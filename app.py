@@ -62,13 +62,13 @@ def api_data():
 
 @app.route('/api/forecast')
 def api_forecast():
-    # Get yesterday's date
-    yesterday = (datetime.now() - timedelta(days=1)).date().isoformat()
+    # Get today's date
+    today = datetime.now().date().isoformat()
     if not os.path.exists(FORECASTS_PATH):
         return jsonify({})
     with open(FORECASTS_PATH, 'r') as f:
         forecasts = json.load(f)
-    forecast = forecasts.get(yesterday)
+    forecast = forecasts.get(today)
     if not forecast and forecasts:
         # Return the most recent available forecast
         latest_date = max(forecasts.keys())

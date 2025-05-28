@@ -16,10 +16,11 @@
 </nav>
 <div class="container-fluid px-2">
   <div class="row g-4">
+    <!-- Row 1: Weather Cam | Outside Temp -->
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Inside Temperature</div>
-        <div class="card-body"><div id="inside-temp-graph" class="plotly-graph"></div></div>
+        <div class="card-header">Weather Cam</div>
+        <div class="card-body d-flex align-items-center justify-content-center" style="height: 320px;"></div>
       </div>
     </div>
     <div class="col-md-6">
@@ -28,6 +29,7 @@
         <div class="card-body"><div id="outside-temp-graph" class="plotly-graph"></div></div>
       </div>
     </div>
+    <!-- Row 2: Humidity | Inside Temp -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Humidity</div>
@@ -36,10 +38,11 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Barometric Pressure</div>
-        <div class="card-body"><div id="pressure-graph" class="plotly-graph"></div></div>
+        <div class="card-header">Inside Temperature</div>
+        <div class="card-body"><div id="inside-temp-graph" class="plotly-graph"></div></div>
       </div>
     </div>
+    <!-- Row 3: Rainfall | Barometric Pressure -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Rainfall</div>
@@ -47,6 +50,13 @@
       </div>
     </div>
     <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Barometric Pressure</div>
+        <div class="card-body"><div id="pressure-graph" class="plotly-graph"></div></div>
+      </div>
+    </div>
+    <!-- Row 4: Wind Speed & Direction, full width -->
+    <div class="col-12">
       <div class="card">
         <div class="card-header">Wind Speed & Direction</div>
         <div class="card-body"><div id="wind-graph" class="plotly-graph"></div></div>

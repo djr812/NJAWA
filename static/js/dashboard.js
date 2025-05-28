@@ -193,13 +193,15 @@ function updateRainfallGraph(data) {
 }
 
 function updateWindGraph(data) {
+    // Convert wind speed from m/s to km/h
+    const windSpeedKmh = data.windSpeed.map(v => v == null ? null : Math.round(v * 3.6 * 100) / 100);
     plotGraph('wind-graph', [
         {
             x: data.dateTime,
-            y: data.windSpeed,
+            y: windSpeedKmh,
             type: 'scatter',
             mode: 'lines',
-            name: 'Wind Speed (m/s)',
+            name: 'Wind Speed (km/h)',
             line: { color: '#607d8b' },
             yaxis: 'y1'
         },
@@ -209,16 +211,18 @@ function updateWindGraph(data) {
             type: 'scatter',
             mode: 'markers',
             name: 'Wind Direction (°)',
-            marker: { color: '#ffeb3b', size: 6 },
+            marker: { color: '#f44336', size: 6 }, // red
             yaxis: 'y2'
         }
     ], {
-        yaxis: { title: 'Wind Speed (m/s)', side: 'left' },
+        yaxis: { title: 'Wind Speed (km/h)', side: 'left' },
         yaxis2: {
             title: 'Wind Dir (°)',
             overlaying: 'y',
             side: 'right',
-            range: [0, 360]
+            range: [0, 360],
+            tickvals: [0, 90, 180, 270, 360],
+            ticktext: ['N', 'E', 'S', 'W', 'N']
         }
     }, true);
 } 

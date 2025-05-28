@@ -26,20 +26,53 @@ function fetchAndUpdateAll() {
         });
 }
 
+function plotGraph(divId, traces, layout, legendAbove) {
+    layout = Object.assign({
+        margin: { t: legendAbove ? 60 : 20 },
+        autosize: true,
+        height: 320,
+        xaxis: {
+            title: 'Time',
+            tickformat: '%H:%M',
+            tickangle: -45,
+            automargin: true,
+            tickformatstops: [
+                {
+                    dtickrange: [null, 3600000], // below 1hr
+                    value: '%H:%M'
+                },
+                {
+                    dtickrange: [3600000, 86400000], // 1hr to 1day
+                    value: '%H:%M'
+                },
+                {
+                    dtickrange: [86400000, null], // 1day and up
+                    value: '%d/%m/%y'
+                }
+            ]
+        }
+    }, layout);
+    if (legendAbove) {
+        layout.legend = {
+            orientation: 'h',
+            yanchor: 'bottom',
+            y: 1.12,
+            xanchor: 'center',
+            x: 0.5
+        };
+    }
+    Plotly.newPlot(divId, traces, layout, {responsive: true, displayModeBar: false, useResizeHandler: true});
+}
+
 function updateInsideTempGraph(data) {
-    Plotly.newPlot('inside-temp-graph', [{
+    plotGraph('inside-temp-graph', [{
         x: data.dateTime,
         y: data.inTemp,
         type: 'scatter',
         mode: 'lines',
         name: 'Inside Temp',
         line: { color: '#ff9800' }
-    }], {
-        margin: { t: 20 },
-        yaxis: { title: '°C' },
-        xaxis: { title: 'Time' },
-        height: 300
-    }, {responsive: true});
+    }], {yaxis: { title: '°C' }});
 }
 
 function updateOutsideTempGraph(data) {
@@ -51,43 +84,74 @@ function updateOutsideTempGraph(data) {
         name: 'Outside Temp',
         line: { color: '#2196f3' }
     }];
-    // If forecast is loaded, add min/max lines
+    let layout = {yaxis: { title: '°C' }};
+    let annotations = [];
     if (latestForecast && latestForecast.predicted_min_temp !== undefined) {
-        let forecastDate = latestForecast.date;
-        // Find all x values for the forecast date
-        let xVals = data.dateTime.filter(dt => dt.startsWith(forecastDate));
+        // Draw min/max lines across the full x-axis
+        let xStart = data.dateTime[0];
+        let xEnd = data.dateTime[data.dateTime.length - 1];
+        // Min line (green)
         traces.push({
-            x: xVals,
-            y: xVals.map(() => latestForecast.predicted_min_temp),
+            x: [xStart, xEnd],
+            y: [latestForecast.predicted_min_temp, latestForecast.predicted_min_temp],
             type: 'scatter',
             mode: 'lines',
             name: 'Forecast Min',
-            line: { dash: 'dash', color: '#4caf50' }
+            line: { color: '#4caf50', width: 3, dash: 'solid' },
+            showlegend: true
         });
+        // Max line (red)
         traces.push({
-            x: xVals,
-            y: xVals.map(() => latestForecast.predicted_max_temp),
+            x: [xStart, xEnd],
+            y: [latestForecast.predicted_max_temp, latestForecast.predicted_max_temp],
             type: 'scatter',
             mode: 'lines',
             name: 'Forecast Max',
-            line: { dash: 'dash', color: '#f44336' }
+            line: { color: '#f44336', width: 3, dash: 'solid' },
+            showlegend: true
+        });
+        // Annotations at the right end
+        annotations.push({
+            x: xEnd,
+            y: latestForecast.predicted_min_temp,
+            xref: 'x',
+            yref: 'y',
+            text: `${latestForecast.predicted_min_temp}°C`,
+            showarrow: false,
+            font: { color: '#4caf50', size: 14, weight: 'bold' },
+            align: 'left',
+            xanchor: 'left',
+            yanchor: 'middle',
+            bgcolor: 'rgba(255,255,255,0.7)',
+            bordercolor: '#4caf50',
+            borderpad: 2
+        });
+        annotations.push({
+            x: xEnd,
+            y: latestForecast.predicted_max_temp,
+            xref: 'x',
+            yref: 'y',
+            text: `${latestForecast.predicted_max_temp}°C`,
+            showarrow: false,
+            font: { color: '#f44336', size: 14, weight: 'bold' },
+            align: 'left',
+            xanchor: 'left',
+            yanchor: 'middle',
+            bgcolor: 'rgba(255,255,255,0.7)',
+            bordercolor: '#f44336',
+            borderpad: 2
         });
     }
-    Plotly.newPlot('outside-temp-graph', traces, {
-        margin: { t: 20 },
-        yaxis: { title: '°C' },
-        xaxis: { title: 'Time' },
-        height: 300
-    }, {responsive: true});
+    if (annotations.length) layout.annotations = annotations;
+    plotGraph('outside-temp-graph', traces, layout);
 }
 
 function updateForecastOnOutsideTemp(forecast) {
-    // This is handled in updateOutsideTempGraph
     if (latestData) updateOutsideTempGraph(latestData);
 }
 
 function updateHumidityGraph(data) {
-    Plotly.newPlot('humidity-graph', [
+    plotGraph('humidity-graph', [
         {
             x: data.dateTime,
             y: data.inHumidity,
@@ -104,47 +168,32 @@ function updateHumidityGraph(data) {
             name: 'Outside Humidity',
             line: { color: '#8bc34a' }
         }
-    ], {
-        margin: { t: 20 },
-        yaxis: { title: '%' },
-        xaxis: { title: 'Time' },
-        height: 300
-    }, {responsive: true});
+    ], {yaxis: { title: '%' }}, true);
 }
 
 function updatePressureGraph(data) {
-    Plotly.newPlot('pressure-graph', [{
+    plotGraph('pressure-graph', [{
         x: data.dateTime,
         y: data.barometer,
         type: 'scatter',
         mode: 'lines',
         name: 'Barometric Pressure',
         line: { color: '#9c27b0' }
-    }], {
-        margin: { t: 20 },
-        yaxis: { title: 'hPa' },
-        xaxis: { title: 'Time' },
-        height: 300
-    }, {responsive: true});
+    }], {yaxis: { title: 'hPa' }});
 }
 
 function updateRainfallGraph(data) {
-    Plotly.newPlot('rainfall-graph', [{
+    plotGraph('rainfall-graph', [{
         x: data.dateTime,
         y: data.rain,
         type: 'bar',
         name: 'Rainfall',
         marker: { color: '#2196f3' }
-    }], {
-        margin: { t: 20 },
-        yaxis: { title: 'mm' },
-        xaxis: { title: 'Time' },
-        height: 300
-    }, {responsive: true});
+    }], {yaxis: { title: 'mm' }});
 }
 
 function updateWindGraph(data) {
-    Plotly.newPlot('wind-graph', [
+    plotGraph('wind-graph', [
         {
             x: data.dateTime,
             y: data.windSpeed,
@@ -164,15 +213,12 @@ function updateWindGraph(data) {
             yaxis: 'y2'
         }
     ], {
-        margin: { t: 20 },
         yaxis: { title: 'Wind Speed (m/s)', side: 'left' },
         yaxis2: {
             title: 'Wind Dir (°)',
             overlaying: 'y',
             side: 'right',
             range: [0, 360]
-        },
-        xaxis: { title: 'Time' },
-        height: 300
-    }, {responsive: true});
+        }
+    }, true);
 } 

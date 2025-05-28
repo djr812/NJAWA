@@ -6,7 +6,7 @@
     <title>Orkney Place Weather</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
@@ -14,42 +14,42 @@
     <a class="navbar-brand" href="#">Orkney Place Weather</a>
   </div>
 </nav>
-<div class="container">
+<div class="container-fluid px-2">
   <div class="row g-4">
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6">
       <div class="card">
         <div class="card-header">Inside Temperature</div>
-        <div class="card-body"><div id="inside-temp-graph"></div></div>
+        <div class="card-body"><div id="inside-temp-graph" class="plotly-graph"></div></div>
       </div>
     </div>
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6">
       <div class="card">
         <div class="card-header">Outside Temperature</div>
-        <div class="card-body"><div id="outside-temp-graph"></div></div>
+        <div class="card-body"><div id="outside-temp-graph" class="plotly-graph"></div></div>
       </div>
     </div>
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6">
       <div class="card">
         <div class="card-header">Humidity</div>
-        <div class="card-body"><div id="humidity-graph"></div></div>
+        <div class="card-body"><div id="humidity-graph" class="plotly-graph"></div></div>
       </div>
     </div>
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6">
       <div class="card">
         <div class="card-header">Barometric Pressure</div>
-        <div class="card-body"><div id="pressure-graph"></div></div>
+        <div class="card-body"><div id="pressure-graph" class="plotly-graph"></div></div>
       </div>
     </div>
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6">
       <div class="card">
         <div class="card-header">Rainfall</div>
-        <div class="card-body"><div id="rainfall-graph"></div></div>
+        <div class="card-body"><div id="rainfall-graph" class="plotly-graph"></div></div>
       </div>
     </div>
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6">
       <div class="card">
         <div class="card-header">Wind Speed & Direction</div>
-        <div class="card-body"><div id="wind-graph"></div></div>
+        <div class="card-body"><div id="wind-graph" class="plotly-graph"></div></div>
       </div>
     </div>
   </div>

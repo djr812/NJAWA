@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 import json
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+import pytz
 
 load_dotenv()
 
@@ -27,30 +28,35 @@ def index():
 @app.route('/api/data')
 def api_data():
     engine = create_engine(DB_URI)
-    since = int((datetime.now() - timedelta(days=7)).timestamp())
+    now = datetime.now()
+    start_time = int((now - timedelta(hours=24)).timestamp())
+    end_time = int((now - timedelta(minutes=5)).timestamp())
     query = f'''
         SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir
         FROM archive
-        WHERE dateTime >= {since}
+        WHERE dateTime >= {start_time} AND dateTime <= {end_time}
         ORDER BY dateTime ASC
     '''
     df = pd.read_sql(query, engine)
-    # Convert timestamps
-    df['dateTime'] = pd.to_datetime(df['dateTime'], unit='s')
-    # Convert F to C for temps
+    # Localize to Australia/Brisbane (UTC+10, no DST)
+    df['dateTime'] = pd.to_datetime(df['dateTime'], unit='s', utc=True).dt.tz_convert('Australia/Brisbane')
     df['inTemp'] = (df['inTemp'] - 32) * 5/9
     df['outTemp'] = (df['outTemp'] - 32) * 5/9
-    # Prepare output
+    df['barometer'] = df['barometer'] * 33.8639  # Convert inHg to hPa
+    
+    def safe_list(col):
+        return [x if pd.notnull(x) else None for x in col]
+
     result = {
         'dateTime': df['dateTime'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist(),
-        'inTemp': df['inTemp'].round(2).tolist(),
-        'outTemp': df['outTemp'].round(2).tolist(),
-        'inHumidity': df['inHumidity'].tolist(),
-        'outHumidity': df['outHumidity'].tolist(),
-        'barometer': df['barometer'].tolist(),
-        'rain': df['rain'].tolist(),
-        'windSpeed': df['windSpeed'].tolist(),
-        'windDir': df['windDir'].tolist(),
+        'inTemp': safe_list(df['inTemp'].round(2)),
+        'outTemp': safe_list(df['outTemp'].round(2)),
+        'inHumidity': safe_list(df['inHumidity']),
+        'outHumidity': safe_list(df['outHumidity']),
+        'barometer': safe_list(df['barometer'].round(2)),
+        'rain': safe_list(df['rain']),
+        'windSpeed': safe_list(df['windSpeed']),
+        'windDir': safe_list(df['windDir']),
     }
     return jsonify(result)
 
@@ -62,8 +68,12 @@ def api_forecast():
         return jsonify({})
     with open(FORECASTS_PATH, 'r') as f:
         forecasts = json.load(f)
-    forecast = forecasts.get(yesterday, {})
-    return jsonify(forecast)
+    forecast = forecasts.get(yesterday)
+    if not forecast and forecasts:
+        # Return the most recent available forecast
+        latest_date = max(forecasts.keys())
+        forecast = forecasts[latest_date]
+    return jsonify(forecast or {})
 
 if __name__ == '__main__':
     app.run(debug=True) 

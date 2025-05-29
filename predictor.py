@@ -15,7 +15,7 @@ load_dotenv()
 def fetch_data():
     DB_USER = 'weewx'
     DB_PASSWORD = os.getenv('WEEWX_DB_PASSWORD')
-    DB_HOST = 'localhost'
+    DB_HOST = '10.1.1.126'
     DB_NAME = 'weewx'
     engine = create_engine(f'mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}')
     query = """

@@ -34,6 +34,20 @@ body {
     height: 320px;
     min-height: 0;
 }
+.card-overlay {
+    position: absolute;
+    top: 18%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #222;
+    opacity: 0.22;
+    pointer-events: none;
+    z-index: 2;
+    text-align: center;
+    white-space: nowrap;
+}
 @media (max-width: 768px) {
     .card-body { min-height: 200px; }
     .plotly-graph { height: 160px; }

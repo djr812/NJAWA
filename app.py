@@ -32,7 +32,7 @@ def api_data():
     start_time = int((now - timedelta(hours=24)).timestamp())
     end_time = int((now - timedelta(minutes=5)).timestamp())
     query = f'''
-        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir
+        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill
         FROM archive
         WHERE dateTime >= {start_time} AND dateTime <= {end_time}
         ORDER BY dateTime ASC
@@ -43,6 +43,8 @@ def api_data():
     df['inTemp'] = (df['inTemp'] - 32) * 5/9
     df['outTemp'] = (df['outTemp'] - 32) * 5/9
     df['barometer'] = df['barometer'] * 33.8639  # Convert inHg to hPa
+    df['heatIndex'] = (df['heatIndex'] - 32) * 5/9
+    df['windChill'] = (df['windChill'] - 32) * 5/9
     
     def safe_list(col):
         return [x if pd.notnull(x) else None for x in col]
@@ -57,6 +59,8 @@ def api_data():
         'rain': safe_list(df['rain']),
         'windSpeed': safe_list(df['windSpeed']),
         'windDir': safe_list(df['windDir']),
+        'heatIndex': safe_list(df['heatIndex'].round(2)),
+        'windChill': safe_list(df['windChill'].round(2)),
     }
     return jsonify(result)
 

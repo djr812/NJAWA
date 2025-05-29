@@ -26,40 +26,77 @@
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Outside Temperature</div>
-        <div class="card-body"><div id="outside-temp-graph" class="plotly-graph"></div></div>
+        <div class="card-body position-relative">
+          <div id="outside-temp-overlay" class="card-overlay"></div>
+          <div id="outside-temp-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 1.5: Heat Index | Wind Chill -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Heat Index</div>
+        <div class="card-body position-relative">
+          <div id="heat-index-overlay" class="card-overlay"></div>
+          <div id="heat-index-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">Wind Chill</div>
+        <div class="card-body position-relative">
+          <div id="wind-chill-overlay" class="card-overlay"></div>
+          <div id="wind-chill-graph" class="plotly-graph"></div>
+        </div>
       </div>
     </div>
     <!-- Row 2: Humidity | Inside Temp -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Humidity</div>
-        <div class="card-body"><div id="humidity-graph" class="plotly-graph"></div></div>
+        <div class="card-body position-relative">
+          <div id="humidity-overlay" class="card-overlay"></div>
+          <div id="humidity-graph" class="plotly-graph"></div>
+        </div>
       </div>
     </div>
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Inside Temperature</div>
-        <div class="card-body"><div id="inside-temp-graph" class="plotly-graph"></div></div>
+        <div class="card-body position-relative">
+          <div id="inside-temp-overlay" class="card-overlay"></div>
+          <div id="inside-temp-graph" class="plotly-graph"></div>
+        </div>
       </div>
     </div>
     <!-- Row 3: Rainfall | Barometric Pressure -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Rainfall</div>
-        <div class="card-body"><div id="rainfall-graph" class="plotly-graph"></div></div>
+        <div class="card-body position-relative">
+          <div id="rainfall-overlay" class="card-overlay"></div>
+          <div id="rainfall-graph" class="plotly-graph"></div>
+        </div>
       </div>
     </div>
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Barometric Pressure</div>
-        <div class="card-body"><div id="pressure-graph" class="plotly-graph"></div></div>
+        <div class="card-body position-relative">
+          <div id="pressure-overlay" class="card-overlay"></div>
+          <div id="pressure-graph" class="plotly-graph"></div>
+        </div>
       </div>
     </div>
     <!-- Row 4: Wind Speed & Direction, full width -->
     <div class="col-12">
       <div class="card">
         <div class="card-header">Wind Speed & Direction</div>
-        <div class="card-body"><div id="wind-graph" class="plotly-graph"></div></div>
+        <div class="card-body position-relative">
+          <div id="wind-overlay" class="card-overlay"></div>
+          <div id="wind-graph" class="plotly-graph"></div>
+        </div>
       </div>
     </div>
   </div>

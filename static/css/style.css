@@ -51,4 +51,19 @@ body {
 @media (max-width: 768px) {
     .card-body { min-height: 200px; }
     .plotly-graph { height: 160px; }
+}
+@media (max-width: 1024px), (max-height: 768px) {
+    .plotly-graph {
+        display: none !important;
+    }
+    .card-overlay {
+        opacity: 1 !important;
+        font-size: 2.2rem !important;
+        top: 50% !important;
+        color: #222 !important;
+        background: rgba(255,255,255,0.85);
+        border-radius: 0.5rem;
+        padding: 0.5em 1em;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
 } 

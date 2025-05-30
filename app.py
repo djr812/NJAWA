@@ -32,7 +32,7 @@ def api_data():
     start_time = int((now - timedelta(hours=24)).timestamp())
     end_time = int((now - timedelta(minutes=5)).timestamp())
     query = f'''
-        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill, lightning_strike_count, lightning_distance, UV
+        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill, lightning_strike_count, lightning_distance, luminosity
         FROM archive
         WHERE dateTime >= {start_time} AND dateTime <= {end_time}
         ORDER BY dateTime ASC
@@ -64,7 +64,7 @@ def api_data():
         'windChill': safe_list(df['windChill'].round(2)),
         'lightning_strike_count': safe_list(df['lightning_strike_count']),
         'lightning_distance': safe_list(df['lightning_distance'].round(2)),
-        'uv': safe_list(df['UV']),
+        'luminosity': safe_list(df['luminosity']),
     }
     return jsonify(result)
 

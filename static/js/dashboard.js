@@ -29,7 +29,7 @@ function fetchAndUpdateAll() {
             updateHeatIndexGraph(data);
             updateWindChillGraph(data);
             updateLightningGraph(data);
-            updateUVGraph(data);
+            updateSolarGraph(data);
         });
     fetch('/api/forecast')
         .then(res => res.json())
@@ -345,16 +345,16 @@ function updateLightningGraph(data) {
     setOverlay('lightning-overlay', lastValid(data.lightning_strike_count), 'strikes', 0);
 }
 
-function updateUVGraph(data) {
-    plotGraph('uv-graph', [{
+function updateSolarGraph(data) {
+    plotGraph('solar-graph', [{
         x: data.dateTime,
-        y: data.uv,
+        y: data.luminosity,
         type: 'scatter',
         mode: 'lines',
-        name: 'UV (kLux)',
+        name: 'Solar (kLux)',
         line: { color: COLORS.powderBlue }
     }], {yaxis: { title: 'kLux' }});
-    setOverlay('uv-overlay', lastValid(data.uv), 'kLux', 2);
+    setOverlay('solar-overlay', lastValid(data.luminosity), 'kLux', 2);
 }
 
 function lastValid(arr) {

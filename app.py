@@ -32,7 +32,7 @@ def api_data():
     start_time = int((now - timedelta(hours=24)).timestamp())
     end_time = int((now - timedelta(minutes=5)).timestamp())
     query = f'''
-        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill
+        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill, lightning_strike_count, lightning_distance, UV
         FROM archive
         WHERE dateTime >= {start_time} AND dateTime <= {end_time}
         ORDER BY dateTime ASC
@@ -45,6 +45,7 @@ def api_data():
     df['barometer'] = df['barometer'] * 33.8639  # Convert inHg to hPa
     df['heatIndex'] = (df['heatIndex'] - 32) * 5/9
     df['windChill'] = (df['windChill'] - 32) * 5/9
+    df['lightning_distance'] = df['lightning_distance'] * 1.60934  # miles to km
     
     def safe_list(col):
         return [x if pd.notnull(x) else None for x in col]
@@ -61,6 +62,9 @@ def api_data():
         'windDir': safe_list(df['windDir']),
         'heatIndex': safe_list(df['heatIndex'].round(2)),
         'windChill': safe_list(df['windChill'].round(2)),
+        'lightning_strike_count': safe_list(df['lightning_strike_count']),
+        'lightning_distance': safe_list(df['lightning_distance'].round(2)),
+        'uv': safe_list(df['UV']),
     }
     return jsonify(result)
 

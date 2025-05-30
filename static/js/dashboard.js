@@ -6,6 +6,15 @@ document.addEventListener('DOMContentLoaded', function() {
 let latestData = null;
 let latestForecast = null;
 
+// Color palette
+const COLORS = {
+    greenBlue: '#2A66B6',
+    powderBlue: '#95B4D4',
+    tuftsBlue: '#4A87D1',
+    fieldDrab: '#6D6425',
+    gold: '#F0CD28',
+};
+
 function fetchAndUpdateAll() {
     fetch('/api/data')
         .then(res => res.json())
@@ -19,6 +28,8 @@ function fetchAndUpdateAll() {
             updateWindGraph(data);
             updateHeatIndexGraph(data);
             updateWindChillGraph(data);
+            updateLightningGraph(data);
+            updateUVGraph(data);
         });
     fetch('/api/forecast')
         .then(res => res.json())
@@ -88,7 +99,7 @@ function updateInsideTempGraph(data) {
         type: 'scatter',
         mode: 'lines',
         name: 'Inside Temp',
-        line: { color: '#ff9800' }
+        line: { color: COLORS.powderBlue }
     }], {yaxis: { title: '°C' }});
     setOverlay('inside-temp-overlay', lastValid(data.inTemp), '°C', 1);
 }
@@ -100,7 +111,7 @@ function updateOutsideTempGraph(data) {
         type: 'scatter',
         mode: 'lines',
         name: 'Outside Temp',
-        line: { color: '#2196f3' }
+        line: { color: COLORS.greenBlue }
     }];
     let layout = {yaxis: { title: '°C' }};
     let annotations = [];
@@ -113,7 +124,7 @@ function updateOutsideTempGraph(data) {
             type: 'scatter',
             mode: 'lines',
             name: 'Forecast Min',
-            line: { color: '#4caf50', width: 3, dash: 'solid' },
+            line: { color: COLORS.fieldDrab, width: 3, dash: 'solid' },
             showlegend: true
         });
         traces.push({
@@ -122,7 +133,7 @@ function updateOutsideTempGraph(data) {
             type: 'scatter',
             mode: 'lines',
             name: 'Forecast Max',
-            line: { color: '#f44336', width: 3, dash: 'solid' },
+            line: { color: COLORS.gold, width: 3, dash: 'solid' },
             showlegend: true
         });
         annotations.push({
@@ -132,12 +143,12 @@ function updateOutsideTempGraph(data) {
             yref: 'y',
             text: `${latestForecast.predicted_min_temp}°C`,
             showarrow: false,
-            font: { color: '#4caf50', size: 14, weight: 'bold' },
+            font: { color: COLORS.fieldDrab, size: 14, weight: 'bold' },
             align: 'left',
             xanchor: 'left',
             yanchor: 'middle',
             bgcolor: 'rgba(255,255,255,0.7)',
-            bordercolor: '#4caf50',
+            bordercolor: COLORS.fieldDrab,
             borderpad: 2
         });
         annotations.push({
@@ -147,12 +158,12 @@ function updateOutsideTempGraph(data) {
             yref: 'y',
             text: `${latestForecast.predicted_max_temp}°C`,
             showarrow: false,
-            font: { color: '#f44336', size: 14, weight: 'bold' },
+            font: { color: COLORS.gold, size: 14, weight: 'bold' },
             align: 'left',
             xanchor: 'left',
             yanchor: 'middle',
             bgcolor: 'rgba(255,255,255,0.7)',
-            bordercolor: '#f44336',
+            bordercolor: COLORS.gold,
             borderpad: 2
         });
     }
@@ -173,7 +184,7 @@ function updateHumidityGraph(data) {
             type: 'scatter',
             mode: 'lines',
             name: 'Inside Humidity',
-            line: { color: '#00bcd4' }
+            line: { color: COLORS.fieldDrab }
         },
         {
             x: data.dateTime,
@@ -181,7 +192,7 @@ function updateHumidityGraph(data) {
             type: 'scatter',
             mode: 'lines',
             name: 'Outside Humidity',
-            line: { color: '#8bc34a' }
+            line: { color: COLORS.greenBlue }
         }
     ], {
         yaxis: { title: '%' },
@@ -203,7 +214,7 @@ function updatePressureGraph(data) {
         type: 'scatter',
         mode: 'lines',
         name: 'Barometric Pressure',
-        line: { color: '#9c27b0' }
+        line: { color: COLORS.fieldDrab }
     }], {yaxis: { title: 'hPa' }});
     setOverlay('pressure-overlay', lastValid(data.barometer), 'hPa', 1);
 }
@@ -214,7 +225,7 @@ function updateRainfallGraph(data) {
         y: data.rain,
         type: 'bar',
         name: 'Rainfall',
-        marker: { color: '#2196f3' }
+        marker: { color: COLORS.tuftsBlue }
     }], {
         yaxis: { title: 'mm', rangemode: 'tozero', zeroline: true, zerolinewidth: 2, zerolinecolor: '#888' }
     });
@@ -231,7 +242,7 @@ function updateWindGraph(data) {
             type: 'scatter',
             mode: 'lines',
             name: 'Wind Speed (km/h)',
-            line: { color: '#607d8b' },
+            line: { color: COLORS.greenBlue },
             yaxis: 'y1'
         },
         {
@@ -240,7 +251,7 @@ function updateWindGraph(data) {
             type: 'scatter',
             mode: 'markers',
             name: 'Wind Direction (°)',
-            marker: { color: '#f44336', size: 6 }, // red
+            marker: { color: COLORS.gold, size: 6 },
             yaxis: 'y2'
         }
     ], {
@@ -271,7 +282,7 @@ function updateHeatIndexGraph(data) {
         type: 'scatter',
         mode: 'lines',
         name: 'Heat Index',
-        line: { color: '#e65100' }
+        line: { color: COLORS.gold }
     }], {yaxis: { title: '°C' }});
     setOverlay('heat-index-overlay', lastValid(data.heatIndex), '°C', 1);
 }
@@ -283,9 +294,67 @@ function updateWindChillGraph(data) {
         type: 'scatter',
         mode: 'lines',
         name: 'Wind Chill',
-        line: { color: '#0288d1' }
+        line: { color: COLORS.powderBlue }
     }], {yaxis: { title: '°C' }});
     setOverlay('wind-chill-overlay', lastValid(data.windChill), '°C', 1);
+}
+
+function updateLightningGraph(data) {
+    // Only show distance bar when strike count is 1 or more
+    const filteredDistance = data.lightning_distance.map((dist, i) => {
+        const count = data.lightning_strike_count[i];
+        return (count !== null && count !== undefined && !isNaN(count) && count >= 1) ? dist : null;
+    });
+    plotGraph('lightning-graph', [
+        {
+            x: data.dateTime,
+            y: filteredDistance,
+            type: 'bar',
+            name: 'Distance (km)',
+            marker: { color: COLORS.tuftsBlue },
+            yaxis: 'y1',
+        },
+        {
+            x: data.dateTime,
+            y: data.lightning_strike_count,
+            type: 'bar',
+            name: 'Count',
+            marker: { color: COLORS.gold },
+            yaxis: 'y2',
+        }
+    ], {
+        yaxis: { title: 'Distance (km)', rangemode: 'tozero', zeroline: true, zerolinewidth: 2, zerolinecolor: '#888' },
+        yaxis2: {
+            title: 'Count',
+            overlaying: 'y',
+            side: 'right',
+            rangemode: 'tozero',
+            zeroline: true,
+            zerolinewidth: 2,
+            zerolinecolor: '#888',
+        },
+        barmode: 'group',
+        legend: {
+            orientation: 'h',
+            x: 0,
+            y: 1.1,
+            xanchor: 'left',
+            yanchor: 'bottom'
+        }
+    });
+    setOverlay('lightning-overlay', lastValid(data.lightning_strike_count), 'strikes', 0);
+}
+
+function updateUVGraph(data) {
+    plotGraph('uv-graph', [{
+        x: data.dateTime,
+        y: data.uv,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'UV (kLux)',
+        line: { color: COLORS.powderBlue }
+    }], {yaxis: { title: 'kLux' }});
+    setOverlay('uv-overlay', lastValid(data.uv), 'kLux', 2);
 }
 
 function lastValid(arr) {

@@ -2,6 +2,13 @@ body {
     background: #f8fafc;
     font-family: 'Segoe UI', Arial, sans-serif;
 }
+:root {
+    --green-blue: #2A66B6;
+    --powder-blue: #95B4D4;
+    --tufts-blue: #4A87D1;
+    --field-drab: #6D6425;
+    --gold: #F0CD28;
+}
 .container-fluid {
     padding-left: 0 !important;
     padding-right: 0 !important;
@@ -11,22 +18,29 @@ body {
     margin-left: 0;
     margin-right: 0;
 }
+.navbar {
+    background: linear-gradient(90deg, var(--tufts-blue) 60%, var(--powder-blue) 100%) !important;
+}
 .card {
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border-radius: 0.75rem;
     margin-left: 0;
     margin-right: 0;
+    border: 1.5px solid var(--powder-blue);
 }
 .card-header {
     font-weight: 600;
-    background: #e3eafc;
-    border-bottom: 1px solid #d1e0fc;
+    background: linear-gradient(90deg, var(--tufts-blue) 60%, var(--powder-blue) 100%);
+    color: #fff;
+    border-bottom: 1px solid var(--powder-blue);
+    letter-spacing: 0.03em;
 }
 .card-body {
     min-height: 380px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #fafdff;
 }
 .plotly-graph {
     width: 100% !important;
@@ -41,7 +55,7 @@ body {
     transform: translate(-50%, -50%);
     font-size: 3.5rem;
     font-weight: 700;
-    color: #222;
+    color: var(--green-blue);
     opacity: 0.22;
     pointer-events: none;
     z-index: 2;
@@ -60,8 +74,8 @@ body {
         opacity: 1 !important;
         font-size: 2.2rem !important;
         top: 50% !important;
-        color: #222 !important;
-        background: rgba(255,255,255,0.85);
+        color: var(--green-blue) !important;
+        background: rgba(245, 250, 255, 0.85);
         border-radius: 0.5rem;
         padding: 0.5em 1em;
         box-shadow: 0 2px 8px rgba(0,0,0,0.07);

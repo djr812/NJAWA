@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
 });
 
 let latestData = null;
@@ -445,4 +447,13 @@ function updatePeriodLabels() {
         const el = document.getElementById(id + '-period');
         if (el) el.textContent = label;
     });
+}
+
+function updateCurrentTime() {
+    const el = document.getElementById('current-time');
+    if (!el) return;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
+    const dateStr = now.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+    el.textContent = `As At ${timeStr} on ${dateStr}`;
 } 

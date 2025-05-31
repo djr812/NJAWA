@@ -78,6 +78,13 @@ body {
     min-width: 110px;
     text-align: right;
 }
+.current-time-label {
+    font-size: 1rem;
+    font-weight: 400;
+    font-style: normal;
+    margin-left: 0.5em;
+    color: #e6e6e6;
+}
 @media (max-width: 768px) {
     .card-body { min-height: 200px; }
     .plotly-graph { height: 160px; }

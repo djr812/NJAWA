@@ -433,13 +433,18 @@ function degToCompass(deg) {
 }
 
 function updatePeriodLabels() {
-    const periodMap = {
-        '24h': 'Last 24 hours',
-        '72h': 'Last 72 hours',
-        '7d': 'Last 7 days',
-        '28d': 'Last 28 days'
-    };
-    const label = periodMap[currentPeriod] || '';
+    let label;
+    if (window.innerWidth <= 1024 || window.innerHeight <= 768) {
+        label = 'Currently';
+    } else {
+        const periodMap = {
+            '24h': 'Last 24 hours',
+            '72h': 'Last 72 hours',
+            '7d': 'Last 7 days',
+            '28d': 'Last 28 days'
+        };
+        label = periodMap[currentPeriod] || '';
+    }
     [
         'outside-temp', 'solar', 'heat-index', 'rainfall', 'lightning',
         'inside-temp', 'pressure', 'wind-chill', 'humidity', 'wind'
@@ -448,6 +453,8 @@ function updatePeriodLabels() {
         if (el) el.textContent = label;
     });
 }
+
+window.addEventListener('resize', updatePeriodLabels);
 
 function updateCurrentTime() {
     const el = document.getElementById('current-time');

@@ -84,6 +84,10 @@ body {
     font-style: normal;
     margin-left: 0.5em;
     color: #e6e6e6;
+    display: inline-block;
+    white-space: normal;
+    word-break: break-word;
+    max-width: 100%;
 }
 @media (max-width: 768px) {
     .card-body { min-height: 200px; }
@@ -92,15 +96,38 @@ body {
 @media (max-width: 1024px), (max-height: 768px) {
     .plotly-graph {
         display: none !important;
+        max-width: 100% !important;
     }
     .card-overlay {
         opacity: 1 !important;
-        font-size: 2.2rem !important;
+        font-size: 3rem !important;
         top: 50% !important;
         color: var(--green-blue) !important;
         background: rgba(245, 250, 255, 0.85);
         border-radius: 0.5rem;
         padding: 0.5em 1em;
         box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    #wind-overlay {
+        font-size: 1.8rem !important;
+        padding: 0.2em 0.2em;
+    }
+    .navbar-brand {
+        font-size: 1.1rem !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        line-height: 1.2;
+    }
+    .current-time-label {
+        font-size: 0.8rem !important;
+        display: block;
+        margin-left: 0;
+        margin-top: 0.2em;
+    }
+    .card-body {
+        max-width: 100%;
+        overflow-wrap: break-word;
+        box-sizing: border-box;
+        padding: 0.5em 0.5em;
     }
 } 

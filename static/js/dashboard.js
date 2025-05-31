@@ -33,7 +33,10 @@ const COLORS = {
 };
 
 function fetchAndUpdateAll() {
-    fetch(`/api/data?period=${currentPeriod}`)
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
+    fetch(`${basePath}/api/data?period=${currentPeriod}`)
         .then(res => res.json())
         .then(data => {
             latestData = data;
@@ -49,13 +52,15 @@ function fetchAndUpdateAll() {
             updateSolarGraph(data);
             updatePeriodLabels();
         });
-    fetch('/api/forecast')
+
+    fetch(`${basePath}/api/forecast`)
         .then(res => res.json())
         .then(forecast => {
             latestForecast = forecast;
             updateForecastOnOutsideTemp(forecast);
         });
 }
+
 
 function plotGraph(divId, traces, layout, legendAbove) {
     // Generate fixed 6-hour interval tickvals and ticktext for the x-axis

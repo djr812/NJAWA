@@ -7,11 +7,25 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
   <div class="container-fluid">
     <a class="navbar-brand" href="#">Orkney Place Weather</a>
+    <div class="d-none d-lg-block ms-auto">
+      <div class="dropdown">
+        <button class="btn btn-link text-white fs-2" type="button" id="periodMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration:none;">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="periodMenuButton">
+          <li><a class="dropdown-item period-option active" href="#" data-period="24h">Last 24 hours</a></li>
+          <li><a class="dropdown-item period-option" href="#" data-period="72h">Last 72 hours</a></li>
+          <li><a class="dropdown-item period-option" href="#" data-period="7d">Last 7 days</a></li>
+          <li><a class="dropdown-item period-option" href="#" data-period="28d">Last 28 days</a></li>
+        </ul>
+      </div>
+    </div>
   </div>
 </nav>
 <div class="container-fluid px-2">
@@ -25,7 +39,7 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Outside Temperature</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="outside-temp-overlay" class="card-overlay"></div>
           <div id="outside-temp-graph" class="plotly-graph"></div>
@@ -35,7 +49,7 @@
     <!-- Row 2: Solar Levels | Heat Index -->
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Solar Levels</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Solar Levels <span id="solar-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="solar-overlay" class="card-overlay"></div>
           <div id="solar-graph" class="plotly-graph"></div>
@@ -44,7 +58,7 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Heat Index</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Heat Index <span id="heat-index-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="heat-index-overlay" class="card-overlay"></div>
           <div id="heat-index-graph" class="plotly-graph"></div>
@@ -54,7 +68,7 @@
     <!-- Row 3: Rainfall | Lightning -->
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Rainfall</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="rainfall-overlay" class="card-overlay"></div>
           <div id="rainfall-graph" class="plotly-graph"></div>
@@ -63,7 +77,7 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Lightning</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Lightning <span id="lightning-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="lightning-overlay" class="card-overlay"></div>
           <div id="lightning-graph" class="plotly-graph"></div>
@@ -73,7 +87,7 @@
     <!-- Row 4: Inside Temp | Barometric Pressure -->
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Inside Temperature</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Inside Temperature <span id="inside-temp-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="inside-temp-overlay" class="card-overlay"></div>
           <div id="inside-temp-graph" class="plotly-graph"></div>
@@ -82,7 +96,7 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Barometric Pressure</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Barometric Pressure <span id="pressure-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="pressure-overlay" class="card-overlay"></div>
           <div id="pressure-graph" class="plotly-graph"></div>
@@ -92,7 +106,7 @@
     <!-- Row 5: Wind Chill | Humidity -->
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Wind Chill</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Wind Chill <span id="wind-chill-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="wind-chill-overlay" class="card-overlay"></div>
           <div id="wind-chill-graph" class="plotly-graph"></div>
@@ -101,7 +115,7 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header">Humidity</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Humidity <span id="humidity-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="humidity-overlay" class="card-overlay"></div>
           <div id="humidity-graph" class="plotly-graph"></div>
@@ -111,7 +125,7 @@
     <!-- Row 6: Wind Speed & Direction, full width -->
     <div class="col-12">
       <div class="card">
-        <div class="card-header">Wind Speed & Direction</div>
+        <div class="card-header d-flex justify-content-between align-items-center">Wind Speed & Direction <span id="wind-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="wind-overlay" class="card-overlay"></div>
           <div id="wind-graph" class="plotly-graph"></div>
@@ -120,6 +134,8 @@
     </div>
   </div>
 </div>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/dashboard.js"></script>
 </body>
 </html> 

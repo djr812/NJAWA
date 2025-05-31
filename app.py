@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 import os
 import pandas as pd
@@ -27,9 +27,17 @@ def index():
 
 @app.route('/api/data')
 def api_data():
+    period = request.args.get('period', '24h')
     engine = create_engine(DB_URI)
     now = datetime.now()
-    start_time = int((now - timedelta(hours=24)).timestamp())
+    if period == '72h':
+        start_time = int((now - timedelta(hours=72)).timestamp())
+    elif period == '7d':
+        start_time = int((now - timedelta(days=7)).timestamp())
+    elif period == '28d':
+        start_time = int((now - timedelta(days=28)).timestamp())
+    else:  # default to 24h
+        start_time = int((now - timedelta(hours=24)).timestamp())
     end_time = int((now - timedelta(minutes=5)).timestamp())
     query = f'''
         SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill, lightning_strike_count, lightning_distance, luminosity

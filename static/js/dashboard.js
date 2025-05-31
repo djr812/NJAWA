@@ -1,10 +1,25 @@
 document.addEventListener('DOMContentLoaded', function() {
     fetchAndUpdateAll();
     setInterval(fetchAndUpdateAll, 5 * 60 * 1000); // Update every 5 minutes
+
+    // Hamburger menu period selection
+    document.querySelectorAll('.period-option').forEach(function(item) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const period = this.getAttribute('data-period');
+            if (period && period !== currentPeriod) {
+                currentPeriod = period;
+                document.querySelectorAll('.period-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                fetchAndUpdateAll();
+            }
+        });
+    });
 });
 
 let latestData = null;
 let latestForecast = null;
+let currentPeriod = '24h';
 
 // Color palette
 const COLORS = {
@@ -16,7 +31,7 @@ const COLORS = {
 };
 
 function fetchAndUpdateAll() {
-    fetch('/api/data')
+    fetch(`/api/data?period=${currentPeriod}`)
         .then(res => res.json())
         .then(data => {
             latestData = data;
@@ -30,6 +45,7 @@ function fetchAndUpdateAll() {
             updateWindChillGraph(data);
             updateLightningGraph(data);
             updateSolarGraph(data);
+            updatePeriodLabels();
         });
     fetch('/api/forecast')
         .then(res => res.json())
@@ -40,31 +56,56 @@ function fetchAndUpdateAll() {
 }
 
 function plotGraph(divId, traces, layout, legendAbove) {
-    layout = Object.assign({
-        margin: { t: legendAbove ? 60 : 20 },
-        autosize: true,
-        height: 320,
-        xaxis: {
-            title: 'Time',
-            tickformat: '%H:%M',
-            tickangle: -45,
-            automargin: true,
-            tickformatstops: [
-                {
-                    dtickrange: [null, 3600000], // below 1hr
-                    value: '%H:%M'
-                },
-                {
-                    dtickrange: [3600000, 86400000], // 1hr to 1day
-                    value: '%H:%M'
-                },
-                {
-                    dtickrange: [86400000, null], // 1day and up
-                    value: '%d/%m/%y'
+    // Generate fixed 6-hour interval tickvals and ticktext for the x-axis
+    if (traces.length && traces[0].x && traces[0].x.length) {
+        const xVals = traces[0].x;
+        const tickvals = [];
+        const ticktext = [];
+        if (xVals.length > 0) {
+            // Find the first and last timestamps
+            const start = new Date(xVals[0].replace(' ', 'T'));
+            const end = new Date(xVals[xVals.length - 1].replace(' ', 'T'));
+            // Find the first midnight before or at start
+            let tick = new Date(start);
+            tick.setMinutes(0, 0, 0);
+            tick.setHours(0);
+            if (tick > start) tick.setDate(tick.getDate() - 1);
+            // Generate ticks every 6 hours
+            while (tick <= end) {
+                const tickStr = tick.getFullYear() + '-' + String(tick.getMonth() + 1).padStart(2, '0') + '-' + String(tick.getDate()).padStart(2, '0') + ' ' + String(tick.getHours()).padStart(2, '0') + ':00:00';
+                tickvals.push(tickStr);
+                if (tick.getHours() === 0) {
+                    ticktext.push(tick.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }));
+                } else {
+                    ticktext.push(tick.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }));
                 }
-            ]
+                tick.setHours(tick.getHours() + 6);
+            }
         }
-    }, layout);
+        layout = Object.assign({
+            margin: { t: legendAbove ? 60 : 20 },
+            autosize: true,
+            height: 320,
+            xaxis: {
+                title: 'Time',
+                tickangle: -45,
+                automargin: true,
+                tickvals: tickvals,
+                ticktext: ticktext
+            }
+        }, layout);
+    } else {
+        layout = Object.assign({
+            margin: { t: legendAbove ? 60 : 20 },
+            autosize: true,
+            height: 320,
+            xaxis: {
+                title: 'Time',
+                tickangle: -45,
+                automargin: true
+            }
+        }, layout);
+    }
     if (legendAbove) {
         layout.legend = {
             orientation: 'h',
@@ -115,7 +156,7 @@ function updateOutsideTempGraph(data) {
     }];
     let layout = {yaxis: { title: '°C' }};
     let annotations = [];
-    if (latestForecast && latestForecast.predicted_min_temp !== undefined) {
+    if (currentPeriod === '24h' && latestForecast && latestForecast.predicted_min_temp !== undefined) {
         let xStart = data.dateTime[0];
         let xEnd = data.dateTime[data.dateTime.length - 1];
         traces.push({
@@ -387,4 +428,21 @@ function degToCompass(deg) {
     if (deg >= 247.5 && deg < 292.5) return 'W';
     if (deg >= 292.5 && deg < 337.5) return 'NW';
     return '--';
+}
+
+function updatePeriodLabels() {
+    const periodMap = {
+        '24h': 'Last 24 hours',
+        '72h': 'Last 72 hours',
+        '7d': 'Last 7 days',
+        '28d': 'Last 28 days'
+    };
+    const label = periodMap[currentPeriod] || '';
+    [
+        'outside-temp', 'solar', 'heat-index', 'rainfall', 'lightning',
+        'inside-temp', 'pressure', 'wind-chill', 'humidity', 'wind'
+    ].forEach(id => {
+        const el = document.getElementById(id + '-period');
+        if (el) el.textContent = label;
+    });
 } 

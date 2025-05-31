@@ -21,6 +21,13 @@ body {
 .navbar {
     background: linear-gradient(90deg, var(--tufts-blue) 60%, var(--powder-blue) 100%) !important;
 }
+.navbar-brand {
+    font-family: 'Tahoma', 'Segoe UI', Arial, sans-serif !important;
+    font-size: 2.2rem !important;
+    font-weight: 700;
+    font-style: italic;
+    letter-spacing: 0.04em;
+}
 .card {
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border-radius: 0.75rem;
@@ -61,6 +68,15 @@ body {
     z-index: 2;
     text-align: center;
     white-space: nowrap;
+}
+.period-label {
+    font-size: 1rem;
+    color: #e6e6e6;
+    font-weight: 400;
+    margin-left: auto;
+    letter-spacing: 0.01em;
+    min-width: 110px;
+    text-align: right;
 }
 @media (max-width: 768px) {
     .card-body { min-height: 200px; }

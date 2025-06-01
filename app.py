@@ -54,6 +54,8 @@ def api_data():
     df['heatIndex'] = (df['heatIndex'] - 32) * 5/9
     df['windChill'] = (df['windChill'] - 32) * 5/9
     df['lightning_distance'] = df['lightning_distance'] * 1.60934  # miles to km
+    if 'luminosity' in df:
+        df['luminosity'] = df['luminosity'] / 1000  # Lux to kLux
     
     def safe_list(col):
         return [x if pd.notnull(x) else None for x in col]

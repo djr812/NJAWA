@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     updateCurrentTime();
     setInterval(updateCurrentTime, 1000);
+    fetchAndDisplaySunriseSunset();
+    scheduleSunriseSunsetUpdate();
 });
 
 let latestData = null;
@@ -468,4 +470,39 @@ function updateCurrentTime() {
     const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
     const dateStr = now.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
     el.textContent = `As At ${timeStr} on ${dateStr}`;
+}
+
+function fetchAndDisplaySunriseSunset() {
+    const lat = -27.407259185389066;
+    const lon = 152.9198965081402;
+    const tzid = 'Australia/Brisbane';
+    const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=today&tzid=${tzid}`;
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'OK' && data.results) {
+                const sunrise = data.results.sunrise;
+                const sunset = data.results.sunset;
+                document.getElementById('sunrise-sunset-info').innerHTML =
+                    `<span>Sunrise: <strong>${sunrise}</strong> &nbsp;|&nbsp; Sunset: <strong>${sunset}</strong></span>`;
+            } else {
+                document.getElementById('sunrise-sunset-info').textContent = 'Sunrise/Sunset info unavailable.';
+            }
+        })
+        .catch(() => {
+            document.getElementById('sunrise-sunset-info').textContent = 'Sunrise/Sunset info unavailable.';
+        });
+}
+
+function scheduleSunriseSunsetUpdate() {
+    // Calculate ms until next 00:01
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(0, 1, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    const msUntilNext = next - now;
+    setTimeout(() => {
+        fetchAndDisplaySunriseSunset();
+        scheduleSunriseSunsetUpdate();
+    }, msUntilNext);
 } 

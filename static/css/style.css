@@ -89,6 +89,14 @@ body {
     word-break: break-word;
     max-width: 100%;
 }
+.sunrise-sunset-info {
+    text-align: center;
+    font-size: 1.15rem;
+    color: #2A66B6;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    margin-bottom: 1.2em;
+}
 @media (max-width: 768px) {
     .card-body { min-height: 200px; }
     .plotly-graph { height: 160px; }

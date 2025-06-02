@@ -32,7 +32,7 @@
 <div id="sunrise-sunset-info" class="sunrise-sunset-info mb-3"></div>
 <div class="container-fluid px-2">
   <div class="row g-4">
-    <!-- Row 1: Weather Cam | Outside Temp -->
+    <!-- Row 1: Weather Cam | Location -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">Weather Cam</div>
@@ -41,14 +41,13 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="outside-temp-overlay" class="card-overlay"></div>
-          <div id="outside-temp-graph" class="plotly-graph"></div>
+        <div class="card-header">Location</div>
+        <div class="card-body d-flex align-items-center justify-content-center" style="height: 320px;">
+          <img src="static/images/localmap.jpg" alt="Local Map" class="img-fluid" style="max-height: 100%; object-fit: contain; width: 100%;" />
         </div>
       </div>
     </div>
-    <!-- Row 2: Solar Levels | Heat Index -->
+    <!-- Row 2: Solar Levels | Outside Temperature -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Solar Levels <span id="solar-period" class="period-label text-end flex-grow-1"></span></div>
@@ -60,29 +59,29 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Heat Index <span id="heat-index-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
-          <div id="heat-index-overlay" class="card-overlay"></div>
-          <div id="heat-index-graph" class="plotly-graph"></div>
+          <div id="outside-temp-overlay" class="card-overlay"></div>
+          <div id="outside-temp-graph" class="plotly-graph"></div>
         </div>
       </div>
     </div>
-    <!-- Row 3: Rainfall | Lightning -->
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="rainfall-overlay" class="card-overlay"></div>
-          <div id="rainfall-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
+    <!-- Row 3: Lightning | Rainfall -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Lightning <span id="lightning-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="lightning-overlay" class="card-overlay"></div>
           <div id="lightning-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="rainfall-overlay" class="card-overlay"></div>
+          <div id="rainfall-graph" class="plotly-graph"></div>
         </div>
       </div>
     </div>
@@ -141,6 +140,7 @@
 <div class="attribution-section mt-5 mb-3" style="text-align:center;">
   <div style="font-style:italic;">This page acknowledges the use of <a href="https://sunrise-sunset.org" target="_blank" rel="noopener">https://sunrise-sunset.org</a> API.</div>
   <div style="font-style:italic;">This station is controlled by WeeWX (<a href="https://weewx.com" target="_blank" rel="noopener">https://weewx.com</a>).</div>
+  <div style="font-style:italic;">This page makes use of maps provided by <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">https://www.openstreetmap.org</a></div>
 </div>
 
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>

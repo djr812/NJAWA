@@ -48,7 +48,6 @@ function fetchAndUpdateAll() {
             updatePressureGraph(data);
             updateRainfallGraph(data);
             updateWindGraph(data);
-            updateHeatIndexGraph(data);
             updateWindChillGraph(data);
             updateLightningGraph(data);
             updateSolarGraph(data);
@@ -323,18 +322,6 @@ function updateWindGraph(data) {
         }
     }, false);
     setWindOverlay(lastValid(windSpeedKmh), lastValid(data.windDir));
-}
-
-function updateHeatIndexGraph(data) {
-    plotGraph('heat-index-graph', [{
-        x: data.dateTime,
-        y: data.heatIndex,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Heat Index',
-        line: { color: COLORS.gold }
-    }], {yaxis: { title: '°C' }});
-    setOverlay('heat-index-overlay', lastValid(data.heatIndex), '°C', 1);
 }
 
 function updateWindChillGraph(data) {

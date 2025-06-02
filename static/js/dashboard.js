@@ -48,6 +48,7 @@ function fetchAndUpdateAll() {
             updatePressureGraph(data);
             updateRainfallGraph(data);
             updateWindGraph(data);
+            updateHeatIndexGraph(data);
             updateWindChillGraph(data);
             updateLightningGraph(data);
             updateSolarGraph(data);
@@ -59,9 +60,28 @@ function fetchAndUpdateAll() {
         .then(forecast => {
             latestForecast = forecast;
             updateForecastOnOutsideTemp(forecast);
+            updatePredictedWeatherConditionsCard(forecast);
         });
 }
 
+function updatePredictedWeatherConditionsCard(forecast) {
+    const cardBody = document.getElementById('predicted-weather-conditions-body');
+    if (!cardBody) return;
+    cardBody.innerHTML = '';
+    if (forecast && forecast.pressure_forecast) {
+        // Sanitize filename: replace spaces and special chars with underscores
+        const filename = forecast.pressure_forecast.replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
+        const img = document.createElement('img');
+        img.src = `static/images/${filename}`;
+        img.alt = forecast.pressure_forecast;
+        cardBody.appendChild(img);
+        // Add the pressure_forecast text below the image
+        const textDiv = document.createElement('div');
+        textDiv.className = 'pressure-forecast-text mt-3';
+        textDiv.textContent = forecast.pressure_forecast;
+        cardBody.appendChild(textDiv);
+    }
+}
 
 function plotGraph(divId, traces, layout, legendAbove) {
     // Generate fixed 6-hour interval tickvals and ticktext for the x-axis
@@ -392,6 +412,18 @@ function updateSolarGraph(data) {
         line: { color: COLORS.powderBlue }
     }], {yaxis: { title: 'kLux' }});
     setOverlay('solar-overlay', lastValid(data.luminosity), 'kLux', 2);
+}
+
+function updateHeatIndexGraph(data) {
+    plotGraph('heat-index-graph', [{
+        x: data.dateTime,
+        y: data.heatIndex,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Heat Index',
+        line: { color: COLORS.gold }
+    }], {yaxis: { title: '°C' }});
+    setOverlay('heat-index-overlay', lastValid(data.heatIndex), '°C', 1);
 }
 
 function lastValid(arr) {

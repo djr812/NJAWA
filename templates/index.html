@@ -47,16 +47,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 2: Solar Levels | Outside Temperature -->
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Solar Levels <span id="solar-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="solar-overlay" class="card-overlay"></div>
-          <div id="solar-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
+    <!-- Row 2: Outside Temperature | Predicted Weather Conditions -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
@@ -66,16 +57,15 @@
         </div>
       </div>
     </div>
-    <!-- Row 3: Lightning | Rainfall -->
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Lightning <span id="lightning-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="lightning-overlay" class="card-overlay"></div>
-          <div id="lightning-graph" class="plotly-graph"></div>
+        <div class="card-header d-flex justify-content-between align-items-center">Predicted Weather Conditions <span class="period-label text-end flex-grow-1" style="color:#e6e6e6;">Next 24-48 hours</span></div>
+        <div class="card-body position-relative" id="predicted-weather-conditions-body">
+          <!-- Content to be added -->
         </div>
       </div>
     </div>
+    <!-- Row 3: Rainfall | Lightning -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
@@ -85,32 +75,22 @@
         </div>
       </div>
     </div>
-    <!-- Row 4: Inside Temp | Barometric Pressure -->
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Inside Temperature <span id="inside-temp-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-header d-flex justify-content-between align-items-center">Lightning <span id="lightning-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
-          <div id="inside-temp-overlay" class="card-overlay"></div>
-          <div id="inside-temp-graph" class="plotly-graph"></div>
+          <div id="lightning-overlay" class="card-overlay"></div>
+          <div id="lightning-graph" class="plotly-graph"></div>
         </div>
       </div>
     </div>
+    <!-- Row 4: Barometric Pressure | Humidity -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Barometric Pressure <span id="pressure-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="pressure-overlay" class="card-overlay"></div>
           <div id="pressure-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
-    <!-- Row 5: Wind Chill | Humidity -->
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Wind Chill <span id="wind-chill-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="wind-chill-overlay" class="card-overlay"></div>
-          <div id="wind-chill-graph" class="plotly-graph"></div>
         </div>
       </div>
     </div>
@@ -123,7 +103,45 @@
         </div>
       </div>
     </div>
-    <!-- Row 6: Wind Speed & Direction, full width -->
+    <!-- Row 5: Solar Levels | Inside Temperature -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Solar Levels <span id="solar-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="solar-overlay" class="card-overlay"></div>
+          <div id="solar-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Inside Temperature <span id="inside-temp-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="inside-temp-overlay" class="card-overlay"></div>
+          <div id="inside-temp-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 6: Heat Index | Wind Chill -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Heat Index <span id="heat-index-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="heat-index-overlay" class="card-overlay"></div>
+          <div id="heat-index-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Wind Chill <span id="wind-chill-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="wind-chill-overlay" class="card-overlay"></div>
+          <div id="wind-chill-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 7: Wind Speed & Direction, full width -->
     <div class="col-12">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Wind Speed & Direction <span id="wind-period" class="period-label text-end flex-grow-1"></span></div>
@@ -141,6 +159,7 @@
   <div style="font-style:italic;">This page acknowledges the use of <a href="https://sunrise-sunset.org" target="_blank" rel="noopener">https://sunrise-sunset.org</a> API.</div>
   <div style="font-style:italic;">This station is controlled by WeeWX (<a href="https://weewx.com" target="_blank" rel="noopener">https://weewx.com</a>).</div>
   <div style="font-style:italic;">This page makes use of maps provided by <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">https://www.openstreetmap.org</a></div>
+  <div style="font-style:italic;">And includes a <a href='https://pngtree.com/freepng/weather-icons-set_3606115.html'>png image from pngtree.com/</a></div>
 </div>
 
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>

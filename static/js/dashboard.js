@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     fetchAndUpdateAll();
     setInterval(fetchAndUpdateAll, 5 * 60 * 1000); // Update every 5 minutes
+    fetchAndUpdateBattery();
+    setInterval(fetchAndUpdateBattery, 5 * 60 * 1000);
 
     // Hamburger menu period selection
     document.querySelectorAll('.period-option').forEach(function(item) {
@@ -524,4 +526,34 @@ function scheduleSunriseSunsetUpdate() {
         fetchAndDisplaySunriseSunset();
         scheduleSunriseSunsetUpdate();
     }, msUntilNext);
+}
+
+function fetchAndUpdateBattery() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
+    fetch(`${basePath}/api/battery`)
+        .then(res => res.json())
+        .then(data => {
+            updateBatteryCard('console', data.console);
+            updateBatteryCard('outdoor', data.outdoor);
+            updateBatteryCard('array', data.array);
+            updateBatteryCard('lightning', data.lightning);
+        });
+}
+
+function updateBatteryCard(type, info) {
+    const iconDiv = document.getElementById(`${type}-battery-icon`);
+    const statusDiv = document.getElementById(`${type}-battery-status`);
+    if (!iconDiv || !statusDiv) return;
+    let svg = '';
+    if (info.status === 'ok') {
+        svg = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="14" width="32" height="20" rx="4" fill="#28a745" stroke="#222" stroke-width="2"/><rect x="40" y="20" width="4" height="8" rx="2" fill="#222"/><rect x="12" y="18" width="24" height="12" rx="2" fill="#fff" fill-opacity="0.2"/></svg>`;
+        statusDiv.className = 'battery-status-text battery-status-ok';
+    } else {
+        svg = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="14" width="32" height="20" rx="4" fill="#d32f2f" stroke="#222" stroke-width="2"/><rect x="40" y="20" width="4" height="8" rx="2" fill="#222"/><rect x="12" y="18" width="24" height="12" rx="2" fill="#fff" fill-opacity="0.2"/></svg>`;
+        statusDiv.className = 'battery-status-text battery-status-low';
+    }
+    iconDiv.innerHTML = svg;
+    statusDiv.textContent = info.label;
 } 

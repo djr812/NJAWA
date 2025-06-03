@@ -87,3 +87,4 @@ coverage.xml
 # Application specific
 forecasts/  
 predictor.log
+battery_cache.json

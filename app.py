@@ -7,6 +7,13 @@ import json
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import pytz
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+import tempfile
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 load_dotenv()
 
@@ -20,6 +27,8 @@ DB_HOST = '10.1.1.126'
 DB_NAME = 'weewx'
 DB_URI = f'mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
 FORECASTS_PATH = os.path.join(os.path.dirname(__file__), 'forecasts', 'forecasts.json')
+BATTERY_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'battery_cache.json')
+BATTERY_CACHE_TTL = 900  # 15 minutes
 
 @app.route('/')
 def index():
@@ -93,5 +102,129 @@ def api_forecast():
         forecast = forecasts[latest_date]
     return jsonify(forecast or {})
 
+@app.route('/api/battery')
+def api_battery():
+    now = time.time()
+    # Try to load cache
+    if os.path.exists(BATTERY_CACHE_PATH):
+        with open(BATTERY_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if now - cache.get('timestamp', 0) < BATTERY_CACHE_TTL:
+                    return jsonify(cache['data'])
+            except Exception:
+                pass
+    chrome_options = Options()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    driver = webdriver.Chrome(options=chrome_options)
+    try:
+        url = 'https://www.ecowitt.net/home/index'
+        driver.get(url)
+        wait = WebDriverWait(driver, 8)
+        # Login automation
+        email_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='email']")))
+        password_input = driver.find_element(By.CSS_SELECTOR, "input[type='password']")
+        login_button = driver.find_element(By.CLASS_NAME, 'login-button')
+        email = os.getenv('ECOWITT_EMAIL')
+        password = os.getenv('ECOWITT_PASSWORD')
+        email_input.clear()
+        email_input.send_keys(email)
+        password_input.clear()
+        password_input.send_keys(password)
+        login_button.click()
+        wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Sensor Array')]")))
+        result = {
+            'console': {'label': 'Unknown', 'status': 'low'},
+            'outdoor': {'label': 'Unknown', 'status': 'low'},
+            'array': {'label': 'Unknown', 'status': 'low'},
+            'lightning': {'label': 'Unknown', 'status': 'low'},
+        }
+        # Console
+        try:
+            device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Console']")
+            console_voltage = None
+            for device_elem in device_elems:
+                try:
+                    tooltip_elem = device_elem.find_element(By.XPATH, "following-sibling::div[contains(@class, 'ivu-tooltip')]")
+                    console_voltage = tooltip_elem.text.strip()
+                    break
+                except Exception:
+                    pass
+            if console_voltage:
+                try:
+                    voltage = float(console_voltage.replace('V','').strip())
+                    if voltage < 4.00:
+                        result['console'] = {'label': 'LOW', 'status': 'low'}
+                    else:
+                        result['console'] = {'label': 'OK', 'status': 'ok'}
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        # Outdoor T&RH Sensor
+        try:
+            device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Outdoor T&RH Sensor']")
+            outdoor_status = None
+            for device_elem in device_elems:
+                try:
+                    tooltip_elem = device_elem.find_element(By.XPATH, "following-sibling::div[contains(@class, 'ivu-tooltip')]")
+                    outdoor_status = tooltip_elem.text.strip().upper()
+                    break
+                except Exception:
+                    pass
+            if outdoor_status in ['OK', 'NORMAL']:
+                result['outdoor'] = {'label': 'OK', 'status': 'ok'}
+            elif outdoor_status:
+                result['outdoor'] = {'label': 'LOW', 'status': 'low'}
+        except Exception:
+            pass
+        # Sensor Array
+        try:
+            device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Sensor Array']")
+            array_status = None
+            for device_elem in device_elems:
+                try:
+                    tooltip_elem = device_elem.find_element(By.XPATH, "following-sibling::div[contains(@class, 'ivu-tooltip')]")
+                    array_status = tooltip_elem.text.strip().upper()
+                    break
+                except Exception:
+                    pass
+            if array_status in ['OK', 'NORMAL']:
+                result['array'] = {'label': 'OK', 'status': 'ok'}
+            elif array_status:
+                result['array'] = {'label': 'LOW', 'status': 'low'}
+        except Exception:
+            pass
+        # Lightning Sensor (robust: find device-name 'Lightning Sensor', then next ivu-tooltip div, check img src)
+        try:
+            device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Lightning Sensor']")
+            lightning_status = None
+            for device_elem in device_elems:
+                try:
+                    tooltip_elem = device_elem.find_element(By.XPATH, "following-sibling::div[contains(@class, 'ivu-tooltip')]")
+                    img = tooltip_elem.find_element(By.TAG_NAME, 'img')
+                    src = img.get_attribute('src')
+                    if src and src.startswith('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAZCAMAAAB0BpxXAAAAyVBMVEWZmZkcupqZmZmZmZmZmZmZmZmZmZkcupqZmZkcupp5opmZmZmZmZkcupqZmZlZqpqZmZkeuZpeqZl4opmZmZmZmZmPnJlPrJqZmZmZmZmZmZmZmZkcupqZmZkkuJqZmZmXmpmZmZkmt5qZmZmZmZmZmZmZmZlbqZmPnJlQrJqHnpmZmZmZmZmZmZlnpplnpplvpJmZmZmZmZmZmZkdupojuJqZmZmHnplQrJo8spocupqZmZlnppmZmZlHr5oguZpvpJkcupqZmZkFgNBJAAAAQXRSTlMBePIEnt9mtHT3wLChb3etM+m+imMGtK2G9+TbdVstGMZAJ+vVy8G3tq6cgHBSREM+LCAO7OG7ua+tqJiXk2RdP27US9gAAAD8SURBVDjLxZMJb4IwGECxsiqUQ2cHAmPAPOY8NnX3POv//1H2owJRA9EY4wt5kC8vLYFUiinnI2V81HyKMaZwpVAqbn4UpJ3/7d3l4nWHSRmFbqiqP4RYqmoR0ottJQ7d9khsX8at7h9jyvKtzlh9/A5exx7D5KuHBg8irCJNYYz964yjH9lEzTSUYVApgUt7Pi903I6fbF0Uvmw40xNWvIewdq1Qu9WKl4fZd3QCCI3i0HTaJDr3X2snhwqEjzDWj5yFQ0QqfLB64rnyfOjPPhrsDtjI82TTnhtGw7Yb3K/c6fNvv+NSSRA0Ww4qQJtIO6Z4Iecyq07EK24BpwZ3o+WYpo4AAAAASUVORK5CYII='):
+                        lightning_status = 'OK'
+                    else:
+                        lightning_status = 'LOW'
+                    break
+                except Exception:
+                    pass
+            if lightning_status == 'OK':
+                result['lightning'] = {'label': 'OK', 'status': 'ok'}
+            elif lightning_status:
+                result['lightning'] = {'label': 'LOW', 'status': 'low'}
+        except Exception:
+            pass
+        # Save cache
+        with open(BATTERY_CACHE_PATH, 'w') as f:
+            json.dump({'timestamp': now, 'data': result}, f)
+        return jsonify(result)
+    finally:
+        driver.quit()
+
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=False) 

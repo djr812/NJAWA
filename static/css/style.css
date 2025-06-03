@@ -164,4 +164,22 @@ body {
     height: auto;
     margin: 0 auto;
     object-fit: contain;
+}
+.battery-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.battery-status-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+}
+.battery-status-ok {
+    color: #28a745;
+}
+.battery-status-low {
+    color: #d32f2f;
 } 

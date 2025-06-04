@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(fetchAndUpdateAll, 5 * 60 * 1000); // Update every 5 minutes
     fetchAndUpdateBattery();
     setInterval(fetchAndUpdateBattery, 5 * 60 * 1000);
+    fetchAndUpdateBarMetrics();
+    setInterval(fetchAndUpdateBarMetrics, 5 * 60 * 1000);
 
     // Hamburger menu period selection
     document.querySelectorAll('.period-option').forEach(function(item) {
@@ -548,12 +550,121 @@ function updateBatteryCard(type, info) {
     if (!iconDiv || !statusDiv) return;
     let svg = '';
     if (info.status === 'ok') {
-        svg = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="14" width="32" height="20" rx="4" fill="#28a745" stroke="#222" stroke-width="2"/><rect x="40" y="20" width="4" height="8" rx="2" fill="#222"/><rect x="12" y="18" width="24" height="12" rx="2" fill="#fff" fill-opacity="0.2"/></svg>`;
+        svg = `<svg width="192" height="192" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="14" width="32" height="20" rx="4" fill="#28a745" stroke="#222" stroke-width="2"/><rect x="40" y="20" width="4" height="8" rx="2" fill="#222"/><rect x="12" y="18" width="24" height="12" rx="2" fill="#fff" fill-opacity="0.2"/></svg>`;
         statusDiv.className = 'battery-status-text battery-status-ok';
     } else {
-        svg = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="14" width="32" height="20" rx="4" fill="#d32f2f" stroke="#222" stroke-width="2"/><rect x="40" y="20" width="4" height="8" rx="2" fill="#222"/><rect x="12" y="18" width="24" height="12" rx="2" fill="#fff" fill-opacity="0.2"/></svg>`;
+        svg = `<svg width="192" height="192" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="14" width="32" height="20" rx="4" fill="#d32f2f" stroke="#222" stroke-width="2"/><rect x="40" y="20" width="4" height="8" rx="2" fill="#222"/><rect x="12" y="18" width="24" height="12" rx="2" fill="#fff" fill-opacity="0.2"/></svg>`;
         statusDiv.className = 'battery-status-text battery-status-low';
     }
     iconDiv.innerHTML = svg;
     statusDiv.textContent = info.label;
+}
+
+function fetchAndUpdateBarMetrics() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    fetch(`${basePath}/api/battery`)
+        .then(res => res.json())
+        .then(data => {
+            updateBarAreaTempHumidity(data);
+            updateOutsideCO2Card(data);
+            updatePM25Card(data);
+            updatePM10Card(data);
+        });
+}
+
+function updateBarAreaTempHumidity(data) {
+    const barAreaDiv = document.getElementById('bar-area-temp-humidity');
+    if (barAreaDiv) {
+        let temp = data.bar_area_temp || '--';
+        let hum = data.bar_area_humidity || '--';
+        barAreaDiv.innerHTML = `
+            <div style="text-align:center;">
+                <div style="font-size:1.2rem;font-weight:500;">Temperature</div>
+                <div style="font-size:2.4rem;font-weight:700;line-height:1.1;">${temp}</div>
+                <div style="font-size:1.2rem;font-weight:500;margin-top:1.2em;">Humidity</div>
+                <div style="font-size:2.2rem;font-weight:700;line-height:1.1;">${hum}</div>
+            </div>
+        `;
+    }
+}
+
+function updateOutsideCO2Card(data) {
+    const co2Div = document.getElementById('outside-co2');
+    if (!co2Div) return;
+    let co2 = data.outside_co2;
+    let scale = 'Unknown';
+    let img = 'unknown.jpg';
+    let bgColor = '#f8fafc';
+    if (typeof co2 === 'number') {
+        if (co2 >= 0 && co2 < 350) { scale = 'Good'; img = 'Good.png'; bgColor = '#d4f7d4'; }
+        else if (co2 >= 350 && co2 < 1000) { scale = 'Moderate'; img = 'Moderate.png'; bgColor = '#fff9c4'; }
+        else if (co2 >= 1000 && co2 < 2000) { scale = 'Poor'; img = 'Poor.png'; bgColor = '#ffe0b2'; }
+        else if (co2 >= 2000 && co2 < 5000) { scale = 'Unhealthy'; img = 'Unhealthy.png'; bgColor = '#ffcdd2'; }
+        else if (co2 >= 5000 && co2 < 40000) { scale = 'Severe'; img = 'Severe.png'; bgColor = '#b3e5fc'; }
+        else if (co2 >= 40000) { scale = 'Hazardous'; img = 'Hazardous.png'; bgColor = '#e1bee7'; }
+    }
+    co2Div.style.background = bgColor;
+    co2Div.innerHTML = `
+        <div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:500;">CO₂ Level</div>
+            <div style="font-size:2.4rem;font-weight:700;line-height:1.1;">${co2 !== undefined && co2 !== null ? co2 + ' ppm' : '--'}</div>
+            <div style="font-size:1.2rem;font-weight:500;margin-top:1.2em;">${scale}</div>
+            <img src="static/images/${img}" alt="${scale}" style="max-width:80px;max-height:80px;margin-top:0.5em;" />
+        </div>
+    `;
+}
+
+function updatePM25Card(data) {
+    const pm25Div = document.getElementById('outside-pm25');
+    if (!pm25Div) return;
+    let pm25 = data.pm25;
+    let scale = 'Unknown';
+    let img = 'unknown.jpg';
+    let bgColor = '#f8fafc';
+    if (typeof pm25 === 'number') {
+        if (pm25 >= 0 && pm25 <= 12) { scale = 'Good'; img = 'Good.png'; bgColor = '#d4f7d4'; }
+        else if (pm25 > 12 && pm25 <= 35.4) { scale = 'Moderate'; img = 'Moderate.png'; bgColor = '#fff9c4'; }
+        else if (pm25 > 35.4 && pm25 <= 55.4) { scale = 'Poor'; img = 'Poor.png'; bgColor = '#ffe0b2'; }
+        else if (pm25 > 55.4 && pm25 <= 150.4) { scale = 'Unhealthy'; img = 'Unhealthy.png'; bgColor = '#ffcdd2'; }
+        else if (pm25 > 150.4 && pm25 <= 250.4) { scale = 'Severe'; img = 'Severe.png'; bgColor = '#b3e5fc'; }
+        else if (pm25 > 250.4) { scale = 'Hazardous'; img = 'Hazardous.png'; bgColor = '#e1bee7'; }
+    }
+    let pm25Display = (typeof pm25 === 'number') ? pm25 + ' µg/m³' : '--';
+    pm25Div.style.background = bgColor;
+    pm25Div.innerHTML = `
+        <div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:500;">PM2.5</div>
+            <div style="font-size:2.4rem;font-weight:700;line-height:1.1;">${pm25Display}</div>
+            <div style="font-size:1.2rem;font-weight:500;margin-top:1.2em;">${scale}</div>
+            <img src="static/images/${img}" alt="${scale}" style="max-width:80px;max-height:80px;margin-top:0.5em;" />
+        </div>
+    `;
+}
+
+function updatePM10Card(data) {
+    const pm10Div = document.getElementById('outside-pm10');
+    if (!pm10Div) return;
+    let pm10 = data.pm10;
+    let scale = 'Unknown';
+    let img = 'unknown.jpg';
+    let bgColor = '#f8fafc';
+    if (typeof pm10 === 'number') {
+        if (pm10 >= 0 && pm10 <= 12) { scale = 'Good'; img = 'Good.png'; bgColor = '#d4f7d4'; }
+        else if (pm10 > 12 && pm10 <= 35.4) { scale = 'Moderate'; img = 'Moderate.png'; bgColor = '#fff9c4'; }
+        else if (pm10 > 35.4 && pm10 <= 55.4) { scale = 'Poor'; img = 'Poor.png'; bgColor = '#ffe0b2'; }
+        else if (pm10 > 55.4 && pm10 <= 150.4) { scale = 'Unhealthy'; img = 'Unhealthy.png'; bgColor = '#ffcdd2'; }
+        else if (pm10 > 150.4 && pm10 <= 250.4) { scale = 'Severe'; img = 'Severe.png'; bgColor = '#b3e5fc'; }
+        else if (pm10 > 250.4) { scale = 'Hazardous'; img = 'Hazardous.png'; bgColor = '#e1bee7'; }
+    }
+    let pm10Display = (typeof pm10 === 'number') ? pm10 + ' µg/m³' : '--';
+    pm10Div.style.background = bgColor;
+    pm10Div.innerHTML = `
+        <div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:500;">PM10</div>
+            <div style="font-size:2.4rem;font-weight:700;line-height:1.1;">${pm10Display}</div>
+            <div style="font-size:1.2rem;font-weight:500;margin-top:1.2em;">${scale}</div>
+            <img src="static/images/${img}" alt="${scale}" style="max-width:80px;max-height:80px;margin-top:0.5em;" />
+        </div>
+    `;
 } 

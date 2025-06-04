@@ -166,15 +166,15 @@ body {
     object-fit: contain;
 }
 .battery-icon {
-    width: 48px;
-    height: 48px;
+    width: 192px;
+    height: 192px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 .battery-status-text {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 2rem;
+    font-weight: 800;
     text-align: center;
 }
 .battery-status-ok {
@@ -182,4 +182,19 @@ body {
 }
 .battery-status-low {
     color: #d32f2f;
+}
+.bar-metrics-row > .bar-metric-card {
+    width: 20%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+}
+@media (max-width: 767.98px) {
+    .bar-metrics-row {
+        flex-direction: column !important;
+    }
+    .bar-metrics-row > .bar-metric-card {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
 } 

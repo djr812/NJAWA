@@ -14,6 +14,7 @@ from selenium.webdriver.common.by import By
 import tempfile
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import re
 
 load_dotenv()
 
@@ -28,7 +29,7 @@ DB_NAME = 'weewx'
 DB_URI = f'mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
 FORECASTS_PATH = os.path.join(os.path.dirname(__file__), 'forecasts', 'forecasts.json')
 BATTERY_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'battery_cache.json')
-BATTERY_CACHE_TTL = 900  # 15 minutes
+BATTERY_CACHE_TTL = 300  # 5 minutes
 
 @app.route('/')
 def index():
@@ -135,12 +136,90 @@ def api_battery():
         password_input.send_keys(password)
         login_button.click()
         wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Sensor Array')]")))
+        time.sleep(8)  # Wait for all widgets to load
         result = {
             'console': {'label': 'Unknown', 'status': 'low'},
             'outdoor': {'label': 'Unknown', 'status': 'low'},
             'array': {'label': 'Unknown', 'status': 'low'},
             'lightning': {'label': 'Unknown', 'status': 'low'},
+            'bar_area_temp': None,
+            'bar_area_humidity': None,
         }
+        # Scrape Bar Area Temp & Humidity and Outside CO2
+        try:
+            # Find all divs
+            all_divs = driver.find_elements(By.XPATH, "//div")
+            found_bar_area = False
+            found_temp_label = False
+            found_humidity_label = False
+            found_temp_value = False
+            found_humidity_value = False
+            found_outside_co2 = False
+            found_co2_label = False
+            found_co2_value = False
+            found_pm25_title = False
+            found_pm25_label = False
+            found_pm25_value = False
+            found_pm10_title = False
+            found_pm10_label = False
+            found_pm10_value = False
+            for i, div in enumerate(all_divs):
+                classes = div.get_attribute('class').split()
+                text = div.text.strip()
+                if not found_bar_area and 'cell' in classes and 'title' in classes and text == 'Bar Area':
+                    found_bar_area = True
+                elif found_bar_area and not found_temp_label and 'cell' in classes and 'Temperature' in text:
+                    found_temp_label = True
+                elif found_temp_label and not found_temp_value and 'ivu-tooltip' in classes:
+                    result['bar_area_temp'] = div.text.strip()
+                    found_temp_value = True
+                elif found_temp_value and not found_humidity_label and 'cell' in classes and 'Humidity' in text:
+                    found_humidity_label = True
+                elif found_humidity_label and not found_humidity_value and 'ivu-tooltip' in classes:
+                    result['bar_area_humidity'] = div.text.strip()
+                    found_humidity_value = True
+                # Outside CO2 logic
+                if not found_outside_co2 and 'cell' in classes and 'title' in classes and text == 'Outside CO2':
+                    found_outside_co2 = True
+                elif found_outside_co2 and not found_co2_label and 'cell' in classes and 'CO2' in text:
+                    found_co2_label = True
+                elif found_co2_label and not found_co2_value and 'ivu-tooltip' in classes:
+                    result['outside_co2'] = div.text.strip()
+                    found_co2_value = True
+                # PM2.5 logic
+                if not found_pm25_title and 'cell' in classes and 'title' in classes and text == 'PM2.5 Air Quality':
+                    found_pm25_title = True
+                elif found_pm25_title and not found_pm25_label and 'cell' in classes and 'Current' in text:
+                    found_pm25_label = True
+                elif found_pm25_label and not found_pm25_value and 'ivu-tooltip' in classes:
+                    result['pm25'] = div.text.strip()
+                    found_pm25_value = True
+                # PM10 logic
+                if not found_pm10_title and 'cell' in classes and 'title' in classes and text == 'PM10 Air Quality':
+                    found_pm10_title = True
+                elif found_pm10_title and not found_pm10_label and 'cell' in classes and 'Current' in text:
+                    found_pm10_label = True
+                elif found_pm10_label and not found_pm10_value and 'ivu-tooltip' in classes:
+                    result['pm10'] = div.text.strip()
+                    found_pm10_value = True
+            # Clean up values
+            if result['bar_area_temp']:
+                temp_val = ''.join(c for c in result['bar_area_temp'] if (c.isdigit() or c=='.' or c=='-'))
+                result['bar_area_temp'] = f"{temp_val}°C" if temp_val else None
+            if result['bar_area_humidity']:
+                hum_val = ''.join(c for c in result['bar_area_humidity'] if (c.isdigit() or c=='.'))
+                result['bar_area_humidity'] = f"{hum_val}%" if hum_val else None
+            if result.get('outside_co2'):
+                co2_val = ''.join(c for c in result['outside_co2'] if c.isdigit())
+                result['outside_co2'] = int(co2_val) if co2_val else None
+            if result.get('pm25'):
+                pm25_val = re.findall(r'[-+]?[0-9]*\.?[0-9]+', result['pm25'])
+                result['pm25'] = float(pm25_val[0]) if pm25_val else None
+            if result.get('pm10'):
+                pm10_val = re.findall(r'[-+]?[0-9]*\.?[0-9]+', result['pm10'])
+                result['pm10'] = float(pm10_val[0]) if pm10_val else None
+        except Exception as e:
+            pass
         # Console
         try:
             device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Console']")

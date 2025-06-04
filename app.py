@@ -14,6 +14,7 @@ from selenium.webdriver.common.by import By
 import tempfile
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
 import re
 
 load_dotenv()
@@ -119,7 +120,10 @@ def api_battery():
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
-    driver = webdriver.Chrome(options=chrome_options)
+
+    service = Service('/usr/bin/chromedriver')
+
+    driver = webdriver.Chrome(service=service, options=chrome_options)
     try:
         url = 'https://www.ecowitt.net/home/index'
         driver.get(url)

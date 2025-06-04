@@ -123,7 +123,7 @@ def api_battery():
     try:
         url = 'https://www.ecowitt.net/home/index'
         driver.get(url)
-        wait = WebDriverWait(driver, 8)
+        wait = WebDriverWait(driver, 4)
         # Login automation
         email_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='email']")))
         password_input = driver.find_element(By.CSS_SELECTOR, "input[type='password']")

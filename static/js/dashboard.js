@@ -74,7 +74,7 @@ function updatePredictedWeatherConditionsCard(forecast) {
     cardBody.innerHTML = '';
     if (forecast && forecast.pressure_forecast) {
         // Sanitize filename: replace spaces and special chars with underscores
-        const filename = forecast.pressure_forecast.replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
+        const filename = forecast.pressure_forecast.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
         const img = document.createElement('img');
         img.src = `static/images/${filename}`;
         img.alt = forecast.pressure_forecast;

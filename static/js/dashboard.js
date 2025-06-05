@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
 let latestData = null;
 let latestForecast = null;
 let currentPeriod = '24h';
+let sunriseTime = null;
+let sunsetTime = null;
 
 // Color palette
 const COLORS = {
@@ -512,12 +514,19 @@ function fetchAndDisplaySunriseSunset() {
                 const sunset = data.results.sunset;
                 document.getElementById('sunrise-sunset-info').innerHTML =
                     `<span>Sunrise: <strong>${sunrise}</strong> &nbsp;|&nbsp; Sunset: <strong>${sunset}</strong></span>`;
+                // Parse times to Date objects (assumes API returns local time string)
+                sunriseTime = new Date(sunrise);
+                sunsetTime = new Date(sunset);
             } else {
                 document.getElementById('sunrise-sunset-info').textContent = 'Sunrise/Sunset info unavailable.';
+                sunriseTime = null;
+                sunsetTime = null;
             }
         })
         .catch(() => {
             document.getElementById('sunrise-sunset-info').textContent = 'Sunrise/Sunset info unavailable.';
+            sunriseTime = null;
+            sunsetTime = null;
         });
 }
 
@@ -532,6 +541,52 @@ function scheduleSunriseSunsetUpdate() {
         fetchAndDisplaySunriseSunset();
         scheduleSunriseSunsetUpdate();
     }, msUntilNext);
+}
+
+function isCamActiveNow() {
+    if (!sunriseTime || !sunsetTime) return true; // fallback: always active
+    const now = new Date();
+    const beforeSunrise = new Date(sunriseTime.getTime() - 15 * 60 * 1000);
+    const afterSunset = new Date(sunsetTime.getTime() + 15 * 60 * 1000);
+    return now >= beforeSunrise && now <= afterSunset;
+}
+
+function refreshWeatherCamImage() {
+    const camImg = document.querySelector('img[alt="Weather Cam"]');
+    const overlay = document.getElementById('weather-cam-offline-overlay');
+    if (!isCamActiveNow()) {
+        if (overlay) overlay.style.display = 'flex';
+        if (camImg) camImg.style.opacity = 0.3;
+        return;
+    } else {
+        if (overlay) overlay.style.display = 'none';
+        if (camImg) camImg.style.opacity = 1;
+    }
+    if (camImg) {
+        // Add a cache-busting query string
+        camImg.src = 'static/images/latest.jpg?t=' + new Date().getTime();
+    }
+}
+
+function updateWeatherCamTimestamp() {
+    if (!isCamActiveNow()) {
+        const el = document.getElementById('weather-cam-timestamp');
+        if (el) el.textContent = '';
+        return;
+    }
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
+    fetch(`${basePath}static/images/latest.jpg`, { method: 'HEAD' })
+        .then(res => {
+            const lastMod = res.headers.get('Last-Modified');
+            if (lastMod) {
+                const date = new Date(lastMod);
+                const formatted = 'SE Aspect as at ' + date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const el = document.getElementById('weather-cam-timestamp');
+                if (el) el.textContent = formatted;
+            }
+        });
 }
 
 function fetchAndUpdateBattery() {
@@ -671,28 +726,4 @@ function updatePM10Card(data) {
             <img src="static/images/${img}" alt="${scale}" style="max-width:80px;max-height:80px;margin-top:0.5em;" />
         </div>
     `;
-}
-
-function refreshWeatherCamImage() {
-    const camImg = document.querySelector('img[alt="Weather Cam"]');
-    if (camImg) {
-        // Add a cache-busting query string
-        camImg.src = 'static/images/latest.jpg?t=' + new Date().getTime();
-    }
-}
-
-function updateWeatherCamTimestamp() {
-    const isProd = window.location.hostname !== 'localhost';
-    const basePath = isProd ? '/njawa' : '';
-
-    fetch(`${basePath}static/images/latest.jpg`, { method: 'HEAD' })
-        .then(res => {
-            const lastMod = res.headers.get('Last-Modified');
-            if (lastMod) {
-                const date = new Date(lastMod);
-                const formatted = 'SE Aspect as at ' + date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-                const el = document.getElementById('weather-cam-timestamp');
-                if (el) el.textContent = formatted;
-            }
-        });
 } 

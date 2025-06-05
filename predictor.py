@@ -56,13 +56,17 @@ def pressure_forecast(df):
     now = df['dateTime'].max()
     twelve_hours_ago = now - timedelta(hours=12)
 
-    recent = df[df['dateTime'] > now - timedelta(hours=1)]['barometer'].mean()
-    previous = df[(df['dateTime'] > twelve_hours_ago) & (df['dateTime'] <= now - timedelta(hours=1))]['barometer'].mean()
+    recent = df[df['dateTime'] > now - timedelta(hours=1)]['barometer'].mean() * 33.8639  # Convert inHg to hPa
+    previous = df[(df['dateTime'] > twelve_hours_ago) & (df['dateTime'] <= now - timedelta(hours=1))]['barometer'].mean() * 33.8639  # Convert inHg to hPa
     
     if pd.isna(recent) or pd.isna(previous):
         return "Insufficient pressure data"
 
     delta = recent - previous
+    
+    # print ('Recent: ' + str(recent))
+    # print ('Previous: ' + str(previous))
+    # print ('Delta: ' + str(delta))
 
     if recent > 1020 and delta > 0:
         return "Sunny and dry"

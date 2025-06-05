@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 import json
 import os
 from dotenv import load_dotenv
+import pytz
 
 load_dotenv()
 
@@ -122,12 +123,42 @@ def save_forecast_to_json(forecast, pressure_outlook, output_dir="/home/dave/pro
 
 # 7. Main routine
 def main():
+    # Use local time for scheduling
+    tz = pytz.timezone('Australia/Brisbane')
+    now = datetime.now(tz)
+    run_make_forecast = now.hour == 1 and now.minute < 10  # Run between 01:00 and 01:09
+
     raw_data = fetch_data()
-    prepared = prepare_data(raw_data)
-    forecast = make_forecast(prepared)
     pressure_outlook = pressure_forecast(raw_data)
-    save_forecast_to_json(forecast, pressure_outlook)
-    send_email(forecast, pressure_outlook)
+
+    if run_make_forecast:
+        prepared = prepare_data(raw_data)
+        forecast = make_forecast(prepared)
+        save_forecast_to_json(forecast, pressure_outlook)
+        send_email(forecast, pressure_outlook)
+    else:
+        # Load the most recent forecast from forecasts.json
+        output_dir = "/home/dave/projects/weather_predictor/forecasts"
+        file_path = os.path.join(output_dir, "forecasts.json")
+        forecast_date = now.date().isoformat()
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
+                all_forecasts = json.load(f)
+            # Use the most recent forecast (latest date)
+            if all_forecasts:
+                latest_date = max(all_forecasts.keys())
+                latest = all_forecasts[latest_date]
+                forecast = {
+                    'ds': now,
+                    'yhat': latest.get('predicted_mean_temp'),
+                    'min_temp': latest.get('predicted_min_temp'),
+                    'max_temp': latest.get('predicted_max_temp')
+                }
+            else:
+                forecast = {'ds': now, 'yhat': None, 'min_temp': None, 'max_temp': None}
+        else:
+            forecast = {'ds': now, 'yhat': None, 'min_temp': None, 'max_temp': None}
+        save_forecast_to_json(forecast, pressure_outlook)
 
 if __name__ == '__main__':
     main()

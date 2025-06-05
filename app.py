@@ -140,7 +140,7 @@ def api_battery():
         password_input.send_keys(password)
         login_button.click()
         wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Sensor Array')]")))
-        time.sleep(2)  # Wait for all widgets to load
+        time.sleep(4)  # Wait for all widgets to load
         result = {
             'console': {'label': 'Unknown', 'status': 'low'},
             'outdoor': {'label': 'Unknown', 'status': 'low'},

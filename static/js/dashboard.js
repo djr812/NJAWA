@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(fetchAndUpdateBattery, 5 * 60 * 1000);
     fetchAndUpdateBarMetrics();
     setInterval(fetchAndUpdateBarMetrics, 5 * 60 * 1000);
+    refreshWeatherCamImage();
+    setInterval(refreshWeatherCamImage, 5 * 60 * 1000);
+    updateWeatherCamTimestamp();
+    setInterval(updateWeatherCamTimestamp, 5 * 60 * 1000);
 
     // Hamburger menu period selection
     document.querySelectorAll('.period-option').forEach(function(item) {
@@ -667,4 +671,28 @@ function updatePM10Card(data) {
             <img src="static/images/${img}" alt="${scale}" style="max-width:80px;max-height:80px;margin-top:0.5em;" />
         </div>
     `;
+}
+
+function refreshWeatherCamImage() {
+    const camImg = document.querySelector('img[alt="Weather Cam"]');
+    if (camImg) {
+        // Add a cache-busting query string
+        camImg.src = 'static/images/latest.jpg?t=' + new Date().getTime();
+    }
+}
+
+function updateWeatherCamTimestamp() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
+    fetch(`${basePath}static/images/latest.jpg`, { method: 'HEAD' })
+        .then(res => {
+            const lastMod = res.headers.get('Last-Modified');
+            if (lastMod) {
+                const date = new Date(lastMod);
+                const formatted = 'SE Aspect as at ' + date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const el = document.getElementById('weather-cam-timestamp');
+                if (el) el.textContent = formatted;
+            }
+        });
 } 

@@ -501,6 +501,17 @@ function updateCurrentTime() {
     el.textContent = `As At ${timeStr} on ${dateStr}`;
 }
 
+function parseLocalTimeString(timeStr) {
+    // Expects 'h:mm:ss AM/PM' format
+    const [time, period] = timeStr.split(' ');
+    const [hours, minutes, seconds] = time.split(':').map(Number);
+    let hour = hours;
+    if (period === 'PM' && hour < 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minutes, seconds);
+}
+
 function fetchAndDisplaySunriseSunset() {
     const lat = -27.407259185389066;
     const lon = 152.9198965081402;
@@ -514,9 +525,12 @@ function fetchAndDisplaySunriseSunset() {
                 const sunset = data.results.sunset;
                 document.getElementById('sunrise-sunset-info').innerHTML =
                     `<span>Sunrise: <strong>${sunrise}</strong> &nbsp;|&nbsp; Sunset: <strong>${sunset}</strong></span>`;
-                // Parse times to Date objects (assumes API returns local time string)
-                sunriseTime = new Date(sunrise);
-                sunsetTime = new Date(sunset);
+                // Parse times to Date objects using the local timezone (Australia/Brisbane)
+                sunriseTime = parseLocalTimeString(sunrise);
+                sunsetTime = parseLocalTimeString(sunset);
+                // Immediately update camera status after sunrise/sunset times are updated
+                updateWeatherCamTimestamp();
+                refreshWeatherCamImage();
             } else {
                 document.getElementById('sunrise-sunset-info').textContent = 'Sunrise/Sunset info unavailable.';
                 sunriseTime = null;

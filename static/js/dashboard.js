@@ -591,7 +591,7 @@ function updateWeatherCamTimestamp() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
 
-    fetch(`${basePath}static/images/latest.jpg`, { method: 'HEAD' })
+    fetch(`${basePath}/static/images/latest.jpg`, { method: 'HEAD' })
         .then(res => {
             const lastMod = res.headers.get('Last-Modified');
             if (lastMod) {

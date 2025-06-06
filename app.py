@@ -31,7 +31,8 @@ DB_NAME = 'weewx'
 DB_URI = f'mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
 FORECASTS_PATH = os.path.join(os.path.dirname(__file__), 'forecasts', 'forecasts.json')
 BATTERY_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'battery_cache.json')
-BATTERY_CACHE_TTL = 300  # 5 minutes
+BATTERY_CACHE_TTL = 43200  # 12 hours in seconds
+WEATHER_CAM_CACHE_TTL = 300  # 5 minutes in seconds
 
 @app.route('/')
 def index():
@@ -117,6 +118,7 @@ def api_battery():
                     return jsonify(cache['data'])
             except Exception:
                 pass
+
     chrome_options = Options()
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
@@ -148,6 +150,7 @@ def api_battery():
             'array': {'label': 'Unknown', 'status': 'low'},
             'lightning': {'label': 'Unknown', 'status': 'low'}
         }
+
         # Console
         try:
             device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Console']")
@@ -170,6 +173,7 @@ def api_battery():
                     pass
         except Exception:
             pass
+
         # Outdoor T&RH Sensor
         try:
             device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Outdoor T&RH Sensor']")
@@ -187,6 +191,7 @@ def api_battery():
                 result['outdoor'] = {'label': 'LOW', 'status': 'low'}
         except Exception:
             pass
+
         # Sensor Array
         try:
             device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Sensor Array']")
@@ -204,29 +209,36 @@ def api_battery():
                 result['array'] = {'label': 'LOW', 'status': 'low'}
         except Exception:
             pass
-        # Lightning Detector
+
+        # Lightning Detector - Get from live data feed
         try:
-            device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Lightning Detector']")
-            lightning_status = None
-            for device_elem in device_elems:
-                try:
-                    tooltip_elem = device_elem.find_element(By.XPATH, "following-sibling::div[contains(@class, 'ivu-tooltip')]")
-                    lightning_status = tooltip_elem.text.strip().upper()
-                    break
-                except Exception:
-                    pass
-            if lightning_status in ['OK', 'NORMAL']:
-                result['lightning'] = {'label': 'OK', 'status': 'ok'}
-            elif lightning_status:
-                result['lightning'] = {'label': 'LOW', 'status': 'low'}
+            response = requests.get('http://10.1.1.184/get_livedata_info', timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                lightning_data = data.get('lightning', [{}])[0]
+                battery_value = lightning_data.get('battery')
+                
+                if battery_value is not None:
+                    try:
+                        battery_level = int(battery_value)
+                        if battery_level >= 2:
+                            result['lightning'] = {'label': 'OK', 'status': 'ok'}
+                        else:
+                            result['lightning'] = {'label': 'LOW', 'status': 'low'}
+                    except (ValueError, TypeError):
+                        result['lightning'] = {'label': 'Unknown', 'status': 'low'}
+                else:
+                    result['lightning'] = {'label': 'Unknown', 'status': 'low'}
+            else:
+                result['lightning'] = {'label': 'Unknown', 'status': 'low'}
         except Exception:
-            pass
+            result['lightning'] = {'label': 'Unknown', 'status': 'low'}
+
         # Cache the result
         with open(BATTERY_CACHE_PATH, 'w') as f:
             json.dump({'timestamp': now, 'data': result}, f)
         return jsonify(result)
     except Exception as e:
-        print(f"Error in battery check: {e}")
         return jsonify(result)
     finally:
         driver.quit()

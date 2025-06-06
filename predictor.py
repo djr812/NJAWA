@@ -64,9 +64,9 @@ def pressure_forecast(df):
 
     delta = recent - previous
     
-    # print ('Recent: ' + str(recent))
-    # print ('Previous: ' + str(previous))
-    # print ('Delta: ' + str(delta))
+    print ('Recent: ' + str(recent))
+    print ('Previous: ' + str(previous))
+    print ('Delta: ' + str(delta))
 
     if recent > 1020 and delta > 0:
         return "Sunny and dry"

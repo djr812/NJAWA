@@ -16,6 +16,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 import re
+import requests
 
 load_dotenv()
 
@@ -145,85 +146,8 @@ def api_battery():
             'console': {'label': 'Unknown', 'status': 'low'},
             'outdoor': {'label': 'Unknown', 'status': 'low'},
             'array': {'label': 'Unknown', 'status': 'low'},
-            'lightning': {'label': 'Unknown', 'status': 'low'},
-            'bar_area_temp': None,
-            'bar_area_humidity': None,
+            'lightning': {'label': 'Unknown', 'status': 'low'}
         }
-        # Scrape Bar Area Temp & Humidity and Outside CO2
-        try:
-            # Find all divs
-            all_divs = driver.find_elements(By.XPATH, "//div")
-            found_bar_area = False
-            found_temp_label = False
-            found_humidity_label = False
-            found_temp_value = False
-            found_humidity_value = False
-            found_outside_co2 = False
-            found_co2_label = False
-            found_co2_value = False
-            found_pm25_title = False
-            found_pm25_label = False
-            found_pm25_value = False
-            found_pm10_title = False
-            found_pm10_label = False
-            found_pm10_value = False
-            for i, div in enumerate(all_divs):
-                classes = div.get_attribute('class').split()
-                text = div.text.strip()
-                if not found_bar_area and 'cell' in classes and 'title' in classes and text == 'Bar Area':
-                    found_bar_area = True
-                elif found_bar_area and not found_temp_label and 'cell' in classes and 'Temperature' in text:
-                    found_temp_label = True
-                elif found_temp_label and not found_temp_value and 'ivu-tooltip' in classes:
-                    result['bar_area_temp'] = div.text.strip()
-                    found_temp_value = True
-                elif found_temp_value and not found_humidity_label and 'cell' in classes and 'Humidity' in text:
-                    found_humidity_label = True
-                elif found_humidity_label and not found_humidity_value and 'ivu-tooltip' in classes:
-                    result['bar_area_humidity'] = div.text.strip()
-                    found_humidity_value = True
-                # Outside CO2 logic
-                if not found_outside_co2 and 'cell' in classes and 'title' in classes and text == 'Outside CO2':
-                    found_outside_co2 = True
-                elif found_outside_co2 and not found_co2_label and 'cell' in classes and 'CO2' in text:
-                    found_co2_label = True
-                elif found_co2_label and not found_co2_value and 'ivu-tooltip' in classes:
-                    result['outside_co2'] = div.text.strip()
-                    found_co2_value = True
-                # PM2.5 logic
-                if not found_pm25_title and 'cell' in classes and 'title' in classes and text == 'PM2.5 Air Quality':
-                    found_pm25_title = True
-                elif found_pm25_title and not found_pm25_label and 'cell' in classes and 'Current' in text:
-                    found_pm25_label = True
-                elif found_pm25_label and not found_pm25_value and 'ivu-tooltip' in classes:
-                    result['pm25'] = div.text.strip()
-                    found_pm25_value = True
-                # PM10 logic
-                if not found_pm10_title and 'cell' in classes and 'title' in classes and text == 'PM10 Air Quality':
-                    found_pm10_title = True
-                elif found_pm10_title and not found_pm10_label and 'cell' in classes and 'Current' in text:
-                    found_pm10_label = True
-                elif found_pm10_label and not found_pm10_value and 'ivu-tooltip' in classes:
-                    result['pm10'] = div.text.strip()
-                    found_pm10_value = True
-            # Clean up values
-            if result['bar_area_temp']:
-                temp_val = ''.join(c for c in result['bar_area_temp'] if (c.isdigit() or c=='.' or c=='-'))
-                result['bar_area_temp'] = f"{temp_val}°C" if temp_val else None
-            if result['bar_area_humidity']:
-                hum_val = ''.join(c for c in result['bar_area_humidity'] if (c.isdigit() or c=='.'))
-                result['bar_area_humidity'] = f"{hum_val}%" if hum_val else None
-            if result.get('outside_co2'):
-                co2_val = ''.join(c for c in result['outside_co2'] if c.isdigit())
-                result['outside_co2'] = int(co2_val) if co2_val else None
-            if result.get('pm25'):
-                pm25_val = re.findall(r'[-+]?[0-9]*\.?[0-9]+', result['pm25'])
-                result['pm25'] = float(pm25_val[0]) if pm25_val else None
-            if result.get('pm10'):
-                pm10_val = re.findall(r'[-+]?[0-9]*\.?[0-9]+', result['pm10'])
-                result['pm10'] = float(pm10_val[0]) if pm10_val else None
-        except Exception as e:
-            pass
         # Console
         try:
             device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Console']")
@@ -280,34 +204,56 @@ def api_battery():
                 result['array'] = {'label': 'LOW', 'status': 'low'}
         except Exception:
             pass
-        # Lightning Sensor (robust: find device-name 'Lightning Sensor', then next ivu-tooltip div, check img src)
+        # Lightning Detector
         try:
-            device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Lightning Sensor']")
+            device_elems = driver.find_elements(By.XPATH, "//div[contains(@class, 'device-name') and normalize-space(text())='Lightning Detector']")
             lightning_status = None
             for device_elem in device_elems:
                 try:
                     tooltip_elem = device_elem.find_element(By.XPATH, "following-sibling::div[contains(@class, 'ivu-tooltip')]")
-                    img = tooltip_elem.find_element(By.TAG_NAME, 'img')
-                    src = img.get_attribute('src')
-                    if src and src.startswith('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAZCAMAAAB0BpxXAAAAyVBMVEWZmZkcupqZmZmZmZmZmZmZmZmZmZkcupqZmZkcupp5opmZmZmZmZkcupqZmZlZqpqZmZkeuZpeqZl4opmZmZmZmZmPnJlPrJqZmZmZmZmZmZmZmZkcupqZmZkkuJqZmZmXmpmZmZkmt5qZmZmZmZmZmZmZmZlbqZmPnJlQrJqHnpmZmZmZmZmZmZlnpplnpplvpJmZmZmZmZmZmZkdupojuJqZmZmHnplQrJo8spocupqZmZlnppmZmZlHr5oguZpvpJkcupqZmZkFgNBJAAAAQXRSTlMBePIEnt9mtHT3wLChb3etM+m+imMGtK2G9+TbdVstGMZAJ+vVy8G3tq6cgHBSREM+LCAO7OG7ua+tqJiXk2RdP27US9gAAAD8SURBVDjLxZMJb4IwGECxsiqUQ2cHAmPAPOY8NnX3POv//1H2owJRA9EY4wt5kC8vLYFUiinnI2V81HyKMaZwpVAqbn4UpJ3/7d3l4nWHSRmFbqiqP4RYqmoR0ottJQ7d9khsX8at7h9jyvKtzlh9/A5exx7D5KuHBg8irCJNYYz964yjH9lEzTSUYVApgUt7Pi903I6fbF0Uvmw40xNWvIewdq1Qu9WKl4fZd3QCCI3i0HTaJDr3X2snhwqEjzDWj5yFQ0QqfLB64rnyfOjPPhrsDtjI82TTnhtGw7Yb3K/c6fNvv+NSSRA0Ww4qQJtIO6Z4Iecyq07EK24BpwZ3o+WYpo4AAAAASUVORK5CYII='):
-                        lightning_status = 'OK'
-                    else:
-                        lightning_status = 'LOW'
+                    lightning_status = tooltip_elem.text.strip().upper()
                     break
                 except Exception:
                     pass
-            if lightning_status == 'OK':
+            if lightning_status in ['OK', 'NORMAL']:
                 result['lightning'] = {'label': 'OK', 'status': 'ok'}
             elif lightning_status:
                 result['lightning'] = {'label': 'LOW', 'status': 'low'}
         except Exception:
             pass
-        # Save cache
+        # Cache the result
         with open(BATTERY_CACHE_PATH, 'w') as f:
             json.dump({'timestamp': now, 'data': result}, f)
         return jsonify(result)
+    except Exception as e:
+        print(f"Error in battery check: {e}")
+        return jsonify(result)
     finally:
         driver.quit()
+
+@app.route('/api/bar_metrics')
+def api_bar_metrics():
+    try:
+        response = requests.get('http://10.1.1.184/get_livedata_info', timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            co2_data = data.get('co2', [{}])[0]
+            return jsonify({
+                'bar_area_temp': f"{co2_data.get('temp', '--')}°C",
+                'bar_area_humidity': co2_data.get('humidity', '--'),
+                'outside_co2': int(co2_data.get('CO2', 0)),
+                'pm25': float(co2_data.get('PM25', 0)),
+                'pm10': float(co2_data.get('PM10', 0))
+            })
+    except Exception as e:
+        print(f"Error fetching bar metrics: {e}")
+    return jsonify({
+        'bar_area_temp': '--',
+        'bar_area_humidity': '--',
+        'outside_co2': None,
+        'pm25': None,
+        'pm10': None
+    })
 
 if __name__ == '__main__':
     app.run(debug=False) 

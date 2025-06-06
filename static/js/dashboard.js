@@ -636,7 +636,7 @@ function updateBatteryCard(type, info) {
 function fetchAndUpdateBarMetrics() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
-    fetch(`${basePath}/api/battery`)
+    fetch(`${basePath}/api/bar_metrics`)
         .then(res => res.json())
         .then(data => {
             updateBarAreaTempHumidity(data);

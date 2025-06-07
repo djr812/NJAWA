@@ -53,19 +53,18 @@ def make_forecast(df):
 
 # 🆕 4. Barometric pressure trend-based forecast
 def pressure_forecast(df):
-    now = df['dateTime'].max()
-    twelve_hours_ago = now - timedelta(hours=12)
-
-    recent = df[df['dateTime'] > now - timedelta(minutes=5)]['barometer'].mean() * 33.8639  # Convert inHg to hPa
-    previous = df[df['dateTime'] > twelve_hours_ago - timedelta(minutes=5) & df['dateTime'] <= twelve_hours_ago]['barometer'].mean() * 33.8639  # Convert inHg to hPa
+    # Get the most recent barometer reading (last 5 minutes)
+    max_date = df['dateTime'].max()
+    five_mins_ago = max_date - timedelta(minutes=5)
+    thirtysix_hours_ago = max_date - timedelta(hours=36)
     
-    if pd.isna(recent) or pd.isna(previous):
-        return "Insufficient pressure data"
-
+    recent = df[(df['dateTime'] > five_mins_ago) & (df['dateTime'] <= max_date)]['barometer'].mean() * 33.8639  # Convert inHg to hPa
+    previous = df[(df['dateTime'] > thirtysix_hours_ago - timedelta(minutes=5)) & (df['dateTime'] <= thirtysix_hours_ago)]['barometer'].mean() * 33.8639  # Convert inHg to hPa
+    
     delta = recent - previous
     
     print ('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    print (str(now) + " - Pressure prediction calculations")
+    print (str(max_date) + " - Pressure prediction calculations")
     print ('Recent: ' + str(recent))
     print ('Previous: ' + str(previous))
     print ('Delta: ' + str(delta))

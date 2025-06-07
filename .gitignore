@@ -90,4 +90,6 @@ predictor.log
 battery_cache.json
 static/images/latest.jpg
 static/videos/latest_tl.mp4
+weather_multi_model.pkl
+
 

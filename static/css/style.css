@@ -146,6 +146,10 @@ body {
         box-sizing: border-box;
         padding: 0.5em 0.5em;
     }
+    /* Add weather cam image positioning for responsive mode */
+    .card-body img[alt="Weather Cam"] {
+        object-position: top right !important;
+    }
 }
 #predicted-weather-conditions-body {
     min-height: 380px;
@@ -197,4 +201,19 @@ body {
         width: 100%;
         margin-bottom: 1rem;
     }
+}
+
+/* Video controls styling */
+.hover-controls::-webkit-media-controls {
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.hover-controls:hover::-webkit-media-controls {
+    opacity: 1;
+}
+
+.hover-controls::-webkit-media-controls-panel {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 0 0 0.5rem 0.5rem;
 } 

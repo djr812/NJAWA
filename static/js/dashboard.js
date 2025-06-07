@@ -52,6 +52,14 @@ function fetchAndUpdateAll() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
 
+    // Start the timelapse video
+    const timelapseVideo = document.getElementById('timelapse-video');
+    if (timelapseVideo) {
+        timelapseVideo.play().catch(error => {
+            console.log('Video autoplay failed:', error);
+        });
+    }
+
     fetch(`${basePath}/api/data?period=${currentPeriod}`)
         .then(res => res.json())
         .then(data => {
@@ -505,6 +513,12 @@ function updateCurrentTime() {
     const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
     const dateStr = now.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
     el.textContent = `As At ${timeStr} on ${dateStr}`;
+    
+    // Update timelapse date
+    const timelapseDate = document.getElementById('timelapse-date');
+    if (timelapseDate) {
+        timelapseDate.textContent = dateStr;
+    }
 }
 
 function parseLocalTimeString(timeStr) {

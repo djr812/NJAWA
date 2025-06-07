@@ -92,17 +92,20 @@ function updatePredictedWeatherConditionsCard(forecast) {
     const cardBody = document.getElementById('predicted-weather-conditions-body');
     if (!cardBody) return;
     cardBody.innerHTML = '';
-    if (forecast && forecast.pressure_forecast) {
+    if (forecast && forecast.ai_forecast) {
         // Sanitize filename: replace spaces and special chars with underscores
-        const filename = forecast.pressure_forecast.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
+        const filename = forecast.ai_forecast.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
         const img = document.createElement('img');
         img.src = `static/images/${filename}`;
-        img.alt = forecast.pressure_forecast;
+        img.alt = forecast.ai_forecast;
         cardBody.appendChild(img);
-        // Add the pressure_forecast text below the image
+        // Add the ai_forecast text below the image
         const textDiv = document.createElement('div');
-        textDiv.className = 'pressure-forecast-text mt-3';
-        textDiv.textContent = forecast.pressure_forecast;
+        textDiv.className = 'ai-forecast-text mt-3';
+        textDiv.style.fontSize = '1.5rem';
+        textDiv.style.fontWeight = 'bold';
+        textDiv.style.textAlign = 'center';
+        textDiv.textContent = forecast.ai_forecast;
         cardBody.appendChild(textDiv);
     }
 }

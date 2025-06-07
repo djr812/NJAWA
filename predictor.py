@@ -56,8 +56,8 @@ def pressure_forecast(df):
     now = df['dateTime'].max()
     twelve_hours_ago = now - timedelta(hours=12)
 
-    recent = df[df['dateTime'] > now - timedelta(hours=1)]['barometer'].mean() * 33.8639  # Convert inHg to hPa
-    previous = df[(df['dateTime'] > twelve_hours_ago) & (df['dateTime'] <= now - timedelta(hours=1))]['barometer'].mean() * 33.8639  # Convert inHg to hPa
+    recent = df[df['dateTime'] > now - timedelta(minutes=5)]['barometer'].mean() * 33.8639  # Convert inHg to hPa
+    previous = df[df['dateTime'] > twelve_hours_ago - timedelta(minutes=5) & df['dateTime'] <= twelve_hours_ago]['barometer'].mean() * 33.8639  # Convert inHg to hPa
     
     if pd.isna(recent) or pd.isna(previous):
         return "Insufficient pressure data"

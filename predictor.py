@@ -137,7 +137,7 @@ def main():
     # Use local time for scheduling
     tz = pytz.timezone('Australia/Brisbane')
     now = datetime.now(tz)
-    run_make_forecast = now.hour == 1 and now.minute < 10  # Run between 01:00 and 01:09
+    run_make_forecast = now.hour == 2 and now.minute < 10  # Run between 01:00 and 01:09
 
     raw_data = fetch_data()
     pressure_outlook = pressure_forecast(raw_data)

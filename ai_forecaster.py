@@ -9,6 +9,7 @@ import datetime
 import os
 import mysql.connector
 from dotenv import load_dotenv
+import argparse
 
 load_dotenv()
 
@@ -113,17 +114,25 @@ def predict_future(df, model):
 # MAIN
 # ------------------------------------
 def main():
+    parser = argparse.ArgumentParser(description='Weather forecasting with optional model retraining')
+    parser.add_argument('--retrain', action='store_true', help='Retrain the model with new data')
+    args = parser.parse_args()
+
     print("Fetching data...")
     df = get_data()
     df = engineer_features(df)
     df = label_weather(df)
 
-    try:
-        model = joblib.load(MODEL_PATH)
-        print("Loaded existing model.")
-    except:
+    if args.retrain:
         print("Training new model...")
         model = train_model(df)
+    else:
+        try:
+            model = joblib.load(MODEL_PATH)
+            print("Loaded existing model.")
+        except:
+            print("No existing model found. Training new model...")
+            model = train_model(df)
 
     predict_future(df, model)
 

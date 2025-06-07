@@ -64,21 +64,29 @@ def pressure_forecast(df):
 
     delta = recent - previous
     
+    print ('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print (str(now) + " - Pressure prediction calculations")
     print ('Recent: ' + str(recent))
     print ('Previous: ' + str(previous))
     print ('Delta: ' + str(delta))
 
     if recent > 1020 and delta > 0:
+        print ("Sunny and dry")
         return "Sunny and dry"
     elif 1013 <= recent <= 1020 and abs(delta) < 0.5:
+        print ("Partly cloudy and stable")
         return "Partly cloudy and stable"
     elif recent < 1010 and delta < -1:
+        print ("Rain or storms likely")
         return "Rain or storms likely"
     elif delta > 1:
+        print ("Improving conditions")
         return "Improving conditions"
     elif delta < -1:
+        print ("Worsening conditions, clouds or rain")
         return "Worsening conditions, clouds or rain"
     else:
+        print ("Mixed or stable weather")
         return "Mixed or stable weather"
 
 # 5. Send email using msmtp

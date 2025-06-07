@@ -60,6 +60,9 @@ function fetchAndUpdateAll() {
         });
     }
 
+    // Update timelapse date
+    updateTimelapseDate();
+
     fetch(`${basePath}/api/data?period=${currentPeriod}`)
         .then(res => res.json())
         .then(data => {
@@ -516,12 +519,6 @@ function updateCurrentTime() {
     const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
     const dateStr = now.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
     el.textContent = `As At ${timeStr} on ${dateStr}`;
-    
-    // Update timelapse date
-    const timelapseDate = document.getElementById('timelapse-date');
-    if (timelapseDate) {
-        timelapseDate.textContent = dateStr;
-    }
 }
 
 function parseLocalTimeString(timeStr) {
@@ -774,4 +771,22 @@ function updatePM10Card(data) {
             <img src="static/images/${img}" alt="${scale}" style="max-width:80px;max-height:80px;margin-top:0.5em;" />
         </div>
     `;
+}
+
+function updateTimelapseDate() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
+    fetch(`${basePath}/static/videos/latest_tl.mp4`, { method: 'HEAD' })
+        .then(res => {
+            const lastMod = res.headers.get('Last-Modified');
+            if (lastMod) {
+                const date = new Date(lastMod);
+                const formatted = date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+                const timelapseDate = document.getElementById('timelapse-date');
+                if (timelapseDate) {
+                    timelapseDate.textContent = formatted;
+                }
+            }
+        });
 } 

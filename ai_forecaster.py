@@ -22,7 +22,7 @@ DB_PASSWORD = os.getenv('WEEWX_DB_PASSWORD')
 DB_HOST = '10.1.1.126'
 DB_NAME = 'weewx'
 
-MODEL_PATH = "weather_multi_model.pkl"
+MODEL_PATH = "/home/dave/projects/weather_predictor/weather_multi_model.pkl"
 LOOKBACK_HOURS = 48
 FORECAST_HOURS = 24
 
@@ -153,7 +153,7 @@ def predict_future(df, models):
 # SAVE PREDICTIONS
 # ------------------------------------
 def save_predictions(weather_pred, min_temp, max_temp):
-    forecasts_file = "forecasts/forecasts.json"
+    forecasts_file = "/home/dave/projects/weather_predictor/forecasts/forecasts.json"
     
     # Create forecasts directory if it doesn't exist
     os.makedirs(os.path.dirname(forecasts_file), exist_ok=True)

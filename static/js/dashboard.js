@@ -60,6 +60,31 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateCurrentTime, 1000);
     fetchAndDisplaySunriseSunset();
     scheduleSunriseSunsetUpdate();
+
+    // Time lapse video handling
+    const timeLapseVideo = document.getElementById('timeLapseVideo');
+    const playButton = document.getElementById('playButton');
+    const videoContainer = document.getElementById('videoContainer');
+    let videoLoaded = false;
+
+    function loadTimeLapseVideo() {
+        if (!videoLoaded) {
+            timeLapseVideo.src = '/static/videos/weather_cam_timelapse.mp4';
+            videoLoaded = true;
+        }
+    }
+
+    playButton.addEventListener('click', function() {
+        loadTimeLapseVideo();
+        videoContainer.classList.remove('d-none');
+        timeLapseVideo.play();
+        playButton.classList.add('d-none');
+    });
+
+    timeLapseVideo.addEventListener('ended', function() {
+        videoContainer.classList.add('d-none');
+        playButton.classList.remove('d-none');
+    });
 });
 
 let latestData = null;
@@ -80,14 +105,6 @@ const COLORS = {
 function fetchAndUpdateAll() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
-
-    // Start the timelapse video
-    const timelapseVideo = document.getElementById('timelapse-video');
-    if (timelapseVideo) {
-        timelapseVideo.play().catch(error => {
-            console.log('Video autoplay failed:', error);
-        });
-    }
 
     // Update timelapse date
     updateTimelapseDate();
@@ -875,10 +892,10 @@ function updateBarAreaComfortLevel(temp, humidity) {
 
     let imgName, text;
     
-    if (temp < 20) {
+    if (temp < 21) {
         imgName = 'Cold.png';
         text = 'Chilly';
-    } else if (temp >= 20 && temp <= 27) {
+    } else if (temp >= 21 && temp <= 27) {
         if (humidity < 50) {
             imgName = 'Perfect.png';
             text = 'Perfect';

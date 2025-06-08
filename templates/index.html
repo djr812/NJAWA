@@ -39,7 +39,7 @@
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Live Weather Cam <span id="weather-cam-timestamp" class="text-end flex-grow-1"></span></div>
         <div class="card-body d-flex align-items-center justify-content-center position-relative" style="height: 320px; padding: 0;">
-          <img src="static/images/latest.jpg" alt="Weather Cam" class="img-fluid" style="width: 100%; height: 100%; object-fit: cover; margin: 0 auto; display: block; border-radius: 0.5rem;" />
+          <img src="static/images/latest.jpg" alt="Weather Cam" class="img-fluid weather-cam-img" style="width: 100%; height: 100%; object-fit: cover; margin: 0 auto; display: block; border-radius: 0.5rem; cursor: pointer;" />
           <div id="weather-cam-offline-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); color:#fff; font-size:2rem; font-weight:700; align-items:center; justify-content:center; z-index:2; border-radius:0.5rem; text-align:center;">Live Camera Offline</div>
         </div>
       </div>
@@ -229,6 +229,14 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Weather Cam Modal -->
+<div id="weatherCamModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9);">
+  <div class="modal-content" style="margin: auto; display: block; max-width: 50%; max-height: 60vh; position: relative; top: 50%; transform: translateY(-50%);">
+    <img id="modalImage" src="" alt="Weather Cam Full Size" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
+    <span class="close-modal" style="position: absolute; top: -40px; right: 0; color: #f1f1f1; font-size: 35px; font-weight: bold; cursor: pointer;">&times;</span>
   </div>
 </div>
 

@@ -14,6 +14,35 @@ document.addEventListener('DOMContentLoaded', function() {
     updateWeatherCamTimestamp();
     setInterval(updateWeatherCamTimestamp, 5 * 60 * 1000);
 
+    // Weather Cam Modal functionality
+    const weatherCamImg = document.querySelector('.weather-cam-img');
+    const modal = document.getElementById('weatherCamModal');
+    const modalImg = document.getElementById('modalImage');
+    const closeModal = document.querySelector('.close-modal');
+
+    weatherCamImg.addEventListener('click', function() {
+        modal.style.display = "block";
+        modalImg.src = this.src;
+    });
+
+    closeModal.addEventListener('click', function() {
+        modal.style.display = "none";
+    });
+
+    // Close modal when clicking outside the image
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === "Escape" && modal.style.display === "block") {
+            modal.style.display = "none";
+        }
+    });
+
     // Hamburger menu period selection
     document.querySelectorAll('.period-option').forEach(function(item) {
         item.addEventListener('click', function(e) {

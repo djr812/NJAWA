@@ -133,7 +133,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
     if (forecast && forecast.ai_forecast) {
         // Create image element
         const img = document.createElement('img');
-        img.src = `/static/images/${forecast.ai_forecast}.png`;
+        img.src = `${basePath}/static/images/${forecast.ai_forecast}.png`;
         img.alt = forecast.ai_forecast;
         img.className = 'img-fluid weather-cam-img';
         cardBody.appendChild(img);

@@ -121,6 +121,9 @@ function fetchAndUpdateAll() {
 }
 
 async function updatePredictedWeatherConditionsCard(forecast) {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
     const cardBody = document.getElementById('predicted-weather-conditions-body');
     if (!cardBody) return;
 
@@ -146,7 +149,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
 
         // Fetch and display training days
         try {
-            const response = await fetch('/api/training_days');
+            const response = await fetch(`${basePath}/api/training_days`);
             const data = await response.json();
             const trainingDaysDiv = document.createElement('div');
             trainingDaysDiv.className = 'training-days-text mt-3';

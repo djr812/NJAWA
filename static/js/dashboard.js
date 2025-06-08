@@ -222,7 +222,7 @@ function updateOutsideTempGraph(data) {
             y: [latestForecast.predicted_min_temp, latestForecast.predicted_min_temp],
             type: 'scatter',
             mode: 'lines',
-            name: 'Forecast Min',
+            name: 'AI Predicted Min',
             line: { color: COLORS.fieldDrab, width: 3, dash: 'solid' },
             showlegend: true
         });
@@ -231,7 +231,7 @@ function updateOutsideTempGraph(data) {
             y: [latestForecast.predicted_max_temp, latestForecast.predicted_max_temp],
             type: 'scatter',
             mode: 'lines',
-            name: 'Forecast Max',
+            name: 'AI Predicted Max',
             line: { color: COLORS.gold, width: 3, dash: 'solid' },
             showlegend: true
         });

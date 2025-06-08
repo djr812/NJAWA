@@ -120,18 +120,22 @@ function fetchAndUpdateAll() {
     fetchAndUpdateBarMetrics();
 }
 
-function updatePredictedWeatherConditionsCard(forecast) {
+async function updatePredictedWeatherConditionsCard(forecast) {
     const cardBody = document.getElementById('predicted-weather-conditions-body');
     if (!cardBody) return;
+
+    // Clear existing content
     cardBody.innerHTML = '';
+
     if (forecast && forecast.ai_forecast) {
-        // Sanitize filename: replace spaces and special chars with underscores
-        const filename = forecast.ai_forecast.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
+        // Create image element
         const img = document.createElement('img');
-        img.src = `static/images/${filename}`;
+        img.src = `/static/images/${forecast.ai_forecast}.png`;
         img.alt = forecast.ai_forecast;
+        img.className = 'img-fluid weather-cam-img';
         cardBody.appendChild(img);
-        // Add the ai_forecast text below the image
+
+        // Create text element for forecast
         const textDiv = document.createElement('div');
         textDiv.className = 'ai-forecast-text mt-3';
         textDiv.style.fontSize = '1.5rem';
@@ -139,6 +143,27 @@ function updatePredictedWeatherConditionsCard(forecast) {
         textDiv.style.textAlign = 'center';
         textDiv.textContent = forecast.ai_forecast;
         cardBody.appendChild(textDiv);
+
+        // Fetch and display training days
+        try {
+            const response = await fetch('/api/training_days');
+            const data = await response.json();
+            const trainingDaysDiv = document.createElement('div');
+            trainingDaysDiv.className = 'training-days-text mt-3';
+            trainingDaysDiv.style.fontSize = '0.9rem';
+            trainingDaysDiv.style.color = '#666';
+            trainingDaysDiv.style.textAlign = 'center';
+            trainingDaysDiv.style.position = 'absolute';
+            trainingDaysDiv.style.bottom = '10px';
+            trainingDaysDiv.style.left = '0';
+            trainingDaysDiv.style.right = '0';
+            trainingDaysDiv.textContent = `AI Weather Model has been trained on ${data.days} days of data`;
+            cardBody.appendChild(trainingDaysDiv);
+        } catch (error) {
+            console.error('Error fetching training days:', error);
+        }
+    } else {
+        cardBody.innerHTML = '<p class="text-center">No forecast available</p>';
     }
 }
 

@@ -91,6 +91,21 @@ def api_data():
     }
     return jsonify(result)
 
+@app.route('/api/training_days')
+def api_training_days():
+    engine = create_engine(DB_URI)
+    query = """
+        SELECT MIN(dateTime) as first_date, MAX(dateTime) as last_date
+        FROM archive
+    """
+    df = pd.read_sql(query, engine)
+    if not df.empty and df['first_date'].iloc[0] is not None and df['last_date'].iloc[0] is not None:
+        first_date = pd.to_datetime(df['first_date'].iloc[0], unit='s')
+        last_date = pd.to_datetime(df['last_date'].iloc[0], unit='s')
+        days = (last_date - first_date).days
+        return jsonify({'days': days})
+    return jsonify({'days': 0})
+
 @app.route('/api/forecast')
 def api_forecast():
     # Get today's date

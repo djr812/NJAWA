@@ -735,18 +735,31 @@ function fetchAndUpdateBarMetrics() {
 }
 
 function updateBarAreaTempHumidity(data) {
-    const barAreaDiv = document.getElementById('bar-area-temp-humidity');
-    if (barAreaDiv) {
-        let temp = data.bar_area_temp || '--';
-        let hum = data.bar_area_humidity || '--';
-        barAreaDiv.innerHTML = `
-            <div style="text-align:center;">
-                <div style="font-size:1.2rem;font-weight:500;">Temperature</div>
-                <div style="font-size:2.4rem;font-weight:700;line-height:1.1;">${temp}</div>
-                <div style="font-size:1.2rem;font-weight:500;margin-top:1.2em;">Humidity</div>
-                <div style="font-size:2.2rem;font-weight:700;line-height:1.1;">${hum}</div>
-            </div>
-        `;
+    const tempElement = document.getElementById('bar-area-temp');
+    const humidityElement = document.getElementById('bar-area-humidity');
+    
+    if (data && data.bar_area_temp && data.bar_area_humidity) {
+        // Extract numeric values from strings like "25.5°C" and "60%"
+        const temp = parseFloat(data.bar_area_temp);
+        const humidity = parseFloat(data.bar_area_humidity);
+        
+        if (!isNaN(temp) && !isNaN(humidity)) {
+            if (tempElement) {
+                tempElement.textContent = `${temp.toFixed(1)}°C`;
+            }
+            if (humidityElement) {
+                humidityElement.textContent = `${humidity.toFixed(1)}%`;
+            }
+            updateBarAreaComfortLevel(temp, humidity);
+        } else {
+            if (tempElement) tempElement.textContent = '--°C';
+            if (humidityElement) humidityElement.textContent = '--%';
+            updateBarAreaComfortLevel(null, null);
+        }
+    } else {
+        if (tempElement) tempElement.textContent = '--°C';
+        if (humidityElement) humidityElement.textContent = '--%';
+        updateBarAreaComfortLevel(null, null);
     }
 }
 
@@ -846,4 +859,83 @@ function updateTimelapseDate() {
                 }
             }
         });
+}
+
+function updateBarAreaComfortLevel(temp, humidity) {
+    const comfortImg = document.getElementById('bar-area-comfort-img');
+    const comfortText = document.getElementById('bar-area-comfort-text');
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    
+    if (temp === null || humidity === null) {
+        comfortImg.src = '';
+        comfortText.textContent = '';
+        return;
+    }
+
+    let imgName, text;
+    
+    if (temp < 20) {
+        imgName = 'Cold.png';
+        text = 'Chilly';
+    } else if (temp >= 20 && temp <= 27) {
+        if (humidity < 50) {
+            imgName = 'Perfect.png';
+            text = 'Perfect';
+        } else {
+            imgName = 'Good.png';
+            text = 'Good';
+        }
+    } else if (temp > 27 && temp <= 30) {
+        imgName = 'Moderate.png';
+        text = 'Reasonable';
+    } else if (temp > 30 && temp <= 33) {
+        imgName = 'Hot.png';
+        text = 'Toasty';
+    } else {
+        imgName = 'TooHot.png';
+        text = 'Way too hot!';
+    }
+
+    comfortImg.src = `${basePath}/static/images/${imgName}`;
+    comfortText.textContent = text;
+}
+
+function updateOutsideCO2(data) {
+    const co2Div = document.getElementById('outside-co2');
+    if (co2Div) {
+        let co2 = typeof data.outside_co2 === 'number' ? data.outside_co2.toFixed(1) : '--';
+        co2Div.innerHTML = `
+            <div style="text-align:center;">
+                <div style="font-size:2.4rem;font-weight:700;line-height:1.1;">${co2}</div>
+                <div style="font-size:1.2rem;font-weight:500;">ppm</div>
+            </div>
+        `;
+    }
+}
+
+function updateOutsidePM25(data) {
+    const pm25Div = document.getElementById('outside-pm25');
+    if (pm25Div) {
+        let pm25 = typeof data.outside_pm25 === 'number' ? data.outside_pm25.toFixed(1) : '--';
+        pm25Div.innerHTML = `
+            <div style="text-align:center;">
+                <div style="font-size:2.4rem;font-weight:700;line-height:1.1;">${pm25}</div>
+                <div style="font-size:1.2rem;font-weight:500;">µg/m³</div>
+            </div>
+        `;
+    }
+}
+
+function updateOutsidePM10(data) {
+    const pm10Div = document.getElementById('outside-pm10');
+    if (pm10Div) {
+        let pm10 = typeof data.outside_pm10 === 'number' ? data.outside_pm10.toFixed(1) : '--';
+        pm10Div.innerHTML = `
+            <div style="text-align:center;">
+                <div style="font-size:2.4rem;font-weight:700;line-height:1.1;">${pm10}</div>
+                <div style="font-size:1.2rem;font-weight:500;">µg/m³</div>
+            </div>
+        `;
+    }
 } 

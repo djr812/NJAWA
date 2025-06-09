@@ -153,14 +153,17 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         img.src = `${basePath}/static/images/${forecast.ai_forecast}.png`;
         img.alt = forecast.ai_forecast;
         img.className = 'img-fluid weather-cam-img';
+        img.style.maxHeight = '180px'; // Increased image height
+        img.style.marginBottom = '10px';
         cardBody.appendChild(img);
 
         // Create text element for forecast
         const textDiv = document.createElement('div');
-        textDiv.className = 'ai-forecast-text mt-3';
+        textDiv.className = 'ai-forecast-text';
         textDiv.style.fontSize = '1.5rem';
         textDiv.style.fontWeight = 'bold';
         textDiv.style.textAlign = 'center';
+        textDiv.style.marginBottom = '10px';
         
         // Add wind forecast text based on ai_wind_forecast value
         let windText = '';
@@ -187,21 +190,57 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         textDiv.textContent = forecast.ai_forecast + windText;
         cardBody.appendChild(textDiv);
 
+        // Create probability text element
+        if (forecast.chance_of_rain !== undefined || forecast.chance_of_lightning !== undefined) {
+            const probDiv = document.createElement('div');
+            probDiv.className = 'probability-text';
+            probDiv.style.fontSize = '1.1rem';
+            probDiv.style.color = '#666';
+            probDiv.style.textAlign = 'center';
+            probDiv.style.marginBottom = '10px';
+
+            let probText = [];
+            if (forecast.chance_of_rain !== undefined) {
+                probText.push(`Chance of Rain: ${forecast.chance_of_rain}%`);
+            }
+            if (forecast.chance_of_lightning !== undefined) {
+                probText.push(`Chance of Lightning: ${forecast.chance_of_lightning}%`);
+            }
+            
+            probDiv.textContent = probText.join(' | ');
+            cardBody.appendChild(probDiv);
+        }
+
         // Fetch and display training days
         try {
             const response = await fetch(`${basePath}/api/training_days`);
             const data = await response.json();
+            
+            // Create container for bottom text
+            const bottomTextContainer = document.createElement('div');
+            bottomTextContainer.style.marginTop = 'auto';
+            bottomTextContainer.style.paddingTop = '10px';
+            cardBody.appendChild(bottomTextContainer);
+
+            // Training days text
             const trainingDaysDiv = document.createElement('div');
-            trainingDaysDiv.className = 'training-days-text mt-3';
+            trainingDaysDiv.className = 'training-days-text';
             trainingDaysDiv.style.fontSize = '0.9rem';
             trainingDaysDiv.style.color = '#666';
             trainingDaysDiv.style.textAlign = 'center';
-            trainingDaysDiv.style.position = 'absolute';
-            trainingDaysDiv.style.bottom = '10px';
-            trainingDaysDiv.style.left = '0';
-            trainingDaysDiv.style.right = '0';
+            trainingDaysDiv.style.marginBottom = '5px';
             trainingDaysDiv.textContent = `AI Weather Model has been trained on ${data.days} days of data`;
-            cardBody.appendChild(trainingDaysDiv);
+            bottomTextContainer.appendChild(trainingDaysDiv);
+
+            // Warning text
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'warning-text';
+            warningDiv.style.fontSize = '0.9rem';
+            warningDiv.style.color = '#666';
+            warningDiv.style.textAlign = 'center';
+            warningDiv.textContent = 'Warning: Do NOT plan your activities based on these predictions.';
+            bottomTextContainer.appendChild(warningDiv);
+
         } catch (error) {
             console.error('Error fetching training days:', error);
         }

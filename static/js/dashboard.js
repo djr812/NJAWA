@@ -161,7 +161,30 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         textDiv.style.fontSize = '1.5rem';
         textDiv.style.fontWeight = 'bold';
         textDiv.style.textAlign = 'center';
-        textDiv.textContent = forecast.ai_forecast;
+        
+        // Add wind forecast text based on ai_wind_forecast value
+        let windText = '';
+        if (forecast.ai_wind_forecast) {
+            switch (forecast.ai_wind_forecast) {
+                case 'Calm':
+                    windText = ' and calm';
+                    break;
+                case 'Light Breeze':
+                    windText = ' with a light breeze';
+                    break;
+                case 'Stiff Breeze':
+                    windText = ' with a stiff breeze';
+                    break;
+                case 'Windy':
+                    windText = ' with windy conditions';
+                    break;
+                case 'High Winds':
+                    windText = '. Caution: High Winds Possible!';
+                    break;
+            }
+        }
+        
+        textDiv.textContent = forecast.ai_forecast + windText;
         cardBody.appendChild(textDiv);
 
         // Fetch and display training days

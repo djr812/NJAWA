@@ -817,10 +817,17 @@ function updateBarAreaTempHumidity(data) {
     const tempElement = document.getElementById('bar-area-temp');
     const humidityElement = document.getElementById('bar-area-humidity');
     
+    console.log('Raw data:', data);
+    console.log('Raw temp:', data?.bar_area_temp);
+    console.log('Raw humidity:', data?.bar_area_humidity);
+    
     if (data && data.bar_area_temp && data.bar_area_humidity) {
         // Extract numeric values from strings like "25.5°C" and "60%"
-        const temp = parseFloat(data.bar_area_temp);
-        const humidity = parseFloat(data.bar_area_humidity);
+        const temp = parseFloat(data.bar_area_temp.replace('°C', ''));
+        const humidity = parseFloat(data.bar_area_humidity.replace('%', ''));
+        
+        console.log('Parsed temp:', temp);
+        console.log('Parsed humidity:', humidity);
         
         if (!isNaN(temp) && !isNaN(humidity)) {
             if (tempElement) {
@@ -946,38 +953,66 @@ function updateBarAreaComfortLevel(temp, humidity) {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
     
+    console.log('Comfort Level - Temp:', temp);
+    console.log('Comfort Level - Humidity:', humidity);
+    
     if (temp === null || humidity === null) {
         comfortImg.src = '';
         comfortText.textContent = '';
         return;
     }
 
-    let imgName, text;
+    let imgName, text, bgColor;
     
     if (temp < 21) {
         imgName = 'Cold.png';
         text = 'Chilly';
+        bgColor = '#e6f3ff'; // light blue
     } else if (temp >= 21 && temp <= 27) {
         if (humidity < 50) {
             imgName = 'Perfect.png';
             text = 'Perfect';
+            bgColor = '#d4f7d4'; // light green
         } else {
             imgName = 'Good.png';
             text = 'Good';
+            bgColor = '#90EE90'; // light green
         }
     } else if (temp > 27 && temp <= 30) {
         imgName = 'Moderate.png';
         text = 'Reasonable';
+        bgColor = '#fff9c4'; // light yellow
     } else if (temp > 30 && temp <= 33) {
         imgName = 'Hot.png';
         text = 'Toasty';
+        bgColor = '#ffcccc'; // light red
     } else {
         imgName = 'TooHot.png';
         text = 'Way too hot!';
+        bgColor = '#ff0000'; // red
     }
 
+    console.log('Selected bgColor:', bgColor);
+    
     comfortImg.src = `${basePath}/static/images/${imgName}`;
     comfortText.textContent = text;
+    
+    // Update the card's background color with higher specificity
+    const card = document.getElementById('bar-area-comfort-level');
+    console.log('Card element:', card);
+    if (card) {
+        // Set background color on both the card and its header
+        card.style.setProperty('background-color', bgColor, 'important');
+        const header = card.querySelector('.card-header');
+        if (header) {
+            header.style.setProperty('background-color', bgColor, 'important');
+        }
+        const body = card.querySelector('.card-body');
+        if (body) {
+            body.style.setProperty('background-color', bgColor, 'important');
+        }
+        console.log('Set background color to:', card.style.backgroundColor);
+    }
 }
 
 function updateOutsideCO2(data) {

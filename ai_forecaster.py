@@ -51,7 +51,6 @@ def engineer_features(df):
     df['lightning_distance_km'] = df['lightning_distance'] * 1.60934
     df['lightning_strike'] = df['lightning_strike_count'].fillna(0)
     df['lightning_last_hour'] = df['lightning_strike'].rolling(window=12, min_periods=1).sum()
-
     df['lightning_closest_km'] = (
         df['lightning_distance_km']
         .where(df['lightning_strike'] > 0)
@@ -59,6 +58,13 @@ def engineer_features(df):
         .min()
         .fillna(1000)
     )
+
+    # Seasonal features
+    df['month'] = df.index.month
+    df['day_of_year'] = df.index.dayofyear
+    df['hour'] = df.index.hour
+    df['sin_doy'] = np.sin(2 * np.pi * df['day_of_year'] / 365.25)
+    df['cos_doy'] = np.cos(2 * np.pi * df['day_of_year'] / 365.25)
 
     df = df.ffill().dropna()
     return df
@@ -94,7 +100,7 @@ def label_weather(df):
     df = df.dropna(subset=['label', 'wind_label', 'max_temp_future', 'min_temp_future'], how='any')
 
     if len(df) < MIN_RECORDS_REQUIRED:
-        print(f"🚫 Not enough data after filtering and labeling: only {len(df)} records available.")
+        print(f"\U0001F6D1 Not enough data after filtering and labeling: only {len(df)} records available.")
         sys.exit(1)
 
     return df
@@ -103,7 +109,8 @@ def train_model(df):
     features = [
         'pressure', 'pressure_change', 'outTemp', 'temp_change',
         'outHumidity', 'humidity_change', 'rolling_rain', 'wind_avg',
-        'lightning_last_hour', 'lightning_closest_km'
+        'lightning_last_hour', 'lightning_closest_km',
+        'month', 'day_of_year', 'hour', 'sin_doy', 'cos_doy'
     ]
 
     X = df[features]
@@ -155,7 +162,8 @@ def predict_future(df, models):
     features = [
         'pressure', 'pressure_change', 'outTemp', 'temp_change',
         'outHumidity', 'humidity_change', 'rolling_rain', 'wind_avg',
-        'lightning_last_hour', 'lightning_closest_km'
+        'lightning_last_hour', 'lightning_closest_km',
+        'month', 'day_of_year', 'hour', 'sin_doy', 'cos_doy'
     ]
 
     weather_model = models['weather']
@@ -243,4 +251,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

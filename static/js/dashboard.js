@@ -569,14 +569,44 @@ function updateLightningGraph(data) {
 }
 
 function updateSolarGraph(data) {
-    plotGraph('solar-graph', [{
-        x: data.dateTime,
-        y: data.luminosity,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Solar (kLux)',
-        line: { color: COLORS.powderBlue }
-    }], {yaxis: { title: 'kLux' }});
+    plotGraph('solar-graph', [
+        {
+            x: data.dateTime,
+            y: data.luminosity,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Solar (kLux)',
+            line: { color: COLORS.powderBlue },
+            yaxis: 'y1'
+        },
+        {
+            x: data.dateTime,
+            y: data.uv,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'UV Index',
+            line: { color: COLORS.gold },
+            yaxis: 'y2'
+        }
+    ], {
+        yaxis: { 
+            title: 'kLux',
+            side: 'left'
+        },
+        yaxis2: {
+            title: 'UV Index',
+            overlaying: 'y',
+            side: 'right',
+            rangemode: 'tozero'
+        },
+        legend: {
+            orientation: 'h',
+            x: 0,
+            y: 1.1,
+            xanchor: 'left',
+            yanchor: 'bottom'
+        }
+    });
     setOverlay('solar-overlay', lastValid(data.luminosity), 'kLux', 2);
 }
 

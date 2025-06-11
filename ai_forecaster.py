@@ -26,7 +26,7 @@ FORECAST_HOURS = 24
 MIN_RECORDS_REQUIRED = 500
 
 def get_data(days):
-    engine = create_engine(f'mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}')
+    engine = create_engine(f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}')
     query = f"""
         SELECT dateTime, pressure, outTemp, outHumidity, windSpeed, rain,
                lightning_distance, lightning_strike_count

@@ -1130,6 +1130,8 @@ function updateActualWeatherConditions(data) {
     const condition = determineWeatherCondition(data);
     console.log('Current condition:', condition);
     console.log('Raw data:', data);
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
     
     const cardBody = document.getElementById('actual-weather-conditions-body');
     if (!cardBody) {
@@ -1197,7 +1199,7 @@ function updateActualWeatherConditions(data) {
             <div style="display: flex; width: 100%; box-sizing: border-box;">
                 <!-- Column 1: Image and Condition -->
                 <div style="width: 400px; min-width: 400px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <img src="/static/images/${conditionImageMap[condition]}" alt="${condition}" style="height: 120px; width: auto; margin-bottom: 1rem;">
+                    <img src="${basePath}/static/images/${conditionImageMap[condition]}" alt="${condition}" style="height: 120px; width: auto; margin-bottom: 1rem;">
                     <div class="h2" style="font-weight: 700;">${condition}</div>
                 </div>
                 

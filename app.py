@@ -33,6 +33,7 @@ FORECASTS_PATH = os.path.join(os.path.dirname(__file__), 'forecasts', 'forecasts
 BATTERY_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'battery_cache.json')
 BATTERY_CACHE_TTL = 43200  # 12 hours in seconds
 WEATHER_CAM_CACHE_TTL = 300  # 5 minutes in seconds
+WAPI_KEY = os.getenv('WAPI_KEY')
 
 @app.route('/')
 def index():
@@ -289,6 +290,23 @@ def api_bar_metrics():
         'pm25': None,
         'pm10': None
     })
+
+@app.route('/api/weather_condition')
+def api_weather_condition():
+    try:
+        response = requests.get(f'http://api.weatherapi.com/v1/current.json?key={WAPI_KEY}&q=Samford&aqi=no')
+        if response.status_code == 200:
+            data = response.json()
+            # Extract just the condition data we need
+            condition = data['current']['condition']
+            return jsonify({
+                'text': condition['text'],
+                'icon': condition['icon']
+            })
+        else:
+            return jsonify({'error': 'Failed to fetch weather data'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=False) 

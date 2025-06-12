@@ -1074,7 +1074,7 @@ function updateOutsidePM10(data) {
     }
 }
 
-function determineWeatherCondition(data) {
+async function determineWeatherCondition(data) {
     // Get the most recent values
     const latest = {
         lightning_strike_count: data.lightning_strike_count[data.lightning_strike_count.length - 1],
@@ -1086,49 +1086,129 @@ function determineWeatherCondition(data) {
         luminosity: data.luminosity[data.luminosity.length - 1]
     };
 
+    // Check if it's night time using local time
+    const now = new Date();
+    const localHour = now.getHours();
+    const isNight = localHour < 6 || localHour >= 18; // Night is between 6 PM and 6 AM local time
+    console.log('Night detection:', {
+        isNight,
+        localTime: now.toLocaleString(),
+        localHour,
+        isCamActive: isCamActiveNow()
+    });
+
+    if (isNight) {
+        try {
+            const isProd = window.location.hostname !== 'localhost';
+            const basePath = isProd ? '/njawa' : '';
+            console.log('Fetching weather condition from API...');
+            const response = await fetch(`${basePath}/api/weather_condition`);
+            const weatherData = await response.json();
+            console.log('WeatherAPI Response:', weatherData);
+            
+            if (weatherData && weatherData.text && weatherData.icon) {
+                console.log('Using WeatherAPI condition:', {
+                    text: weatherData.text,
+                    icon: weatherData.icon
+                });
+                return {
+                    text: weatherData.text,
+                    icon: weatherData.icon
+                };
+            } else {
+                console.warn('WeatherAPI response missing required data:', weatherData);
+            }
+        } catch (error) {
+            console.error('Error fetching weather condition:', error);
+        }
+    } else {
+        console.log('Using day time condition logic with sensor data:', latest);
+    }
+
+    // Day time conditions (existing logic)
     // Clear skies (priority rule): very bright light, no rain or lightning
     if (latest.luminosity >= 30000 && latest.rain === 0 && latest.lightning_strike_count === 0) {
-        return "Clear";
+        console.log('Day condition: Clear');
+        return {
+            text: "Clear",
+            icon: null
+        };
     }
     // Electrical storm
     else if (latest.lightning_strike_count >= 1 && latest.lightning_distance < 15 && latest.rain > 0) {
-        return "Electrical Storm";
+        console.log('Day condition: Electrical Storm');
+        return {
+            text: "Electrical Storm",
+            icon: null
+        };
     }
     // Storm or heavy rain
     else if (latest.rain > 2 && latest.windSpeed > 25) {
-        return "Storm";
+        console.log('Day condition: Storm');
+        return {
+            text: "Storm",
+            icon: null
+        };
     }
     else if (latest.rain > 2) {
-        return "Heavy Rain";
+        console.log('Day condition: Heavy Rain');
+        return {
+            text: "Heavy Rain",
+            icon: null
+        };
     }
     else if (latest.rain > 0) {
-        return "Rain";
+        console.log('Day condition: Rain');
+        return {
+            text: "Rain",
+            icon: null
+        };
     }
     // Fog
     else if (latest.outHumidity > 95 && latest.cloudbase < 100) {
-        return "Fog";
+        console.log('Day condition: Fog');
+        return {
+            text: "Fog",
+            icon: null
+        };
     }
     // Overcast — only if light is very low and cloudbase is low
     else if (latest.luminosity < 8 && latest.cloudbase < 1000) {
-        return "Overcast";
+        console.log('Day condition: Overcast');
+        return {
+            text: "Overcast",
+            icon: null
+        };
     }
     // Partly Cloudy — moderate light or moderate clouds
     else if (latest.luminosity >= 8 && latest.luminosity < 30 && latest.cloudbase < 3000) {
-        return "Partly Cloudy";
+        console.log('Day condition: Partly Cloudy');
+        return {
+            text: "Partly Cloudy",
+            icon: null
+        };
     }
     // Windy
     else if (latest.windSpeed > 20) {
-        return "Windy";
+        console.log('Day condition: Windy');
+        return {
+            text: "Windy",
+            icon: null
+        };
     }
     // Default
     else {
-        return "Clear";
+        console.log('Day condition: Default (Clear)');
+        return {
+            text: "Clear",
+            icon: null
+        };
     }
 }
 
-function updateActualWeatherConditions(data) {
-    const condition = determineWeatherCondition(data);
-    console.log('Current condition:', condition);
+async function updateActualWeatherConditions(data) {
+    const condition = await determineWeatherCondition(data);
+    console.log('Final condition object:', condition);
     console.log('Raw data:', data);
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -1180,7 +1260,7 @@ function updateActualWeatherConditions(data) {
     
     console.log('Processed latest values:', latest);
 
-    // Map condition to image filename
+    // Map condition to image filename for day time conditions
     const conditionImageMap = {
         'Clear': 'Clear.png',
         'Electrical Storm': 'Electrical_strom.png',
@@ -1193,14 +1273,22 @@ function updateActualWeatherConditions(data) {
         'Windy': 'Windy.png'
     };
     
+    // Determine which image to use
+    const imageSrc = condition.icon ? condition.icon : `${basePath}/static/images/${conditionImageMap[condition.text] || 'Clear.png'}`;
+    console.log('Image source:', {
+        usingWeatherAPI: !!condition.icon,
+        imageSrc,
+        conditionText: condition.text
+    });
+    
     // Update the condition text with appropriate styling
     conditionDisplay.innerHTML = `
         <div style="width: 100%; max-width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
             <div style="display: flex; width: 100%; box-sizing: border-box;">
                 <!-- Column 1: Image and Condition -->
                 <div style="width: 400px; min-width: 400px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <img src="${basePath}/static/images/${conditionImageMap[condition]}" alt="${condition}" style="height: 120px; width: auto; margin-bottom: 1rem;">
-                    <div class="h2" style="font-weight: 700;">${condition}</div>
+                    <img src="${imageSrc}" alt="${condition.text}" style="height: 120px; width: auto; margin-bottom: 1rem;">
+                    <div class="h2" style="font-weight: 700;">${condition.text}</div>
                 </div>
                 
                 <!-- Column 2: Temperature, Pressure, Rain, UV -->

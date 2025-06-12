@@ -53,7 +53,7 @@ def api_data():
         start_time = int((now - timedelta(hours=24)).timestamp())
     end_time = int((now - timedelta(minutes=5)).timestamp())
     query = f'''
-        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill, lightning_strike_count, lightning_distance, luminosity, UV
+        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill, lightning_strike_count, lightning_distance, luminosity, UV, cloudbase
         FROM archive
         WHERE dateTime >= {start_time} AND dateTime <= {end_time}
         ORDER BY dateTime ASC
@@ -69,6 +69,8 @@ def api_data():
     df['lightning_distance'] = df['lightning_distance'] * 1.60934  # miles to km
     if 'luminosity' in df:
         df['luminosity'] = df['luminosity'] / 1000  # Lux to kLux
+    if 'cloudbase' in df:
+        df['cloudbase'] = df['cloudbase'] * 0.3048  # feet to meters
     
     def safe_list(col):
         return [x if pd.notnull(x) else None for x in col]
@@ -89,6 +91,7 @@ def api_data():
         'lightning_distance': safe_list(df['lightning_distance'].round(2)),
         'luminosity': safe_list(df['luminosity']),
         'uv': safe_list(df['UV'].round(1)),
+        'cloudbase': safe_list(df['cloudbase'].round(0)),
     }
     return jsonify(result)
 

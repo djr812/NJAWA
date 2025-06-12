@@ -123,6 +123,7 @@ function fetchAndUpdateAll() {
             updateWindChillGraph(data);
             updateLightningGraph(data);
             updateSolarGraph(data);
+            updateActualWeatherConditions(data);
             updatePeriodLabels();
         });
 
@@ -1082,4 +1083,177 @@ function updateOutsidePM10(data) {
             </div>
         `;
     }
+}
+
+function determineWeatherCondition(data) {
+    // Get the most recent values
+    const latest = {
+        lightning_strike_count: data.lightning_strike_count[data.lightning_strike_count.length - 1],
+        lightning_distance: data.lightning_distance[data.lightning_distance.length - 1] * 1.60934, // Convert miles to km
+        rain: data.rain[data.rain.length - 1],
+        windSpeed: data.windSpeed[data.windSpeed.length - 1],
+        outHumidity: data.outHumidity[data.outHumidity.length - 1],
+        cloudbase: data.cloudbase[data.cloudbase.length - 1] * 0.3048, // Convert feet to meters
+        luminosity: data.luminosity[data.luminosity.length - 1]
+    };
+
+    // Clear skies (priority rule): very bright light, no rain or lightning
+    if (latest.luminosity >= 30000 && latest.rain === 0 && latest.lightning_strike_count === 0) {
+        return "Clear";
+    }
+    // Electrical storm
+    else if (latest.lightning_strike_count >= 1 && latest.lightning_distance < 15 && latest.rain > 0) {
+        return "Electrical Storm";
+    }
+    // Storm or heavy rain
+    else if (latest.rain > 2 && latest.windSpeed > 25) {
+        return "Storm";
+    }
+    else if (latest.rain > 2) {
+        return "Heavy Rain";
+    }
+    else if (latest.rain > 0) {
+        return "Rain";
+    }
+    // Fog
+    else if (latest.outHumidity > 95 && latest.cloudbase < 100) {
+        return "Fog";
+    }
+    // Overcast — only if light is very low and cloudbase is low
+    else if (latest.luminosity < 8 && latest.cloudbase < 1000) {
+        return "Overcast";
+    }
+    // Partly Cloudy — moderate light or moderate clouds
+    else if (latest.luminosity >= 8 && latest.luminosity < 30 && latest.cloudbase < 3000) {
+        return "Partly Cloudy";
+    }
+    // Windy
+    else if (latest.windSpeed > 20) {
+        return "Windy";
+    }
+    // Default
+    else {
+        return "Clear";
+    }
+}
+
+function updateActualWeatherConditions(data) {
+    const condition = determineWeatherCondition(data);
+    console.log('Current condition:', condition);
+    console.log('Raw data:', data);
+    
+    const cardBody = document.getElementById('actual-weather-conditions-body');
+    if (!cardBody) {
+        console.error('Could not find Actual Weather Conditions card body');
+        return;
+    }
+    
+    const conditionDisplay = cardBody.querySelector('.weather-condition');
+    if (!conditionDisplay) {
+        console.error('Could not find weather condition display');
+        return;
+    }
+
+    // Helper function to safely convert to number
+    const toNumber = (value, defaultValue = 0) => {
+        if (typeof value === 'string') {
+            // Remove any non-numeric characters except decimal point
+            value = value.replace(/[^0-9.-]/g, '');
+        }
+        const num = parseFloat(value);
+        return isNaN(num) ? defaultValue : num;
+    };
+
+    // Helper function to convert degrees to compass bearing
+    const degreesToCompass = (degrees) => {
+        const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                          'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+        const index = Math.round(degrees / 22.5) % 16;
+        return directions[index];
+    };
+
+    // Get the current values directly from the data object
+    const latest = {
+        lightning_strike_count: toNumber(data.lightning_strike_count),
+        lightning_distance: toNumber(data.lightning_distance) * 1.60934, // Convert miles to km
+        rain: toNumber(data.rain),
+        windSpeed: toNumber(data.windSpeed),
+        windDir: toNumber(data.windDir),
+        outHumidity: toNumber(data.outHumidity),
+        cloudbase: toNumber(data.cloudbase) * 0.3048, // Convert feet to meters
+        luminosity: toNumber(data.luminosity),
+        outTemp: toNumber(data.outTemp),
+        barometer: toNumber(data.barometer),
+        UV: toNumber(data.UV)
+    };
+    
+    console.log('Processed latest values:', latest);
+
+    // Map condition to image filename
+    const conditionImageMap = {
+        'Clear': 'Clear.png',
+        'Electrical Storm': 'Electrical_strom.png',
+        'Storm': 'Storm.png',
+        'Heavy Rain': 'Heavy_rain.png',
+        'Rain': 'Rain.png',
+        'Fog': 'Fog.png',
+        'Overcast': 'Overcast.png',
+        'Partly Cloudy': 'Partly_cloudy.png',
+        'Windy': 'Windy.png'
+    };
+    
+    // Update the condition text with appropriate styling
+    conditionDisplay.innerHTML = `
+        <div style="width: 100%; max-width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
+            <div style="display: flex; width: 100%; box-sizing: border-box;">
+                <!-- Column 1: Image and Condition -->
+                <div style="width: 400px; min-width: 400px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <img src="/static/images/${conditionImageMap[condition]}" alt="${condition}" style="height: 120px; width: auto; margin-bottom: 1rem;">
+                    <div class="h2" style="font-weight: 700;">${condition}</div>
+                </div>
+                
+                <!-- Column 2: Temperature, Pressure, Rain, UV -->
+                <div style="width: 300px; min-width: 300px; box-sizing: border-box;">
+                    <div class="mb-4">
+                        <div class="h6 mb-1" style="color: #666;">TEMPERATURE</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.outTemp.toFixed(2)}°C</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="h6 mb-1" style="color: #666;">REL. AIR PRESSURE</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.barometer.toFixed(2)} hPa</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="h6 mb-1" style="color: #666;">RAIN</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.rain.toFixed(2)} mm</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="h6 mb-1" style="color: #666;">UV RATING</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.UV.toFixed(2)}</div>
+                    </div>
+                </div>
+                
+                <!-- Column 3: Humidity, Wind, Lightning -->
+                <div style="width: 300px; min-width: 300px; box-sizing: border-box;">
+                    <div class="mb-4">
+                        <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.outHumidity.toFixed(2)}%</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="h6 mb-1" style="color: #666;">WIND SPEED</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.windSpeed.toFixed(2)} km/h</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="h6 mb-1" style="color: #666;">WIND DIRECTION</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${degreesToCompass(latest.windDir)}</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="h6 mb-1" style="color: #666;">LIGHTNING STRIKES</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.lightning_strike_count.toFixed(2)}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    console.log('Updated card with condition:', condition);
 } 

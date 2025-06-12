@@ -58,13 +58,24 @@
         </div>
       </div>
     </div>
-    <!-- Row 2: Outside Temperature | Predicted Weather Conditions -->
+    <!-- Row 2: Actual Weather Conditions | AI Predicted Weather Conditions -->
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="outside-temp-overlay" class="card-overlay"></div>
-          <div id="outside-temp-graph" class="plotly-graph"></div>
+        <div class="card-header d-flex justify-content-between align-items-center">Actual Weather Conditions <span class="period-label text-end flex-grow-1">Currently</span></div>
+        <div class="card-body position-relative" id="actual-weather-conditions-body">
+          <div class="weather-condition text-center">
+            <div class="h2 mb-3" style="font-weight: 700;">--</div>
+            <div class="row">
+              <div class="col-6">
+                <div class="h6 mb-1" style="color: #666;">TEMPERATURE</div>
+                <div style="font-size: 1.8rem; font-weight: 700;">--°C</div>
+              </div>
+              <div class="col-6">
+                <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
+                <div style="font-size: 1.8rem; font-weight: 700;">--%</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -76,7 +87,38 @@
         </div>
       </div>
     </div>
-    <!-- Row 3: Rainfall | Lightning -->
+    <!-- Row 3: Outside Temperature | Bar Comfort Level -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="outside-temp-overlay" class="card-overlay"></div>
+          <div id="outside-temp-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Bar Comfort Level <span class="period-label text-end flex-grow-1">Currently</span></div>
+        <div class="card-body position-relative h-100 d-flex flex-column align-items-center justify-content-center">
+          <div class="d-flex justify-content-center align-items-center mb-3">
+            <div class="me-3 text-center">
+              <div class="h6 mb-1" style="color: #666;">TEMP</div>
+              <div style="font-size: 2.4rem; font-weight: 700; line-height: 1.1;" id="bar-area-temp">--°C</div>
+            </div>
+            <div class="ms-3 text-center">
+              <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
+              <div style="font-size: 2.4rem; font-weight: 700; line-height: 1.1;" id="bar-area-humidity">--%</div>
+            </div>
+          </div>
+          <div class="text-center">
+            <div id="bar-area-comfort-text" class="h5 mb-2"></div>
+            <img id="bar-area-comfort-img" src="" alt="Comfort Level" class="img-fluid" style="max-height: 80px;">
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 4: Rainfall | Lightning -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
@@ -95,7 +137,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 4: Barometric Pressure | Humidity -->
+    <!-- Row 5: Barometric Pressure | Humidity -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Barometric Pressure <span id="pressure-period" class="period-label text-end flex-grow-1"></span></div>
@@ -114,50 +156,28 @@
         </div>
       </div>
     </div>
-    <!-- Row 5: Bar Area Metrics (4 cards) -->
+    <!-- Row 6: Bar Area Metrics (3 cards) -->
     <div class="row g-4 mt-2 mb-2">
-      <div class="col-md-3 d-flex">
-        <div class="card h-100 w-100" id="bar-area-comfort-level">
-          <div class="card-header d-flex justify-content-between align-items-center"><span>Bar Area Comfort Level</span><span class="period-label text-end flex-grow-1">Currently</span></div>
-          <div class="card-body position-relative h-100 d-flex flex-column align-items-center justify-content-center">
-            <div class="d-flex justify-content-center align-items-center mb-3">
-              <div class="me-3 text-center">
-                <div class="h6 mb-1" style="color: #666;">TEMP</div>
-                <div style="font-size: 2.4rem; font-weight: 700; line-height: 1.1;" id="bar-area-temp">--°C</div>
-              </div>
-              <div class="ms-3 text-center">
-                <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
-                <div style="font-size: 2.4rem; font-weight: 700; line-height: 1.1;" id="bar-area-humidity">--%</div>
-              </div>
-            </div>
-            <div class="text-center">
-              <div id="bar-area-comfort-text" class="h5 mb-2"></div>
-              <img id="bar-area-comfort-img" src="" alt="Comfort Level" class="img-fluid" style="max-height: 80px;">
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 d-flex">
+      <div class="col-md-4 d-flex">
         <div class="card h-100 w-100">
           <div class="card-header d-flex justify-content-between align-items-center"><span>CO2 Level</span><span class="period-label text-end flex-grow-1">Currently</span></div>
           <div class="card-body position-relative h-100 d-flex align-items-center justify-content-center" id="outside-co2"></div>
         </div>
       </div>
-      <div class="col-md-3 d-flex">
+      <div class="col-md-4 d-flex">
         <div class="card h-100 w-100">
           <div class="card-header d-flex justify-content-between align-items-center"><span>PM2.5 Fine Particle Pollution</span><span class="period-label text-end flex-grow-1">Currently</span></div>
           <div class="card-body position-relative h-100 d-flex align-items-center justify-content-center" id="outside-pm25"></div>
         </div>
       </div>
-      <div class="col-md-3 d-flex">
+      <div class="col-md-4 d-flex">
         <div class="card h-100 w-100">
           <div class="card-header d-flex justify-content-between align-items-center"><span>PM10 Air Pollution</span><span class="period-label text-end flex-grow-1">Currently</span></div>
           <div class="card-body position-relative h-100 d-flex align-items-center justify-content-center" id="outside-pm10"></div>
         </div>
       </div>
     </div>
-    <!-- Custom CSS for .bar-metric-card will be added in static/css/style.css -->
-    <!-- Row 6: Solar Levels | Inside Temperature -->
+    <!-- Row 7: Solar Levels | Inside Temperature -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Solar Levels <span id="solar-period" class="period-label text-end flex-grow-1"></span></div>
@@ -176,7 +196,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 7: Heat Index | Wind Chill -->
+    <!-- Row 8: Heat Index | Wind Chill -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Heat Index <span id="heat-index-period" class="period-label text-end flex-grow-1"></span></div>
@@ -195,7 +215,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 8: Wind Speed & Direction, full width -->
+    <!-- Row 9: Wind Speed & Direction, full width -->
     <div class="col-12">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Wind Speed & Direction <span id="wind-period" class="period-label text-end flex-grow-1"></span></div>
@@ -205,7 +225,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 9: Local Weather Cards -->
+    <!-- Row 10: Local Weather Cards -->
     <div class="row g-4 mt-4">
       <div class="col-md-3">
         <div class="card">
@@ -248,7 +268,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 10: Battery Status Cards -->
+    <!-- Row 11: Battery Status Cards -->
     <div class="row g-4 mt-4">
       <div class="col-md-3">
         <div class="card">

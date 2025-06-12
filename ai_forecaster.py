@@ -7,7 +7,6 @@ from sklearn.metrics import classification_report, r2_score
 import joblib
 import datetime
 import os
-import mysql.connector
 from dotenv import load_dotenv
 import argparse
 import json

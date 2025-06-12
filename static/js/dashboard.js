@@ -1,4 +1,39 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all charts
+    initializeCharts();
+    
+    // Start data updates
+    updateWeatherData();
+    setInterval(updateWeatherData, 60000); // Update every minute
+    
+    // Initialize timelapse video elements if they exist
+    const playButton = document.getElementById('play-timelapse');
+    const timeLapseVideo = document.getElementById('timelapse-video');
+    const videoContainer = document.getElementById('video-container');
+    
+    if (playButton && timeLapseVideo && videoContainer) {
+        let videoLoaded = false;
+        
+        function loadTimeLapseVideo() {
+            if (!videoLoaded) {
+                timeLapseVideo.src = '/static/videos/weather_cam_timelapse.mp4';
+                videoLoaded = true;
+            }
+        }
+
+        playButton.addEventListener('click', function() {
+            loadTimeLapseVideo();
+            videoContainer.classList.remove('d-none');
+            timeLapseVideo.play();
+            playButton.classList.add('d-none');
+        });
+
+        timeLapseVideo.addEventListener('ended', function() {
+            videoContainer.classList.add('d-none');
+            playButton.classList.remove('d-none');
+        });
+    }
+
     fetchAndUpdateAll();
     fetchAndUpdateBattery();  // Initial battery check
     
@@ -60,31 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateCurrentTime, 1000);
     fetchAndDisplaySunriseSunset();
     scheduleSunriseSunsetUpdate();
-
-    // Time lapse video handling
-    const timeLapseVideo = document.getElementById('timeLapseVideo');
-    const playButton = document.getElementById('playButton');
-    const videoContainer = document.getElementById('videoContainer');
-    let videoLoaded = false;
-
-    function loadTimeLapseVideo() {
-        if (!videoLoaded) {
-            timeLapseVideo.src = '/static/videos/weather_cam_timelapse.mp4';
-            videoLoaded = true;
-        }
-    }
-
-    playButton.addEventListener('click', function() {
-        loadTimeLapseVideo();
-        videoContainer.classList.remove('d-none');
-        timeLapseVideo.play();
-        playButton.classList.add('d-none');
-    });
-
-    timeLapseVideo.addEventListener('ended', function() {
-        videoContainer.classList.add('d-none');
-        playButton.classList.remove('d-none');
-    });
 });
 
 let latestData = null;
@@ -149,14 +159,29 @@ async function updatePredictedWeatherConditionsCard(forecast) {
     cardBody.innerHTML = '';
 
     if (forecast && forecast.ai_forecast) {
+        // Create main container with flex layout
+        const mainContainer = document.createElement('div');
+        mainContainer.style.display = 'flex';
+        mainContainer.style.width = '100%';
+        mainContainer.style.gap = '20px';
+        cardBody.appendChild(mainContainer);
+
+        // Left Column: Image and Condition
+        const leftColumn = document.createElement('div');
+        leftColumn.style.flex = '1';
+        leftColumn.style.display = 'flex';
+        leftColumn.style.flexDirection = 'column';
+        leftColumn.style.alignItems = 'center';
+        mainContainer.appendChild(leftColumn);
+
         // Create image element
         const img = document.createElement('img');
         img.src = `${basePath}/static/images/${forecast.ai_forecast}.png`;
         img.alt = forecast.ai_forecast;
         img.className = 'img-fluid weather-cam-img';
-        img.style.maxHeight = '180px'; // Increased image height
+        img.style.maxHeight = '180px';
         img.style.marginBottom = '10px';
-        cardBody.appendChild(img);
+        leftColumn.appendChild(img);
 
         // Create text element for forecast
         const textDiv = document.createElement('div');
@@ -165,7 +190,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         textDiv.style.fontWeight = 'bold';
         textDiv.style.textAlign = 'center';
         textDiv.style.marginBottom = '10px';
-        
+
         // Add wind forecast text based on ai_wind_forecast value
         let windText = '';
         if (forecast.ai_wind_forecast) {
@@ -189,27 +214,43 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         }
         
         textDiv.textContent = forecast.ai_forecast + windText;
-        cardBody.appendChild(textDiv);
+        leftColumn.appendChild(textDiv);
 
-        // Create probability text element
-        if (forecast.chance_of_rain !== undefined || forecast.chance_of_lightning !== undefined) {
-            const probDiv = document.createElement('div');
-            probDiv.className = 'probability-text';
-            probDiv.style.fontSize = '1.1rem';
-            probDiv.style.color = '#666';
-            probDiv.style.textAlign = 'center';
-            probDiv.style.marginBottom = '10px';
+        // Right Column: Temperature Range and Probabilities
+        const rightColumn = document.createElement('div');
+        rightColumn.style.flex = '1';
+        rightColumn.style.display = 'flex';
+        rightColumn.style.flexDirection = 'column';
+        rightColumn.style.justifyContent = 'center';
+        mainContainer.appendChild(rightColumn);
 
-            let probText = [];
-            if (forecast.chance_of_rain !== undefined) {
-                probText.push(`Chance of Rain: ${forecast.chance_of_rain}%`);
-            }
-            if (forecast.chance_of_lightning !== undefined) {
-                probText.push(`Chance of Lightning: ${forecast.chance_of_lightning}%`);
-            }
-            
-            probDiv.textContent = probText.join(' | ');
-            cardBody.appendChild(probDiv);
+        // Add predicted temperature range
+        if (forecast.predicted_min_temp !== undefined && forecast.predicted_max_temp !== undefined) {
+            const tempRangeDiv = document.createElement('div');
+            tempRangeDiv.style.fontSize = '1.2rem';
+            tempRangeDiv.style.color = COLORS.fieldDrab;
+            tempRangeDiv.style.marginBottom = '15px';
+            tempRangeDiv.textContent = `Predicted Range: ${forecast.predicted_min_temp.toFixed(1)}°C - ${forecast.predicted_max_temp.toFixed(1)}°C`;
+            rightColumn.appendChild(tempRangeDiv);
+        }
+
+        // Create probability text elements
+        if (forecast.chance_of_rain !== undefined) {
+            const rainDiv = document.createElement('div');
+            rainDiv.style.fontSize = '1.1rem';
+            rainDiv.style.color = '#666';
+            rainDiv.style.marginBottom = '10px';
+            rainDiv.textContent = `Chance of Rain: ${forecast.chance_of_rain}%`;
+            rightColumn.appendChild(rainDiv);
+        }
+
+        if (forecast.chance_of_lightning !== undefined) {
+            const lightningDiv = document.createElement('div');
+            lightningDiv.style.fontSize = '1.1rem';
+            lightningDiv.style.color = '#666';
+            lightningDiv.style.marginBottom = '10px';
+            lightningDiv.textContent = `Chance of Lightning: ${forecast.chance_of_lightning}%`;
+            rightColumn.appendChild(lightningDiv);
         }
 
         // Fetch and display training days
@@ -219,8 +260,10 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             
             // Create container for bottom text
             const bottomTextContainer = document.createElement('div');
-            bottomTextContainer.style.marginTop = 'auto';
+            bottomTextContainer.style.marginTop = '20px';
             bottomTextContainer.style.paddingTop = '10px';
+            bottomTextContainer.style.borderTop = '1px solid #ddd';
+            bottomTextContainer.style.width = '100%';
             cardBody.appendChild(bottomTextContainer);
 
             // Training days text
@@ -350,60 +393,6 @@ function updateOutsideTempGraph(data) {
         line: { color: COLORS.greenBlue }
     }];
     let layout = {yaxis: { title: '°C' }};
-    let annotations = [];
-    if (currentPeriod === '24h' && latestForecast && latestForecast.predicted_min_temp !== undefined) {
-        let xStart = data.dateTime[0];
-        let xEnd = data.dateTime[data.dateTime.length - 1];
-        traces.push({
-            x: [xStart, xEnd],
-            y: [latestForecast.predicted_min_temp, latestForecast.predicted_min_temp],
-            type: 'scatter',
-            mode: 'lines',
-            name: 'AI Predicted Min',
-            line: { color: COLORS.fieldDrab, width: 3, dash: 'solid' },
-            showlegend: true
-        });
-        traces.push({
-            x: [xStart, xEnd],
-            y: [latestForecast.predicted_max_temp, latestForecast.predicted_max_temp],
-            type: 'scatter',
-            mode: 'lines',
-            name: 'AI Predicted Max',
-            line: { color: COLORS.gold, width: 3, dash: 'solid' },
-            showlegend: true
-        });
-        annotations.push({
-            x: xEnd,
-            y: latestForecast.predicted_min_temp,
-            xref: 'x',
-            yref: 'y',
-            text: `${latestForecast.predicted_min_temp}°C`,
-            showarrow: false,
-            font: { color: COLORS.fieldDrab, size: 14, weight: 'bold' },
-            align: 'left',
-            xanchor: 'left',
-            yanchor: 'middle',
-            bgcolor: 'rgba(255,255,255,0.7)',
-            bordercolor: COLORS.fieldDrab,
-            borderpad: 2
-        });
-        annotations.push({
-            x: xEnd,
-            y: latestForecast.predicted_max_temp,
-            xref: 'x',
-            yref: 'y',
-            text: `${latestForecast.predicted_max_temp}°C`,
-            showarrow: false,
-            font: { color: COLORS.gold, size: 14, weight: 'bold' },
-            align: 'left',
-            xanchor: 'left',
-            yanchor: 'middle',
-            bgcolor: 'rgba(255,255,255,0.7)',
-            bordercolor: COLORS.gold,
-            borderpad: 2
-        });
-    }
-    if (annotations.length) layout.annotations = annotations;
     plotGraph('outside-temp-graph', traces, layout);
     setOverlay('outside-temp-overlay', lastValid(data.outTemp), '°C', 1);
 }
@@ -1174,7 +1163,7 @@ function updateActualWeatherConditions(data) {
 
     // Get the current values directly from the data object
     const latest = {
-        lightning_strike_count: toNumber(data.lightning_strike_count),
+        lightning_strike_count: Math.round(toNumber(data.lightning_strike_count)),
         lightning_distance: toNumber(data.lightning_distance) * 1.60934, // Convert miles to km
         rain: toNumber(data.rain),
         windSpeed: toNumber(data.windSpeed),
@@ -1184,7 +1173,7 @@ function updateActualWeatherConditions(data) {
         luminosity: toNumber(data.luminosity),
         outTemp: toNumber(data.outTemp),
         barometer: toNumber(data.barometer),
-        UV: toNumber(data.UV)
+        UV: Math.round(toNumber(data.uv)) // Round UV to whole number
     };
     
     console.log('Processed latest values:', latest);
@@ -1228,7 +1217,7 @@ function updateActualWeatherConditions(data) {
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">UV RATING</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.UV.toFixed(2)}</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.UV}</div>
                     </div>
                 </div>
                 
@@ -1248,7 +1237,7 @@ function updateActualWeatherConditions(data) {
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">LIGHTNING STRIKES</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.lightning_strike_count.toFixed(2)}</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.lightning_strike_count}</div>
                     </div>
                 </div>
             </div>
@@ -1256,4 +1245,305 @@ function updateActualWeatherConditions(data) {
     `;
     
     console.log('Updated card with condition:', condition);
+}
+
+// Initialize all charts
+function initializeCharts() {
+    // Outside Temperature Graph
+    const outsideTempCtx = document.getElementById('outside-temp-chart');
+    if (outsideTempCtx) {
+        new Chart(outsideTempCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Outside Temperature',
+                    data: [],
+                    borderColor: COLORS.fieldDrab,
+                    backgroundColor: 'rgba(76, 61, 43, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        position: 'bottom',
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#666'
+                        },
+                        border: {
+                            display: true
+                        }
+                    },
+                    y: {
+                        position: 'left',
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        },
+                        border: {
+                            display: true
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Rainfall Graph
+    const rainfallCtx = document.getElementById('rainfall-chart');
+    if (rainfallCtx) {
+        new Chart(rainfallCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Rainfall',
+                    data: [],
+                    borderColor: COLORS.rainBlue,
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Lightning Graph
+    const lightningCtx = document.getElementById('lightning-chart');
+    if (lightningCtx) {
+        new Chart(lightningCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Lightning',
+                    data: [],
+                    borderColor: COLORS.lightningYellow,
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Function to get UV risk level and time to sunburn
+function getUVInfo(uvIndex) {
+    let riskLevel, timeToBurn;
+    
+    if (uvIndex <= 2) {
+        riskLevel = 'Low';
+        timeToBurn = '> 1 hour';
+    } else if (uvIndex <= 5) {
+        riskLevel = 'Moderate';
+        timeToBurn = '30-45 minutes';
+    } else if (uvIndex <= 7) {
+        riskLevel = 'High';
+        timeToBurn = '15-25 minutes';
+    } else if (uvIndex <= 10) {
+        riskLevel = 'Very High';
+        timeToBurn = '10-15 minutes';
+    } else {
+        riskLevel = 'Extreme';
+        timeToBurn = '< 10 minutes';
+    }
+    
+    return { riskLevel, timeToBurn };
+}
+
+// Function to update UV Level card
+function updateUVLevelCard(uvIndex) {
+    console.log('Updating UV Level card with index:', uvIndex);
+    
+    const uvLevelElement = document.getElementById('uv-level');
+    const uvRiskElement = document.getElementById('uv-risk');
+    const uvImageElement = document.getElementById('uv-image');
+    const card = uvLevelElement?.closest('.card');
+    
+    if (!uvLevelElement || !uvRiskElement || !uvImageElement || !card) {
+        console.error('UV Level card elements not found');
+        return;
+    }
+    
+    // Round UV index to whole number
+    const roundedUV = Math.round(uvIndex);
+    
+    // Update UV level
+    uvLevelElement.textContent = roundedUV;
+    
+    // Determine risk level, color, and time to sunburn
+    let riskLevel, bgColor, img;
+    if (roundedUV <= 2) {
+        riskLevel = 'Low';
+        bgColor = '#d4f7d4'; // Light green (same as Good)
+        img = 'Good.png';
+    } else if (roundedUV <= 5) {
+        riskLevel = 'Moderate';
+        bgColor = '#fff9c4'; // Light yellow (same as Moderate)
+        img = 'Moderate.png';
+    } else if (roundedUV <= 7) {
+        riskLevel = 'High';
+        bgColor = '#ffe0b2'; // Light orange (same as Poor)
+        img = 'Poor.png';
+    } else if (roundedUV <= 10) {
+        riskLevel = 'Very High';
+        bgColor = '#ffcdd2'; // Light red (same as Unhealthy)
+        img = 'Unhealthy.png';
+    } else {
+        riskLevel = 'Extreme';
+        bgColor = '#e1bee7'; // Light purple (same as Hazardous)
+        img = 'Hazardous.png';
+    }
+    
+    // Update risk level with time to sunburn
+    let timeToBurn;
+    if (roundedUV <= 2) timeToBurn = '60+ minutes to sunburn';
+    else if (roundedUV <= 5) timeToBurn = '30 to 45 minutes to sunburn';
+    else if (roundedUV <= 7) timeToBurn = '15 to 25 minutes to sunburn';
+    else if (roundedUV <= 10) timeToBurn = '10 to 15 minutes to sunburn';
+    else timeToBurn = 'less than 10 minutes to sunburn';
+    
+    uvRiskElement.textContent = `${riskLevel} - ${timeToBurn}`;
+    
+    // Update card background and image
+    const cardBody = card.querySelector('.card-body');
+    if (cardBody) {
+        cardBody.style.backgroundColor = bgColor;
+    }
+    uvImageElement.src = `static/images/${img}`;
+    
+    console.log('UV Level card updated successfully');
+}
+
+// Update the updateWeatherData function to include UV level
+async function updateWeatherData() {
+    try {
+        const isProd = window.location.hostname !== 'localhost';
+        const basePath = isProd ? '/njawa' : '';
+        
+        // Fetch weather data
+        const weatherResponse = await fetch(`${basePath}/api/data?period=24h`);
+        if (!weatherResponse.ok) {
+            throw new Error(`HTTP error! status: ${weatherResponse.status}`);
+        }
+        const weatherData = await weatherResponse.json();
+        
+        console.log('Full weather data:', weatherData);
+        
+        // Get latest values for immediate updates
+        const latestValues = weatherData.dateTime ? {
+            ...Object.fromEntries(
+                Object.entries(weatherData).map(([key, values]) => [key, values[values.length - 1]])
+            )
+        } : {};
+        
+        console.log('Latest values:', latestValues);
+        
+        // Update all the weather data displays using existing functions
+        updateActualWeatherConditions(latestValues); // Pass latest values instead of full data
+        updateOutsideTempGraph(weatherData);
+        updateRainfallGraph(weatherData);
+        updateLightningGraph(weatherData);
+        
+        // Update UV Level card if UV data exists
+        if (latestValues.uv !== undefined) {
+            console.log('Updating UV Level card with:', latestValues.uv);
+            updateUVLevelCard(latestValues.uv);
+        } else {
+            console.log('No UV data found in latest values');
+        }
+        
+        // Fetch bar metrics data
+        const barMetricsResponse = await fetch(`${basePath}/api/bar_metrics`);
+        if (!barMetricsResponse.ok) {
+            throw new Error(`HTTP error! status: ${barMetricsResponse.status}`);
+        }
+        const barMetricsData = await barMetricsResponse.json();
+        
+        // Update bar metrics
+        updateBarAreaTempHumidity(barMetricsData);
+        updateOutsideCO2Card(barMetricsData);
+        updatePM25Card(barMetricsData);
+        updatePM10Card(barMetricsData);
+        
+    } catch (error) {
+        console.error('Error fetching weather data:', error);
+    }
 } 

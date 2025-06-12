@@ -156,24 +156,40 @@
         </div>
       </div>
     </div>
-    <!-- Row 6: Bar Area Metrics (3 cards) -->
+    <!-- Row 6: Bar Area Metrics (4 cards) -->
     <div class="row g-4 mt-2 mb-2">
-      <div class="col-md-4 d-flex">
+      <div class="col-md-3 d-flex">
         <div class="card h-100 w-100">
           <div class="card-header d-flex justify-content-between align-items-center"><span>CO2 Level</span><span class="period-label text-end flex-grow-1">Currently</span></div>
           <div class="card-body position-relative h-100 d-flex align-items-center justify-content-center" id="outside-co2"></div>
         </div>
       </div>
-      <div class="col-md-4 d-flex">
+      <div class="col-md-3 d-flex">
         <div class="card h-100 w-100">
           <div class="card-header d-flex justify-content-between align-items-center"><span>PM2.5 Fine Particle Pollution</span><span class="period-label text-end flex-grow-1">Currently</span></div>
           <div class="card-body position-relative h-100 d-flex align-items-center justify-content-center" id="outside-pm25"></div>
         </div>
       </div>
-      <div class="col-md-4 d-flex">
+      <div class="col-md-3 d-flex">
         <div class="card h-100 w-100">
           <div class="card-header d-flex justify-content-between align-items-center"><span>PM10 Air Pollution</span><span class="period-label text-end flex-grow-1">Currently</span></div>
           <div class="card-body position-relative h-100 d-flex align-items-center justify-content-center" id="outside-pm10"></div>
+        </div>
+      </div>
+      <div class="col-md-3 d-flex">
+        <div class="card h-100 w-100 uv-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>UV Level</span>
+                <span class="period-label text-end flex-grow-1">Currently</span>
+            </div>
+            <div class="card-body position-relative h-100 d-flex align-items-center justify-content-center p-0">
+                <div style="text-align:center; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <div style="font-size:1.2rem;font-weight:500;">UV Index</div>
+                    <div id="uv-level" style="font-size:2.4rem;font-weight:700;line-height:1.1;">--</div>
+                    <div id="uv-risk" style="font-size:1.2rem;font-weight:500;margin-top:1.2em;">--</div>
+                    <img id="uv-image" src="" alt="UV Level" style="max-width:80px;max-height:80px;margin-top:0.5em;" />
+                </div>
+            </div>
         </div>
       </div>
     </div>

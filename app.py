@@ -38,6 +38,10 @@ WEATHER_CAM_CACHE_TTL = 300  # 5 minutes in seconds
 def index():
     return render_template('index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
 @app.route('/api/data')
 def api_data():
     period = request.args.get('period', '24h')

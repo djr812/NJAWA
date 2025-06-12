@@ -87,76 +87,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 3: Outside Temperature | Bar Comfort Level -->
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="outside-temp-overlay" class="card-overlay"></div>
-          <div id="outside-temp-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Bar Comfort Level <span class="period-label text-end flex-grow-1">Currently</span></div>
-        <div class="card-body position-relative h-100 d-flex flex-column align-items-center justify-content-center">
-          <div class="d-flex justify-content-center align-items-center mb-3">
-            <div class="me-3 text-center">
-              <div class="h6 mb-1" style="color: #666;">TEMP</div>
-              <div style="font-size: 2.4rem; font-weight: 700; line-height: 1.1;" id="bar-area-temp">--°C</div>
-            </div>
-            <div class="ms-3 text-center">
-              <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
-              <div style="font-size: 2.4rem; font-weight: 700; line-height: 1.1;" id="bar-area-humidity">--%</div>
-            </div>
-          </div>
-          <div class="text-center">
-            <div id="bar-area-comfort-text" class="h5 mb-2"></div>
-            <img id="bar-area-comfort-img" src="" alt="Comfort Level" class="img-fluid" style="max-height: 80px;">
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Row 4: Rainfall | Lightning -->
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="rainfall-overlay" class="card-overlay"></div>
-          <div id="rainfall-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Lightning <span id="lightning-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="lightning-overlay" class="card-overlay"></div>
-          <div id="lightning-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
-    <!-- Row 5: Barometric Pressure | Humidity -->
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Barometric Pressure <span id="pressure-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="pressure-overlay" class="card-overlay"></div>
-          <div id="pressure-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Humidity <span id="humidity-period" class="period-label text-end flex-grow-1"></span></div>
-        <div class="card-body position-relative">
-          <div id="humidity-overlay" class="card-overlay"></div>
-          <div id="humidity-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
-    <!-- Row 6: Bar Area Metrics (4 cards) -->
+    <!-- Row 3: Bar Area Metrics (4 cards) -->
     <div class="row g-4 mt-2 mb-2">
       <div class="col-md-3 d-flex">
         <div class="card h-100 w-100">
@@ -193,7 +124,119 @@
         </div>
       </div>
     </div>
-    <!-- Row 7: Solar Levels | Inside Temperature -->
+    <!-- Row 4: Local Weather Cards -->
+    <div class="row g-4 mt-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">Local Weather - Mitchelton</div>
+                <div class="card-body">
+                    <div id="weatherapi-weather-widget-3"></div>
+                    <script type='text/javascript' src='https://www.weatherapi.com/weather/widget.ashx?loc=133471&wid=3&tu=1&div=weatherapi-weather-widget-3' async></script>
+                    <noscript><a href="https://www.weatherapi.com/weather/q/mitchelton-133471" alt="Hour by hour Mitchelton weather">10 day hour by hour Mitchelton weather</a></noscript>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">Local Weather - Birkdale</div>
+                <div class="card-body">
+                    <div id="weatherapi-weather-widget-4"></div>
+                    <script type='text/javascript' src='https://www.weatherapi.com/weather/widget.ashx?loc=128369&wid=3&tu=1&div=weatherapi-weather-widget-4' async></script>
+                    <noscript><a href="https://www.weatherapi.com/weather/q/birkdale-128369" alt="Hour by hour Birkdale weather">10 day hour by hour Birkdale weather</a></noscript>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">Local Weather - Mooloolaba</div>
+                <div class="card-body">
+                    <div id="weatherapi-weather-widget-5"></div>
+                    <script type='text/javascript' src='https://www.weatherapi.com/weather/widget.ashx?loc=133576&wid=3&tu=1&div=weatherapi-weather-widget-5' async></script>
+                    <noscript><a href="https://www.weatherapi.com/weather/q/mooloolaba-133576" alt="Hour by hour Mooloolaba weather">10 day hour by hour Mooloolaba weather</a></noscript>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">Local Weather - Surfers Paradise</div>
+                <div class="card-body">
+                    <div id="weatherapi-weather-widget-2"></div>
+                    <script type='text/javascript' src='https://www.weatherapi.com/weather/widget.ashx?loc=135988&wid=3&tu=1&div=weatherapi-weather-widget-2' async></script>
+                    <noscript><a href="https://www.weatherapi.com/weather/q/surfers-paradise-135988" alt="Hour by hour Surfers Paradise weather">10 day hour by hour Surfers Paradise weather</a></noscript>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Row 5: Outside Temperature | Bar Comfort Level -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="outside-temp-overlay" class="card-overlay"></div>
+          <div id="outside-temp-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Bar Comfort Level <span class="period-label text-end flex-grow-1">Currently</span></div>
+        <div class="card-body position-relative h-100 d-flex flex-column align-items-center justify-content-center">
+          <div class="d-flex justify-content-center align-items-center mb-3">
+            <div class="me-3 text-center">
+              <div class="h6 mb-1" style="color: #666;">TEMP</div>
+              <div style="font-size: 2.4rem; font-weight: 700; line-height: 1.1;" id="bar-area-temp">--°C</div>
+            </div>
+            <div class="ms-3 text-center">
+              <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
+              <div style="font-size: 2.4rem; font-weight: 700; line-height: 1.1;" id="bar-area-humidity">--%</div>
+            </div>
+          </div>
+          <div class="text-center">
+            <div id="bar-area-comfort-text" class="h5 mb-2"></div>
+            <img id="bar-area-comfort-img" src="" alt="Comfort Level" class="img-fluid" style="max-height: 80px;">
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 6: Rainfall | Lightning -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="rainfall-overlay" class="card-overlay"></div>
+          <div id="rainfall-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Lightning <span id="lightning-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="lightning-overlay" class="card-overlay"></div>
+          <div id="lightning-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 7: Barometric Pressure | Humidity -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Barometric Pressure <span id="pressure-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="pressure-overlay" class="card-overlay"></div>
+          <div id="pressure-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Humidity <span id="humidity-period" class="period-label text-end flex-grow-1"></span></div>
+        <div class="card-body position-relative">
+          <div id="humidity-overlay" class="card-overlay"></div>
+          <div id="humidity-graph" class="plotly-graph"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 8: Solar Levels | Inside Temperature -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Solar Levels <span id="solar-period" class="period-label text-end flex-grow-1"></span></div>
@@ -212,7 +255,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 8: Heat Index | Wind Chill -->
+    <!-- Row 9: Heat Index | Wind Chill -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Heat Index <span id="heat-index-period" class="period-label text-end flex-grow-1"></span></div>
@@ -231,56 +274,13 @@
         </div>
       </div>
     </div>
-    <!-- Row 9: Wind Speed & Direction, full width -->
+    <!-- Row 10: Wind Speed & Direction, full width -->
     <div class="col-12">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Wind Speed & Direction <span id="wind-period" class="period-label text-end flex-grow-1"></span></div>
         <div class="card-body position-relative">
           <div id="wind-overlay" class="card-overlay"></div>
           <div id="wind-graph" class="plotly-graph"></div>
-        </div>
-      </div>
-    </div>
-    <!-- Row 10: Local Weather Cards -->
-    <div class="row g-4 mt-4">
-      <div class="col-md-3">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">Local Weather - Mitchelton</div>
-          <div class="card-body">
-            <div id="weatherapi-weather-widget-3"></div>
-            <script type='text/javascript' src='https://www.weatherapi.com/weather/widget.ashx?loc=133471&wid=3&tu=1&div=weatherapi-weather-widget-3' async></script>
-            <noscript><a href="https://www.weatherapi.com/weather/q/mitchelton-133471" alt="Hour by hour Mitchelton weather">10 day hour by hour Mitchelton weather</a></noscript>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">Local Weather - Birkdale</div>
-          <div class="card-body">
-            <div id="weatherapi-weather-widget-4"></div>
-            <script type='text/javascript' src='https://www.weatherapi.com/weather/widget.ashx?loc=128369&wid=3&tu=1&div=weatherapi-weather-widget-4' async></script>
-            <noscript><a href="https://www.weatherapi.com/weather/q/birkdale-128369" alt="Hour by hour Birkdale weather">10 day hour by hour Birkdale weather</a></noscript>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">Local Weather - Mooloolaba</div>
-          <div class="card-body">
-            <div id="weatherapi-weather-widget-5"></div>
-            <script type='text/javascript' src='https://www.weatherapi.com/weather/widget.ashx?loc=133576&wid=3&tu=1&div=weatherapi-weather-widget-5' async></script>
-            <noscript><a href="https://www.weatherapi.com/weather/q/mooloolaba-133576" alt="Hour by hour Mooloolaba weather">10 day hour by hour Mooloolaba weather</a></noscript>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">Local Weather - Surfers Paradise</div>
-          <div class="card-body">
-            <div id="weatherapi-weather-widget-2"></div>
-            <script type='text/javascript' src='https://www.weatherapi.com/weather/widget.ashx?loc=135988&wid=3&tu=1&div=weatherapi-weather-widget-2' async></script>
-            <noscript><a href="https://www.weatherapi.com/weather/q/surfers-paradise-135988" alt="Hour by hour Surfers Paradise weather">10 day hour by hour Surfers Paradise weather</a></noscript>
-          </div>
         </div>
       </div>
     </div>

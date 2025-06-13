@@ -1205,7 +1205,7 @@ async function updateActualWeatherConditions(data) {
             <div style="display: flex; width: 100%; box-sizing: border-box;">
                 <!-- Column 1: Image and Condition -->
                 <div style="width: 400px; min-width: 400px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <img src="${imageSrc}" alt="${condition.text}" style="height: 120px; width: auto; margin-bottom: 1rem;">
+                    <img src="${imageSrc}" alt="${condition.text}" style="height: 180px; width: auto; margin-bottom: 1rem; object-fit: contain;">
                     <div class="h2" style="font-weight: 700;">${condition.text}</div>
                 </div>
                 

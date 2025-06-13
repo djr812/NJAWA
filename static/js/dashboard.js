@@ -1202,15 +1202,15 @@ async function updateActualWeatherConditions(data) {
     // Update the condition text with appropriate styling
     conditionDisplay.innerHTML = `
         <div style="width: 100%; max-width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
-            <div style="display: flex; width: 100%; box-sizing: border-box;">
+            <div style="display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box; gap: 1rem;">
                 <!-- Column 1: Image and Condition -->
-                <div style="width: 400px; min-width: 400px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div style="flex: 1; min-width: 300px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                     <img src="${imageSrc}" alt="${condition.text}" style="height: 180px; width: auto; margin-bottom: 1rem; object-fit: contain;">
                     <div class="h2" style="font-weight: 700;">${condition.text}</div>
                 </div>
                 
                 <!-- Column 2: Temperature, Pressure, Rain, UV -->
-                <div style="width: 300px; min-width: 300px; box-sizing: border-box;">
+                <div style="flex: 1; min-width: 250px; box-sizing: border-box;">
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">TEMPERATURE</div>
                         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outTemp)}°C</div>
@@ -1230,7 +1230,7 @@ async function updateActualWeatherConditions(data) {
                 </div>
                 
                 <!-- Column 3: Humidity, Wind, Lightning -->
-                <div style="width: 300px; min-width: 300px; box-sizing: border-box;">
+                <div style="flex: 1; min-width: 250px; box-sizing: border-box;">
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
                         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outHumidity)}%</div>

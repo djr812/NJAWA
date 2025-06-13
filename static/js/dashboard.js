@@ -1075,132 +1075,26 @@ function updateOutsidePM10(data) {
 }
 
 async function determineWeatherCondition(data) {
-    // Get the values directly from the data object
-    const latest = {
-        lightning_strike_count: data.lightning_strike_count,
-        lightning_distance: data.lightning_distance * 1.60934, // Convert miles to km
-        rain: data.rain,
-        windSpeed: data.windSpeed,
-        outHumidity: data.outHumidity,
-        cloudbase: data.cloudbase * 0.3048, // Convert feet to meters
-        luminosity: data.luminosity
-    };
-
-    // Check if it's night time using local time
-    const now = new Date();
-    const localHour = now.getHours();
-    const isNight = localHour < 6 || localHour >= 18; // Night is between 6 PM and 6 AM local time
-    console.log('Night detection:', {
-        isNight,
-        localTime: now.toLocaleString(),
-        localHour,
-        isCamActive: isCamActiveNow()
-    });
-
-    if (isNight) {
-        try {
-            const isProd = window.location.hostname !== 'localhost';
-            const basePath = isProd ? '/njawa' : '';
-            console.log('Fetching weather condition from API...');
-            const response = await fetch(`${basePath}/api/weather_condition`);
-            const weatherData = await response.json();
-            console.log('WeatherAPI Response:', weatherData);
-            
-            if (weatherData && weatherData.text && weatherData.icon) {
-                console.log('Using WeatherAPI condition:', {
-                    text: weatherData.text,
-                    icon: weatherData.icon
-                });
-                return {
-                    text: weatherData.text,
-                    icon: weatherData.icon
-                };
-            } else {
-                console.warn('WeatherAPI response missing required data:', weatherData);
-            }
-        } catch (error) {
-            console.error('Error fetching weather condition:', error);
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    
+    try {
+        // Always use the API call method
+        const response = await fetch(`${basePath}/api/weather_condition`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    } else {
-        console.log('Using day time condition logic with sensor data:', latest);
-    }
-
-    // Day time conditions (existing logic)
-    // Clear skies (priority rule): very bright light, no rain or lightning
-    if (latest.luminosity >= 30000 && latest.rain === 0 && latest.lightning_strike_count === 0) {
-        console.log('Day condition: Clear');
+        const weatherData = await response.json();
+        console.log('Weather API response:', weatherData);
+        
         return {
-            text: "Clear",
-            icon: null
+            text: weatherData.text,
+            icon: weatherData.icon
         };
-    }
-    // Electrical storm
-    else if (latest.lightning_strike_count >= 1 && latest.lightning_distance < 15 && latest.rain > 0) {
-        console.log('Day condition: Electrical Storm');
+    } catch (error) {
+        console.error('Error fetching weather condition:', error);
         return {
-            text: "Electrical Storm",
-            icon: null
-        };
-    }
-    // Storm or heavy rain
-    else if (latest.rain > 2 && latest.windSpeed > 25) {
-        console.log('Day condition: Storm');
-        return {
-            text: "Storm",
-            icon: null
-        };
-    }
-    else if (latest.rain > 2) {
-        console.log('Day condition: Heavy Rain');
-        return {
-            text: "Heavy Rain",
-            icon: null
-        };
-    }
-    else if (latest.rain > 0) {
-        console.log('Day condition: Rain');
-        return {
-            text: "Rain",
-            icon: null
-        };
-    }
-    // Fog
-    else if (latest.outHumidity > 95 && latest.cloudbase < 100) {
-        console.log('Day condition: Fog');
-        return {
-            text: "Fog",
-            icon: null
-        };
-    }
-    // Overcast — only if light is very low and cloudbase is low
-    else if (latest.luminosity < 8 && latest.cloudbase < 1000) {
-        console.log('Day condition: Overcast');
-        return {
-            text: "Overcast",
-            icon: null
-        };
-    }
-    // Partly Cloudy — moderate light or moderate clouds
-    else if (latest.luminosity >= 8 && latest.luminosity < 30 && latest.cloudbase < 3000) {
-        console.log('Day condition: Partly Cloudy');
-        return {
-            text: "Partly Cloudy",
-            icon: null
-        };
-    }
-    // Windy
-    else if (latest.windSpeed > 20) {
-        console.log('Day condition: Windy');
-        return {
-            text: "Windy",
-            icon: null
-        };
-    }
-    // Default
-    else {
-        console.log('Day condition: Default (Clear)');
-        return {
-            text: "Clear",
+            text: 'Clear',
             icon: null
         };
     }

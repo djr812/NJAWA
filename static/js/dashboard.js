@@ -1075,15 +1075,15 @@ function updateOutsidePM10(data) {
 }
 
 async function determineWeatherCondition(data) {
-    // Get the most recent values
+    // Get the values directly from the data object
     const latest = {
-        lightning_strike_count: data.lightning_strike_count[data.lightning_strike_count.length - 1],
-        lightning_distance: data.lightning_distance[data.lightning_distance.length - 1] * 1.60934, // Convert miles to km
-        rain: data.rain[data.rain.length - 1],
-        windSpeed: data.windSpeed[data.windSpeed.length - 1],
-        outHumidity: data.outHumidity[data.outHumidity.length - 1],
-        cloudbase: data.cloudbase[data.cloudbase.length - 1] * 0.3048, // Convert feet to meters
-        luminosity: data.luminosity[data.luminosity.length - 1]
+        lightning_strike_count: data.lightning_strike_count,
+        lightning_distance: data.lightning_distance * 1.60934, // Convert miles to km
+        rain: data.rain,
+        windSpeed: data.windSpeed,
+        outHumidity: data.outHumidity,
+        cloudbase: data.cloudbase * 0.3048, // Convert feet to meters
+        luminosity: data.luminosity
     };
 
     // Check if it's night time using local time
@@ -1207,9 +1207,47 @@ async function determineWeatherCondition(data) {
 }
 
 async function updateActualWeatherConditions(data) {
-    const condition = await determineWeatherCondition(data);
+    // Helper function to safely get value (handles both arrays and single values)
+    const getValue = (value, defaultValue = 0) => {
+        if (value === undefined || value === null) {
+            console.warn('Value is undefined or null');
+            return defaultValue;
+        }
+        if (Array.isArray(value)) {
+            if (value.length === 0) {
+                console.warn('Array is empty');
+                return defaultValue;
+            }
+            const lastValue = value[value.length - 1];
+            return lastValue === null ? defaultValue : lastValue;
+        }
+        return value;
+    };
+
+    // Get the values with validation
+    const latest = {
+        lightning_strike_count: Math.round(getValue(data.lightning_strike_count)),
+        lightning_distance: getValue(data.lightning_distance) * 1.60934, // Convert miles to km
+        rain: getValue(data.rain),
+        windSpeed: getValue(data.windSpeed),
+        windDir: getValue(data.windDir),
+        outHumidity: getValue(data.outHumidity),
+        cloudbase: getValue(data.cloudbase) * 0.3048, // Convert feet to meters
+        luminosity: getValue(data.luminosity),
+        outTemp: getValue(data.outTemp),
+        barometer: getValue(data.barometer),
+        UV: Math.round(getValue(data.uv)) // Round UV to whole number
+    };
+
+    console.log('Raw data for debugging:', {
+        windDir: data.windDir,
+        uv: data.uv,
+        lightning_strike_count: data.lightning_strike_count
+    });
+    console.log('Processed latest values:', latest);
+
+    const condition = await determineWeatherCondition(latest);
     console.log('Final condition object:', condition);
-    console.log('Raw data:', data);
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
     
@@ -1225,41 +1263,18 @@ async function updateActualWeatherConditions(data) {
         return;
     }
 
-    // Helper function to safely convert to number
-    const toNumber = (value, defaultValue = 0) => {
-        if (typeof value === 'string') {
-            // Remove any non-numeric characters except decimal point
-            value = value.replace(/[^0-9.-]/g, '');
-        }
-        const num = parseFloat(value);
-        return isNaN(num) ? defaultValue : num;
-    };
-
     // Helper function to convert degrees to compass bearing
     const degreesToCompass = (degrees) => {
+        if (degrees === undefined || degrees === null || isNaN(degrees)) {
+            console.warn('Invalid wind direction:', degrees);
+            return '--';
+        }
         const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
                           'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
         const index = Math.round(degrees / 22.5) % 16;
         return directions[index];
     };
-
-    // Get the current values directly from the data object
-    const latest = {
-        lightning_strike_count: Math.round(toNumber(data.lightning_strike_count)),
-        lightning_distance: toNumber(data.lightning_distance) * 1.60934, // Convert miles to km
-        rain: toNumber(data.rain),
-        windSpeed: toNumber(data.windSpeed),
-        windDir: toNumber(data.windDir),
-        outHumidity: toNumber(data.outHumidity),
-        cloudbase: toNumber(data.cloudbase) * 0.3048, // Convert feet to meters
-        luminosity: toNumber(data.luminosity),
-        outTemp: toNumber(data.outTemp),
-        barometer: toNumber(data.barometer),
-        UV: Math.round(toNumber(data.uv)) // Round UV to whole number
-    };
     
-    console.log('Processed latest values:', latest);
-
     // Map condition to image filename for day time conditions
     const conditionImageMap = {
         'Clear': 'Clear.png',
@@ -1281,6 +1296,15 @@ async function updateActualWeatherConditions(data) {
         conditionText: condition.text
     });
     
+    // Helper function to safely format numbers
+    const formatNumber = (value, decimals = 2) => {
+        if (value === undefined || value === null || isNaN(value)) {
+            console.warn('Invalid number value:', value);
+            return '--';
+        }
+        return Number(value).toFixed(decimals);
+    };
+    
     // Update the condition text with appropriate styling
     conditionDisplay.innerHTML = `
         <div style="width: 100%; max-width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
@@ -1295,19 +1319,19 @@ async function updateActualWeatherConditions(data) {
                 <div style="width: 300px; min-width: 300px; box-sizing: border-box;">
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">TEMPERATURE</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.outTemp.toFixed(2)}°C</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outTemp)}°C</div>
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">REL. AIR PRESSURE</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.barometer.toFixed(2)} hPa</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.barometer)} hPa</div>
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">RAIN</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.rain.toFixed(2)} mm</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.rain)} mm</div>
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">UV RATING</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.UV}</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.UV === 0 ? '0' : (latest.UV || '--')}</div>
                     </div>
                 </div>
                 
@@ -1315,11 +1339,11 @@ async function updateActualWeatherConditions(data) {
                 <div style="width: 300px; min-width: 300px; box-sizing: border-box;">
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.outHumidity.toFixed(2)}%</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outHumidity)}%</div>
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">WIND SPEED</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.windSpeed.toFixed(2)} km/h</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.windSpeed)} km/h</div>
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">WIND DIRECTION</div>
@@ -1327,7 +1351,7 @@ async function updateActualWeatherConditions(data) {
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">LIGHTNING STRIKES</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.lightning_strike_count}</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.lightning_strike_count === 0 ? '0' : (latest.lightning_strike_count || '--')}</div>
                     </div>
                 </div>
             </div>
@@ -1595,19 +1619,42 @@ async function updateWeatherData() {
         }
         const weatherData = await weatherResponse.json();
         
-        console.log('Full weather data:', weatherData);
+        // Validate data arrays
+        if (!weatherData.dateTime || !Array.isArray(weatherData.dateTime) || weatherData.dateTime.length === 0) {
+            console.error('Invalid or empty dateTime array');
+            return;
+        }
+
+        // Log first and last timestamps to verify order
+        console.log('Data time range:', {
+            first: weatherData.dateTime[0],
+            last: weatherData.dateTime[weatherData.dateTime.length - 1]
+        });
         
         // Get latest values for immediate updates
-        const latestValues = weatherData.dateTime ? {
-            ...Object.fromEntries(
-                Object.entries(weatherData).map(([key, values]) => [key, values[values.length - 1]])
-            )
-        } : {};
+        const latestValues = {
+            dateTime: weatherData.dateTime[weatherData.dateTime.length - 1],
+            barometer: weatherData.barometer[weatherData.barometer.length - 1],
+            cloudbase: weatherData.cloudbase[weatherData.cloudbase.length - 1],
+            heatIndex: weatherData.heatIndex[weatherData.heatIndex.length - 1],
+            inHumidity: weatherData.inHumidity[weatherData.inHumidity.length - 1],
+            inTemp: weatherData.inTemp[weatherData.inTemp.length - 1],
+            lightning_distance: weatherData.lightning_distance[weatherData.lightning_distance.length - 1],
+            lightning_strike_count: weatherData.lightning_strike_count[weatherData.lightning_strike_count.length - 1],
+            luminosity: weatherData.luminosity[weatherData.luminosity.length - 1],
+            outHumidity: weatherData.outHumidity[weatherData.outHumidity.length - 1],
+            outTemp: weatherData.outTemp[weatherData.outTemp.length - 1],
+            rain: weatherData.rain[weatherData.rain.length - 1],
+            uv: weatherData.uv[weatherData.uv.length - 1],
+            windChill: weatherData.windChill[weatherData.windChill.length - 1],
+            windDir: weatherData.windDir[weatherData.windDir.length - 1],
+            windSpeed: weatherData.windSpeed[weatherData.windSpeed.length - 1]
+        };
         
         console.log('Latest values:', latestValues);
         
         // Update all the weather data displays using existing functions
-        updateActualWeatherConditions(latestValues); // Pass latest values instead of full data
+        updateActualWeatherConditions(weatherData); // Pass the full data object
         updateOutsideTempGraph(weatherData);
         updateRainfallGraph(weatherData);
         updateLightningGraph(weatherData);

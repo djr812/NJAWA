@@ -224,32 +224,49 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         rightColumn.style.justifyContent = 'center';
         mainContainer.appendChild(rightColumn);
 
-        // Add predicted temperature range
-        if (forecast.predicted_min_temp !== undefined && forecast.predicted_max_temp !== undefined) {
-            const tempRangeDiv = document.createElement('div');
-            tempRangeDiv.style.fontSize = '1.2rem';
-            tempRangeDiv.style.color = COLORS.fieldDrab;
-            tempRangeDiv.style.marginBottom = '15px';
-            tempRangeDiv.textContent = `Predicted Range: ${forecast.predicted_min_temp.toFixed(1)}°C - ${forecast.predicted_max_temp.toFixed(1)}°C`;
-            rightColumn.appendChild(tempRangeDiv);
+        // Add predicted minimum temperature with confidence and range
+        if (forecast.predicted_min_temp !== undefined) {
+            const minTempDiv = document.createElement('div');
+            minTempDiv.style.fontSize = '1.2rem';
+            minTempDiv.style.color = '#666';
+            minTempDiv.style.marginBottom = '15px';
+            minTempDiv.innerHTML = `
+                Predicted Min Temp: ${forecast.predicted_min_temp.toFixed(1)}°C (Confidence ${forecast.predicted_min_temp_confidence.toFixed(1)}%)<br>
+                Range: ${forecast.predicted_min_temp_range}
+            `;
+            rightColumn.appendChild(minTempDiv);
         }
 
-        // Create probability text elements
+        // Add predicted maximum temperature with confidence and range
+        if (forecast.predicted_max_temp !== undefined) {
+            const maxTempDiv = document.createElement('div');
+            maxTempDiv.style.fontSize = '1.2rem';
+            maxTempDiv.style.color = '#666';
+            maxTempDiv.style.marginBottom = '15px';
+            maxTempDiv.innerHTML = `
+                Predicted Max Temp: ${forecast.predicted_max_temp.toFixed(1)}°C (Confidence ${forecast.predicted_max_temp_confidence.toFixed(1)}%)<br>
+                Range: ${forecast.predicted_max_temp_range}
+            `;
+            rightColumn.appendChild(maxTempDiv);
+        }
+
+        // Add chance of rain with confidence
         if (forecast.chance_of_rain !== undefined) {
             const rainDiv = document.createElement('div');
-            rainDiv.style.fontSize = '1.1rem';
+            rainDiv.style.fontSize = '1.2rem';
             rainDiv.style.color = '#666';
-            rainDiv.style.marginBottom = '10px';
-            rainDiv.textContent = `Chance of Rain: ${forecast.chance_of_rain}%`;
+            rainDiv.style.marginBottom = '15px';
+            rainDiv.innerHTML = `Chance of Rain: ${forecast.chance_of_rain.toFixed(1)}% (Confidence ${forecast.chance_of_rain_confidence.toFixed(1)}%)`;
             rightColumn.appendChild(rainDiv);
         }
 
+        // Add chance of lightning with confidence
         if (forecast.chance_of_lightning !== undefined) {
             const lightningDiv = document.createElement('div');
-            lightningDiv.style.fontSize = '1.1rem';
+            lightningDiv.style.fontSize = '1.2rem';
             lightningDiv.style.color = '#666';
-            lightningDiv.style.marginBottom = '10px';
-            lightningDiv.textContent = `Chance of Lightning: ${forecast.chance_of_lightning}%`;
+            lightningDiv.style.marginBottom = '15px';
+            lightningDiv.innerHTML = `Chance of Lightning: ${forecast.chance_of_lightning.toFixed(1)}% (Confidence ${forecast.chance_of_lightning_confidence.toFixed(1)}%)`;
             rightColumn.appendChild(lightningDiv);
         }
 

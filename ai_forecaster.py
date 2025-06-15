@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import argparse
 import json
 import sys
+import warnings
 
 load_dotenv()
 
@@ -58,7 +59,6 @@ def engineer_features(df):
         .fillna(1000)
     )
 
-    # Seasonal features
     df['month'] = df.index.month
     df['day_of_year'] = df.index.dayofyear
     df['hour'] = df.index.hour
@@ -125,13 +125,11 @@ def train_model(df):
 
     weather_model = RandomForestClassifier(n_estimators=150, random_state=42, class_weight='balanced')
     weather_model.fit(X_train, y_weather_train)
-    y_weather_pred = weather_model.predict(X_test)
-    print("\nWeather Model Performance:\n", classification_report(y_weather_test, y_weather_pred))
+    print("\nWeather Model Performance:\n", classification_report(y_weather_test, weather_model.predict(X_test)))
 
     wind_model = RandomForestClassifier(n_estimators=150, random_state=42, class_weight='balanced')
     wind_model.fit(X_train, y_wind_train)
-    y_wind_pred = wind_model.predict(X_test)
-    print("\nWind Model Performance:\n", classification_report(y_wind_test, y_wind_pred))
+    print("\nWind Model Performance:\n", classification_report(y_wind_test, wind_model.predict(X_test)))
 
     max_temp_model = RandomForestRegressor(n_estimators=150, random_state=42)
     min_temp_model = RandomForestRegressor(n_estimators=150, random_state=42)
@@ -139,12 +137,9 @@ def train_model(df):
     max_temp_model.fit(X_train, y_max_temp_train)
     min_temp_model.fit(X_train, y_min_temp_train)
 
-    y_max_temp_pred = max_temp_model.predict(X_test)
-    y_min_temp_pred = min_temp_model.predict(X_test)
-
     print("\nTemperature Models Performance:")
-    print(f"Max Temperature R² Score: {r2_score(y_max_temp_test, y_max_temp_pred):.3f}")
-    print(f"Min Temperature R² Score: {r2_score(y_min_temp_test, y_min_temp_pred):.3f}")
+    print(f"Max Temperature R² Score: {r2_score(y_max_temp_test, max_temp_model.predict(X_test)):.3f}")
+    print(f"Min Temperature R² Score: {r2_score(y_min_temp_test, min_temp_model.predict(X_test)):.3f}")
 
     models = {
         'weather': weather_model,
@@ -165,30 +160,53 @@ def predict_future(df, models):
         'month', 'day_of_year', 'hour', 'sin_doy', 'cos_doy'
     ]
 
+    latest_features = latest[features]
+
     weather_model = models['weather']
-    weather_pred = weather_model.predict(latest[features])[0]
-    weather_probs = weather_model.predict_proba(latest[features])[0]
+    weather_pred = weather_model.predict(latest_features)[0]
+    weather_probs = weather_model.predict_proba(latest_features)[0]
     class_labels = weather_model.classes_
 
     prob_dict = dict(zip(class_labels, weather_probs))
     chance_of_rain = 100 * (prob_dict.get('Rain', 0) + prob_dict.get('Storm', 0))
     chance_of_lightning = 100 * prob_dict.get('Storm', 0)
+    
+    # Calculate confidence levels for rain and lightning
+    rain_confidence = 100 * max(prob_dict.get('Rain', 0) + prob_dict.get('Storm', 0), 
+                              1 - (prob_dict.get('Rain', 0) + prob_dict.get('Storm', 0)))
+    lightning_confidence = 100 * max(prob_dict.get('Storm', 0), 1 - prob_dict.get('Storm', 0))
 
-    wind_pred = models['wind'].predict(latest[features])[0]
-    max_temp_pred = models['max_temp'].predict(latest[features])[0]
-    min_temp_pred = models['min_temp'].predict(latest[features])[0]
+    wind_pred = models['wind'].predict(latest_features)[0]
+    max_temp_model = models['max_temp']
+    min_temp_model = models['min_temp']
 
-    max_temp_celsius = (max_temp_pred - 32) * 5/9
-    min_temp_celsius = (min_temp_pred - 32) * 5/9
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        max_temp_preds = np.array([tree.predict(latest_features.values)[0] for tree in max_temp_model.estimators_])
+        min_temp_preds = np.array([tree.predict(latest_features.values)[0] for tree in min_temp_model.estimators_])
 
-    print(f"\nForecast for next {FORECAST_HOURS}h:")
-    print(f"Weather: {weather_pred} | Wind: {wind_pred}")
-    print(f"Chance of Rain: {chance_of_rain:.1f}% | Chance of Lightning: {chance_of_lightning:.1f}%")
-    print(f"Temperature Range: {min_temp_celsius:.1f}°C to {max_temp_celsius:.1f}°C")
+    max_temp_mean = np.mean(max_temp_preds)
+    min_temp_mean = np.mean(min_temp_preds)
+    max_temp_std = np.std(max_temp_preds)
+    min_temp_std = np.std(min_temp_preds)
 
-    return weather_pred, wind_pred, min_temp_celsius, max_temp_celsius, chance_of_rain, chance_of_lightning
+    # Convert to Celsius
+    max_temp_c = (max_temp_mean - 32) * 5/9
+    min_temp_c = (min_temp_mean - 32) * 5/9
+    max_temp_err = max_temp_std * 5/9
+    min_temp_err = min_temp_std * 5/9
 
-def save_predictions(weather_pred, wind_pred, min_temp, max_temp, chance_of_rain, chance_of_lightning):
+    # Calculate temperature confidence levels (95% confidence interval)
+    max_temp_confidence = 100 * (1 - (2 * max_temp_err) / max_temp_c)
+    min_temp_confidence = 100 * (1 - (2 * min_temp_err) / min_temp_c)
+
+    return (weather_pred, wind_pred, min_temp_c, max_temp_c, min_temp_err, max_temp_err, 
+            chance_of_rain, chance_of_lightning, rain_confidence, lightning_confidence,
+            max_temp_confidence, min_temp_confidence)
+
+def save_predictions(weather_pred, wind_pred, min_temp, max_temp, min_temp_err, max_temp_err, 
+                    chance_of_rain, chance_of_lightning, rain_confidence, lightning_confidence,
+                    max_temp_confidence, min_temp_confidence):
     forecasts_file = "/home/dave/projects/weather_predictor/forecasts/forecasts.json"
     os.makedirs(os.path.dirname(forecasts_file), exist_ok=True)
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -197,11 +215,19 @@ def save_predictions(weather_pred, wind_pred, min_temp, max_temp, chance_of_rain
         current_date: {
             "date": current_date,
             "predicted_min_temp": round(min_temp, 1),
+            "predicted_min_temp_error": round(min_temp_err, 1),
+            "predicted_min_temp_range": f"{round(min_temp - min_temp_err, 1)} to {round(min_temp + min_temp_err, 1)}",
+            "predicted_min_temp_confidence": round(min_temp_confidence, 1),
             "predicted_max_temp": round(max_temp, 1),
+            "predicted_max_temp_error": round(max_temp_err, 1),
+            "predicted_max_temp_range": f"{round(max_temp - max_temp_err, 1)} to {round(max_temp + max_temp_err, 1)}",
+            "predicted_max_temp_confidence": round(max_temp_confidence, 1),
             "ai_forecast": weather_pred,
             "ai_wind_forecast": wind_pred,
             "chance_of_rain": round(chance_of_rain, 1),
-            "chance_of_lightning": round(chance_of_lightning, 1)
+            "chance_of_rain_confidence": round(rain_confidence, 1),
+            "chance_of_lightning": round(chance_of_lightning, 1),
+            "chance_of_lightning_confidence": round(lightning_confidence, 1)
         }
     }
 
@@ -218,8 +244,6 @@ def save_predictions(weather_pred, wind_pred, min_temp, max_temp, chance_of_rain
 
     with open(forecasts_file, 'w') as f:
         json.dump(forecasts, f, indent=4)
-
-    print(f"\nPredictions saved to {forecasts_file}")
 
 def main():
     parser = argparse.ArgumentParser(description='Weather forecasting with optional model retraining')
@@ -245,8 +269,8 @@ def main():
             print("No existing models found or invalid. Training new models...")
             models = train_model(df)
 
-    weather_pred, wind_pred, min_temp, max_temp, chance_of_rain, chance_of_lightning = predict_future(df, models)
-    save_predictions(weather_pred, wind_pred, min_temp, max_temp, chance_of_rain, chance_of_lightning)
+    predictions = predict_future(df, models)
+    save_predictions(*predictions)
 
 if __name__ == "__main__":
     main()

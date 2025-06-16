@@ -3,8 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
     
     // Start data updates
-    updateWeatherData();
-    setInterval(updateWeatherData, 60000); // Update every minute
+    setInterval(updateWeatherData, 300000); // Update every 5 minutes
     
     // Initialize timelapse video elements if they exist
     const playButton = document.getElementById('play-timelapse');

@@ -134,6 +134,15 @@ function fetchAndUpdateAll() {
             updateSolarGraph(data);
             updateActualWeatherConditions(data);
             updatePeriodLabels();
+            
+            // Update UV Level card if UV data exists
+            if (data.uv && data.uv.length > 0) {
+                const latestUV = data.uv[data.uv.length - 1];
+                if (latestUV !== undefined) {
+                    console.log('Updating UV Level card with:', latestUV);
+                    updateUVLevelCard(latestUV);
+                }
+            }
         });
 
     fetch(`${basePath}/api/forecast`)

@@ -697,9 +697,11 @@ function updateCurrentTime() {
     const el = document.getElementById('current-time');
     if (!el) return;
     const now = new Date();
-    const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
-    const dateStr = now.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
-    el.textContent = `As At ${timeStr} on ${dateStr}`;
+    // Convert to Brisbane time
+    const brisbaneTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Brisbane' }));
+    const timeStr = brisbaneTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const dateStr = brisbaneTime.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    el.textContent = `Local Time in Brisbane, Australia is ${timeStr} on ${dateStr}`;
 }
 
 function parseLocalTimeString(timeStr) {
@@ -709,8 +711,11 @@ function parseLocalTimeString(timeStr) {
     let hour = hours;
     if (period === 'PM' && hour < 12) hour += 12;
     if (period === 'AM' && hour === 12) hour = 0;
+    
+    // Create date in Brisbane timezone
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minutes, seconds);
+    const brisbaneDate = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Brisbane' }));
+    return new Date(brisbaneDate.getFullYear(), brisbaneDate.getMonth(), brisbaneDate.getDate(), hour, minutes, seconds);
 }
 
 function fetchAndDisplaySunriseSunset() {

@@ -94,6 +94,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateCurrentTime, 1000);
     fetchAndDisplaySunriseSunset();
     scheduleSunriseSunsetUpdate();
+
+    // Add QFD alerts functionality
+    fetchAndUpdateQFDAlerts();
+    setInterval(fetchAndUpdateQFDAlerts, 30 * 60 * 1000); // Update every 30 minutes
 });
 
 let latestData = null;
@@ -1532,79 +1536,160 @@ function updateUVLevelCard(uvIndex) {
 
 // Update the updateWeatherData function to include UV level
 async function updateWeatherData() {
-    try {
-        const isProd = window.location.hostname !== 'localhost';
-        const basePath = isProd ? '/njawa' : '';
-        
-        // Fetch weather data
-        const weatherResponse = await fetch(`${basePath}/api/data?period=24h`);
-        if (!weatherResponse.ok) {
-            throw new Error(`HTTP error! status: ${weatherResponse.status}`);
-        }
-        const weatherData = await weatherResponse.json();
-        
-        // Validate data arrays
-        if (!weatherData.dateTime || !Array.isArray(weatherData.dateTime) || weatherData.dateTime.length === 0) {
-            console.error('Invalid or empty dateTime array');
-            return;
-        }
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
 
-        // Log first and last timestamps to verify order
-        console.log('Data time range:', {
-            first: weatherData.dateTime[0],
-            last: weatherData.dateTime[weatherData.dateTime.length - 1]
-        });
+    try {
+        const response = await fetch(`${basePath}/api/weather_condition`);
+        const data = await response.json();
         
-        // Get latest values for immediate updates
-        const latestValues = {
-            dateTime: weatherData.dateTime[weatherData.dateTime.length - 1],
-            barometer: weatherData.barometer[weatherData.barometer.length - 1],
-            cloudbase: weatherData.cloudbase[weatherData.cloudbase.length - 1],
-            heatIndex: weatherData.heatIndex[weatherData.heatIndex.length - 1],
-            inHumidity: weatherData.inHumidity[weatherData.inHumidity.length - 1],
-            inTemp: weatherData.inTemp[weatherData.inTemp.length - 1],
-            lightning_distance: weatherData.lightning_distance[weatherData.lightning_distance.length - 1],
-            lightning_strike_count: weatherData.lightning_strike_count[weatherData.lightning_strike_count.length - 1],
-            luminosity: weatherData.luminosity[weatherData.luminosity.length - 1],
-            outHumidity: weatherData.outHumidity[weatherData.outHumidity.length - 1],
-            outTemp: weatherData.outTemp[weatherData.outTemp.length - 1],
-            rain: weatherData.rain[weatherData.rain.length - 1],
-            uv: weatherData.uv[weatherData.uv.length - 1],
-            windChill: weatherData.windChill[weatherData.windChill.length - 1],
-            windDir: weatherData.windDir[weatherData.windDir.length - 1],
-            windSpeed: weatherData.windSpeed[weatherData.windSpeed.length - 1]
-        };
-        
-        console.log('Latest values:', latestValues);
-        
-        // Update all the weather data displays using existing functions
-        updateActualWeatherConditions(weatherData); // Pass the full data object
-        updateOutsideTempGraph(weatherData);
-        updateRainfallGraph(weatherData);
-        updateLightningGraph(weatherData);
-        
-        // Update UV Level card if UV data exists
-        if (latestValues.uv !== undefined) {
-            console.log('Updating UV Level card with:', latestValues.uv);
-            updateUVLevelCard(latestValues.uv);
-        } else {
-            console.log('No UV data found in latest values');
+        if (data.condition) {
+            await updateActualWeatherConditions(latestData);
         }
-        
-        // Fetch bar metrics data
-        const barMetricsResponse = await fetch(`${basePath}/api/bar_metrics`);
-        if (!barMetricsResponse.ok) {
-            throw new Error(`HTTP error! status: ${barMetricsResponse.status}`);
-        }
-        const barMetricsData = await barMetricsResponse.json();
-        
-        // Update bar metrics
-        updateBarAreaTempHumidity(barMetricsData);
-        updateOutsideCO2Card(barMetricsData);
-        updatePM25Card(barMetricsData);
-        updatePM10Card(barMetricsData);
-        
     } catch (error) {
-        console.error('Error fetching weather data:', error);
+        console.error('Error updating weather data:', error);
+    }
+}
+
+// QFD Alerts functionality
+async function fetchAndUpdateQFDAlerts() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
+    try {
+        const response = await fetch(`${basePath}/api/qfd_alerts`);
+        const data = await response.json();
+        updateQFDAlertsCard(data);
+    } catch (error) {
+        console.error('Error fetching QFD alerts:', error);
+        updateQFDAlertsCard({ alerts: [], count: 0, error: 'Failed to fetch alerts' });
+    }
+}
+
+function updateQFDAlertsCard(data) {
+    const cardBody = document.getElementById('qfd-alerts-body');
+    if (!cardBody) return;
+
+    // Clear existing content
+    cardBody.innerHTML = '';
+
+    if (data.error) {
+        // Display error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'text-center text-muted';
+        errorDiv.innerHTML = `
+            <div class="mb-2">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div>Unable to load alerts</div>
+            <small>${data.error}</small>
+        `;
+        cardBody.appendChild(errorDiv);
+        return;
+    }
+
+    if (!data.alerts || data.alerts.length === 0) {
+        // Display no alerts message
+        const noAlertsDiv = document.createElement('div');
+        noAlertsDiv.className = 'text-center text-success';
+        noAlertsDiv.innerHTML = `
+            <div class="mb-2">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div>No active alerts</div>
+            <small>All clear in the Ferny Grove area</small>
+        `;
+        cardBody.appendChild(noAlertsDiv);
+        return;
+    }
+
+    // Create alerts container
+    const alertsContainer = document.createElement('div');
+    alertsContainer.className = 'qfd-alerts-container';
+    alertsContainer.style.maxHeight = '300px';
+    alertsContainer.style.overflowY = 'auto';
+    cardBody.appendChild(alertsContainer);
+
+    // Add each alert
+    data.alerts.forEach((alert, index) => {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert-item mb-3';
+        alertDiv.style.border = '1px solid #dee2e6';
+        alertDiv.style.borderRadius = '8px';
+        alertDiv.style.padding = '12px';
+        alertDiv.style.backgroundColor = getAlertBackgroundColor(alert.warning_level);
+
+        const warningLevelBadge = document.createElement('span');
+        warningLevelBadge.className = 'badge me-2';
+        warningLevelBadge.style.backgroundColor = getAlertBadgeColor(alert.warning_level);
+        warningLevelBadge.style.color = 'white';
+        warningLevelBadge.textContent = alert.warning_level;
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'fw-bold mb-1';
+        titleDiv.style.fontSize = '0.9rem';
+        titleDiv.textContent = alert.warning_title;
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'mb-2';
+        headerDiv.style.fontSize = '0.8rem';
+        headerDiv.style.color = '#666';
+        headerDiv.textContent = alert.header;
+
+        const detailsDiv = document.createElement('div');
+        detailsDiv.className = 'small text-muted';
+        detailsDiv.innerHTML = `
+            <div><strong>Location:</strong> ${alert.locality}</div>
+            <div><strong>Area:</strong> ${alert.warning_area}</div>
+            <div><strong>Status:</strong> ${alert.current_status}</div>
+            <div><strong>Published:</strong> ${alert.publish_date}</div>
+        `;
+
+        alertDiv.appendChild(warningLevelBadge);
+        alertDiv.appendChild(titleDiv);
+        alertDiv.appendChild(headerDiv);
+        alertDiv.appendChild(detailsDiv);
+
+        alertsContainer.appendChild(alertDiv);
+    });
+
+    // Add last updated timestamp
+    if (data.last_updated) {
+        const timestampDiv = document.createElement('div');
+        timestampDiv.className = 'text-muted small mt-2 text-center';
+        timestampDiv.textContent = `Last updated: ${data.last_updated}`;
+        cardBody.appendChild(timestampDiv);
+    }
+}
+
+function getAlertBackgroundColor(warningLevel) {
+    const level = warningLevel.toLowerCase();
+    switch (level) {
+        case 'emergency warning':
+            return '#f8d7da';
+        case 'watch and act':
+            return '#fff3cd';
+        case 'advice':
+            return '#d1ecf1';
+        case 'information':
+            return '#e2e3e5';
+        default:
+            return '#f8f9fa';
+    }
+}
+
+function getAlertBadgeColor(warningLevel) {
+    const level = warningLevel.toLowerCase();
+    switch (level) {
+        case 'emergency warning':
+            return '#dc3545';
+        case 'watch and act':
+            return '#ffc107';
+        case 'advice':
+            return '#17a2b8';
+        case 'information':
+            return '#6c757d';
+        default:
+            return '#6c757d';
     }
 } 

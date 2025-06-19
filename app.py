@@ -35,6 +35,20 @@ BATTERY_CACHE_TTL = 43200  # 12 hours in seconds
 WEATHER_CAM_CACHE_TTL = 300  # 5 minutes in seconds
 WAPI_KEY = os.getenv('WAPI_KEY')
 
+# QFD Alerts configuration
+QFD_ALERTS_URL = "https://publiccontent-gis-psba-qld-gov-au.s3.amazonaws.com/content/Feeds/BushfireCurrentIncidents/bushfireAlert.json"
+QFD_ALERTS_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'qfd_alerts_cache.json')
+QFD_ALERTS_CACHE_TTL = 1800  # 30 minutes in seconds
+
+# Ferny Grove area suburbs for filtering alerts
+FERNY_GROVE_AREA_SUBURBS = [
+    'ferny grove', 'ferny hills', 'samford', 'the gap', 'keperra', 
+    'upper kedron', 'camp mountain', 'enoggera reservoir', 'bunya', 
+    'arana hills', 'samford village', 'samford valley', "jolly's lookout", 
+    'wights mountain', 'mt nebo', 'mt glorious', 'yugar', 'clear mountain', 
+    'everton hills'
+]
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -307,6 +321,125 @@ def api_weather_condition():
             return jsonify({'error': 'Failed to fetch weather data'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/qfd_alerts')
+def api_qfd_alerts():
+    """Fetch and filter QFD alerts for the Ferny Grove area"""
+    now = time.time()
+    
+    # Try to load cache first
+    if os.path.exists(QFD_ALERTS_CACHE_PATH):
+        with open(QFD_ALERTS_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if now - cache.get('timestamp', 0) < QFD_ALERTS_CACHE_TTL:
+                    return jsonify(cache['data'])
+            except Exception:
+                pass
+    
+    try:
+        # Fetch data from QFD API
+        response = requests.get(QFD_ALERTS_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Filter alerts for Ferny Grove area
+        relevant_alerts = []
+        
+        if 'features' in data:
+            for feature in data['features']:
+                if 'properties' in feature:
+                    props = feature['properties']
+                    
+                    # Check if alert is relevant to Ferny Grove area
+                    is_relevant = False
+                    
+                    # Check WarningArea field
+                    if 'WarningArea' in props and props['WarningArea']:
+                        warning_area = props['WarningArea'].lower()
+                        for suburb in FERNY_GROVE_AREA_SUBURBS:
+                            if suburb in warning_area:
+                                is_relevant = True
+                                break
+                    
+                    # Check Locality field
+                    if not is_relevant and 'Locality' in props and props['Locality']:
+                        locality = props['Locality'].lower()
+                        for suburb in FERNY_GROVE_AREA_SUBURBS:
+                            if suburb in locality:
+                                is_relevant = True
+                                break
+                    
+                    # Check WarningText field
+                    if not is_relevant and 'WarningText' in props and props['WarningText']:
+                        warning_text = props['WarningText'].lower()
+                        for suburb in FERNY_GROVE_AREA_SUBURBS:
+                            if suburb in warning_text:
+                                is_relevant = True
+                                break
+                    
+                    if is_relevant:
+                        # Parse datetime
+                        publish_date = None
+                        if 'PublishDateLocal_ISO' in props and props['PublishDateLocal_ISO']:
+                            try:
+                                publish_date = datetime.fromisoformat(props['PublishDateLocal_ISO'].replace('Z', '+00:00'))
+                                # Convert to Brisbane time
+                                brisbane_tz = pytz.timezone('Australia/Brisbane')
+                                if publish_date.tzinfo is None:
+                                    publish_date = brisbane_tz.localize(publish_date)
+                                else:
+                                    publish_date = publish_date.astimezone(brisbane_tz)
+                            except Exception:
+                                publish_date = None
+                        
+                        alert = {
+                            'warning_level': props.get('WarningLevel', 'Unknown'),
+                            'warning_title': props.get('WarningTitle', 'No Title'),
+                            'header': props.get('Header', 'No Header'),
+                            'publish_date': publish_date.strftime('%Y-%m-%d %H:%M:%S') if publish_date else 'Unknown',
+                            'locality': props.get('Locality', 'Unknown'),
+                            'warning_area': props.get('WarningArea', 'Unknown'),
+                            'current_status': props.get('CurrentStatus', 'Unknown'),
+                            'location': props.get('Location', 'Unknown')
+                        }
+                        relevant_alerts.append(alert)
+        
+        # Sort by publish date (newest first)
+        relevant_alerts.sort(key=lambda x: x['publish_date'], reverse=True)
+        
+        result = {
+            'alerts': relevant_alerts,
+            'count': len(relevant_alerts),
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        # Cache the result
+        cache_data = {
+            'timestamp': now,
+            'data': result
+        }
+        with open(QFD_ALERTS_CACHE_PATH, 'w') as f:
+            json.dump(cache_data, f)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        # Return cached data if available, otherwise empty result
+        if os.path.exists(QFD_ALERTS_CACHE_PATH):
+            with open(QFD_ALERTS_CACHE_PATH, 'r') as f:
+                try:
+                    cache = json.load(f)
+                    return jsonify(cache['data'])
+                except Exception:
+                    pass
+        
+        return jsonify({
+            'alerts': [],
+            'count': 0,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'error': str(e)
+        })
 
 if __name__ == '__main__':
     app.run(debug=False) 

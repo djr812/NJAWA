@@ -93,5 +93,6 @@ static/videos/latest_tl.mp4
 weather_multi_model.pkl
 ai_forecaster_new.py
 azure_weather_image_ID.py
+*.json
 
 

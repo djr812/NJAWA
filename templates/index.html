@@ -302,7 +302,75 @@
         </div>
       </div>
     </div>
-    <!-- Row 12: Battery Status Cards -->
+    <!-- Row 12: My Weather Setup, full width -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">My Weather Setup <span class="period-label text-end flex-grow-1">Current Configuration</span></div>
+        <div class="card-body position-relative">
+          <div id="weather-setup-content">
+            <div class="row">
+              <div class="col-md-4">
+                <h4 class="mb-3 text-center">My Ecowitt Weather Sensor Array</h4>
+                <ul class="list-unstyled text-center">
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WS3900 Console</li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WH32 External Temperature/Humidity Sensor</li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WS69 Rain/Wind/Solar Sensor Array</li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WH57 Lightning Sensor</li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>HP10 Weather Cam</li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WH45 CO2/Pollution AQI Sensor</li>
+                </ul>
+              </div>
+              <div class="col-md-4">
+                <div class="row">
+                  <div class="col-3">
+                    <div class="text-center" style="margin: 0 5px;">
+                      <img src="static/images/WeatherVane.jpeg" alt="Weather Vane" class="img-fluid setup-image" style="max-height: 280px !important; object-fit: contain; border-radius: 0.5rem; cursor: pointer;" onclick="openSetupImageModal('static/images/WeatherVane.jpeg', 'Weather Vane')">
+                      <div class="mt-2">
+                        <h6>WS69 Sensor Array</h6>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="text-center" style="margin: 0 5px;">
+                      <img src="static/images/CO2Meter.jpeg" alt="CO2 Meter" class="img-fluid setup-image" style="max-height: 280px !important; object-fit: contain; border-radius: 0.5rem; cursor: pointer;" onclick="openSetupImageModal('static/images/CO2Meter.jpeg', 'CO2 Meter')">
+                      <div class="mt-2">
+                        <h6>WH45 CO2 and Air Quality Sensor</h6>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="text-center" style="margin: 0 5px;">
+                      <img src="static/images/WH32.jpeg" alt="WH32 Sensor" class="img-fluid setup-image" style="max-height: 200px; border-radius: 0.5rem; cursor: pointer;" onclick="openSetupImageModal('static/images/WH32.jpeg', 'WH32 Temperature/Humidity Sensor')">
+                      <div class="mt-2">
+                        <h6>WH32 Sensor</h6>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="text-center" style="margin: 0 5px;">
+                      <img src="static/images/WeatherCam_Lightning.jpeg" alt="HP10 | WH57" class="img-fluid setup-image" style="max-height: 200px; border-radius: 0.5rem; cursor: pointer;" onclick="openSetupImageModal('static/images/WeatherCam_Lightning.jpeg', 'Weather Cam and Lightning Sensor')">
+                      <div class="mt-2">
+                        <h6>HP10 | WH57</h6>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h4 class="mb-3">Located in Ferny Grove, Brisbane.</h4>
+                <p class="text-justify">
+                  Orkney Ridge is located in the leafy suburb of Ferny Grove on the north-western outskirts of the City of Brisbane, Queensland. Nestled in the foothills of Mt Nebo, Ferny Grove has a generally temperate climate with the exception of some sweltering summer months.
+                </p>
+                <p class="text-justify">
+                  This website utilises Random Forest AI calculations to make local weather predictions about Temperature and Conditions, as well as the chance of Rain and Lightning in the next 24-48 hours. Here's hoping this site provides you with some useful hyper-local weather information.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 13: Battery Status Cards -->
     <div class="row g-4 mt-4">
       <div class="col-md-3">
         <div class="card">
@@ -349,6 +417,15 @@
   <div class="modal-content" style="margin: auto; display: block; max-width: 50%; max-height: 60vh; position: relative; top: 50%; transform: translateY(-50%);">
     <img id="modalImage" src="" alt="Weather Cam Full Size" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
     <span class="close-modal" style="position: absolute; top: -40px; right: 0; color: #f1f1f1; font-size: 35px; font-weight: bold; cursor: pointer;">&times;</span>
+  </div>
+</div>
+
+<!-- Setup Images Modal -->
+<div id="setupImageModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9);">
+  <div class="modal-content" style="margin: auto; display: block; max-width: 70%; max-height: 80vh; position: relative; top: 50%; transform: translateY(-50%);">
+    <img id="setupModalImage" src="" alt="Setup Image Full Size" style="width: 100%; height: auto; object-fit: contain; border-radius: 0.5rem;">
+    <div id="setupModalTitle" style="position: absolute; top: -50px; left: 0; color: #f1f1f1; font-size: 24px; font-weight: bold;"></div>
+    <span class="close-modal" onclick="closeSetupImageModal()" style="position: absolute; top: -40px; right: 0; color: #f1f1f1; font-size: 35px; font-weight: bold; cursor: pointer;">&times;</span>
   </div>
 </div>
 

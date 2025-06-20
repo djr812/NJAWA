@@ -1891,3 +1891,39 @@ function updateBOMWarningsCard(data) {
     `;
     cardBody.appendChild(attributionDiv);
 } 
+
+// Setup Images Modal functionality
+function openSetupImageModal(imageSrc, imageTitle) {
+    const modal = document.getElementById('setupImageModal');
+    const modalImg = document.getElementById('setupModalImage');
+    const modalTitle = document.getElementById('setupModalTitle');
+    
+    modal.style.display = "block";
+    modalImg.src = imageSrc;
+    modalTitle.textContent = imageTitle;
+}
+
+function closeSetupImageModal() {
+    const modal = document.getElementById('setupImageModal');
+    modal.style.display = "none";
+}
+
+// Add event listeners for setup image modal when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup Image Modal functionality
+    const setupModal = document.getElementById('setupImageModal');
+    
+    // Close modal when clicking outside the image
+    setupModal.addEventListener('click', function(e) {
+        if (e.target === setupModal) {
+            closeSetupImageModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === "Escape" && setupModal.style.display === "block") {
+            closeSetupImageModal();
+        }
+    });
+});

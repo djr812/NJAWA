@@ -17,6 +17,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 import re
 import requests
+import xml.etree.ElementTree as ET
 
 load_dotenv()
 
@@ -39,6 +40,11 @@ WAPI_KEY = os.getenv('WAPI_KEY')
 QFD_ALERTS_URL = "https://publiccontent-gis-psba-qld-gov-au.s3.amazonaws.com/content/Feeds/BushfireCurrentIncidents/bushfireAlert.json"
 QFD_ALERTS_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'qfd_alerts_cache.json')
 QFD_ALERTS_CACHE_TTL = 1800  # 30 minutes in seconds
+
+# BOM Warnings configuration
+BOM_WARNINGS_URL = "http://www.bom.gov.au/fwo/IDZ00056.warnings_qld.xml"
+BOM_WARNINGS_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'bom_warnings_cache.json')
+BOM_WARNINGS_CACHE_TTL = 1800  # 30 minutes in seconds
 
 # Ferny Grove area suburbs for filtering alerts
 FERNY_GROVE_AREA_SUBURBS = [
@@ -437,6 +443,132 @@ def api_qfd_alerts():
         return jsonify({
             'alerts': [],
             'count': 0,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'error': str(e)
+        })
+
+@app.route('/api/bom_warnings')
+def api_bom_warnings():
+    """Fetch and parse BOM Queensland warnings from RSS feed"""
+    now = time.time()
+    
+    # Try to load cache first
+    if os.path.exists(BOM_WARNINGS_CACHE_PATH):
+        with open(BOM_WARNINGS_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if now - cache.get('timestamp', 0) < BOM_WARNINGS_CACHE_TTL:
+                    return jsonify(cache['data'])
+            except Exception:
+                pass
+    
+    try:
+        # Fetch data from BOM RSS feed
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(BOM_WARNINGS_URL, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        # Parse XML
+        root = ET.fromstring(response.content)
+        
+        # Initialize warnings containers
+        marine_warnings = []
+        land_warnings = []
+        
+        # Find all items - try different approaches for XML structure
+        items = root.findall('.//item')
+        if not items:
+            # Try alternative paths
+            items = root.findall('item')
+        if not items:
+            # Try with namespace
+            items = root.findall('.//{http://purl.org/rss/1.0/}item')
+        
+        print(f"Found {len(items)} items in RSS feed")
+        
+        for item in items:
+            try:
+                # Extract title, description, pubDate, and link
+                title_elem = item.find('title')
+                description_elem = item.find('description')
+                pubDate_elem = item.find('pubDate')
+                link_elem = item.find('link')
+                
+                # Get text content safely
+                title_text = title_elem.text.strip() if title_elem is not None and title_elem.text else ''
+                desc_text = description_elem.text.strip() if description_elem is not None and description_elem.text else ''
+                pub_date = pubDate_elem.text.strip() if pubDate_elem is not None and pubDate_elem.text else ''
+                link_url = link_elem.text.strip() if link_elem is not None and link_elem.text else ''
+                
+                print(f"Processing item: {title_text}")
+                
+                if title_text:  # Only process items with titles
+                    warning = {
+                        'title': title_text,
+                        'description': desc_text,
+                        'pubDate': pub_date,
+                        'link': link_url
+                    }
+                    
+                    # Categorize warnings based on title and description
+                    title_lower = title_text.lower()
+                    desc_lower = desc_text.lower()
+                    
+                    # Check for marine-related keywords
+                    marine_keywords = ['marine', 'coastal', 'boat', 'sailing', 'fishing', 'water', 'sea', 'ocean', 'harbour', 'port']
+                    is_marine = any(keyword in title_lower or keyword in desc_lower for keyword in marine_keywords)
+                    
+                    if is_marine:
+                        marine_warnings.append(warning)
+                        print(f"  -> Categorized as Marine warning")
+                    else:
+                        land_warnings.append(warning)
+                        print(f"  -> Categorized as Land warning")
+                        
+            except Exception as e:
+                print(f"Error parsing warning item: {e}")
+                continue
+        
+        result = {
+            'marine_warnings': marine_warnings,
+            'land_warnings': land_warnings,
+            'marine_count': len(marine_warnings),
+            'land_count': len(land_warnings),
+            'total_count': len(marine_warnings) + len(land_warnings),
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        print(f"Final result: {result['marine_count']} marine, {result['land_count']} land warnings")
+        
+        # Cache the result
+        cache_data = {
+            'timestamp': now,
+            'data': result
+        }
+        with open(BOM_WARNINGS_CACHE_PATH, 'w') as f:
+            json.dump(cache_data, f)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching BOM warnings: {e}")
+        # Return cached data if available, otherwise empty result
+        if os.path.exists(BOM_WARNINGS_CACHE_PATH):
+            with open(BOM_WARNINGS_CACHE_PATH, 'r') as f:
+                try:
+                    cache = json.load(f)
+                    return jsonify(cache['data'])
+                except Exception:
+                    pass
+        
+        return jsonify({
+            'marine_warnings': [],
+            'land_warnings': [],
+            'marine_count': 0,
+            'land_count': 0,
+            'total_count': 0,
             'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'error': str(e)
         })

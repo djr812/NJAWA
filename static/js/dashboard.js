@@ -98,6 +98,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add QFD alerts functionality
     fetchAndUpdateQFDAlerts();
     setInterval(fetchAndUpdateQFDAlerts, 30 * 60 * 1000); // Update every 30 minutes
+    
+    // Initialize BOM Warnings
+    fetchAndUpdateBOMWarnings();
+    setInterval(fetchAndUpdateBOMWarnings, 30 * 60 * 1000); // Update every 30 minutes
 });
 
 let latestData = null;
@@ -1692,4 +1696,198 @@ function getAlertBadgeColor(warningLevel) {
         default:
             return '#6c757d';
     }
+}
+
+// BOM Warnings functionality
+async function fetchAndUpdateBOMWarnings() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
+    try {
+        const response = await fetch(`${basePath}/api/bom_warnings`);
+        const data = await response.json();
+        updateBOMWarningsCard(data);
+    } catch (error) {
+        console.error('Error fetching BOM warnings:', error);
+        updateBOMWarningsCard({ 
+            marine_warnings: [], 
+            land_warnings: [], 
+            marine_count: 0, 
+            land_count: 0, 
+            error: 'Failed to fetch warnings' 
+        });
+    }
+}
+
+function updateBOMWarningsCard(data) {
+    const cardBody = document.getElementById('bom-radar-body');
+    if (!cardBody) return;
+
+    // Clear existing content
+    cardBody.innerHTML = '';
+    
+    // Ensure card body has proper display for vertical stacking
+    cardBody.style.display = 'flex';
+    cardBody.style.flexDirection = 'column';
+    cardBody.style.width = '100%';
+
+    if (data.error) {
+        // Display error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'text-center text-muted';
+        errorDiv.innerHTML = `
+            <div class="mb-2">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div>Unable to load warnings</div>
+            <small>${data.error}</small>
+        `;
+        cardBody.appendChild(errorDiv);
+        return;
+    }
+
+    // Create warnings container
+    const warningsContainer = document.createElement('div');
+    warningsContainer.className = 'bom-warnings-container';
+    warningsContainer.style.maxHeight = '300px';
+    warningsContainer.style.overflowY = 'auto';
+    warningsContainer.style.marginBottom = '15px';
+    warningsContainer.style.width = '100%';
+    warningsContainer.style.display = 'block';
+    cardBody.appendChild(warningsContainer);
+
+    // Marine Warnings Section
+    const marineSection = document.createElement('div');
+    marineSection.className = 'mb-4';
+    
+    const marineHeader = document.createElement('h6');
+    marineHeader.className = 'fw-bold mb-2';
+    marineHeader.style.color = '#0d6efd';
+    marineHeader.innerHTML = `<i class="fas fa-water me-2"></i>Marine Warnings (${data.marine_count || 0})`;
+    marineSection.appendChild(marineHeader);
+
+    if (!data.marine_warnings || data.marine_warnings.length === 0) {
+        const noMarineDiv = document.createElement('div');
+        noMarineDiv.className = 'text-muted small';
+        noMarineDiv.textContent = 'No current marine warnings';
+        marineSection.appendChild(noMarineDiv);
+    } else {
+        data.marine_warnings.forEach((warning, index) => {
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-info alert-sm mb-2';
+            warningDiv.style.fontSize = '0.85rem';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'fw-bold mb-1';
+            if (warning.link) {
+                const titleLink = document.createElement('a');
+                titleLink.href = warning.link;
+                titleLink.target = '_blank';
+                titleLink.textContent = warning.title;
+                titleLink.style.color = 'inherit';
+                titleLink.style.textDecoration = 'none';
+                titleDiv.appendChild(titleLink);
+            } else {
+                titleDiv.textContent = warning.title;
+            }
+            
+            const descDiv = document.createElement('div');
+            descDiv.className = 'small';
+            descDiv.textContent = warning.description;
+            
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'text-muted small mt-1';
+            metaDiv.textContent = `Published: ${warning.pubDate}`;
+            
+            warningDiv.appendChild(titleDiv);
+            warningDiv.appendChild(descDiv);
+            warningDiv.appendChild(metaDiv);
+            marineSection.appendChild(warningDiv);
+        });
+    }
+    
+    warningsContainer.appendChild(marineSection);
+
+    // Land Warnings Section
+    const landSection = document.createElement('div');
+    landSection.className = 'mb-4';
+    
+    const landHeader = document.createElement('h6');
+    landHeader.className = 'fw-bold mb-2';
+    landHeader.style.color = '#dc3545';
+    landHeader.innerHTML = `<i class="fas fa-mountain me-2"></i>Land Warnings (${data.land_count || 0})`;
+    landSection.appendChild(landHeader);
+
+    if (!data.land_warnings || data.land_warnings.length === 0) {
+        const noLandDiv = document.createElement('div');
+        noLandDiv.className = 'text-muted small';
+        noLandDiv.textContent = 'No current land warnings';
+        landSection.appendChild(noLandDiv);
+    } else {
+        data.land_warnings.forEach((warning, index) => {
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning alert-sm mb-2';
+            warningDiv.style.fontSize = '0.85rem';
+            
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'fw-bold mb-1';
+            if (warning.link) {
+                const titleLink = document.createElement('a');
+                titleLink.href = warning.link;
+                titleLink.target = '_blank';
+                titleLink.textContent = warning.title;
+                titleLink.style.color = 'inherit';
+                titleLink.style.textDecoration = 'none';
+                titleDiv.appendChild(titleLink);
+            } else {
+                titleDiv.textContent = warning.title;
+            }
+            
+            const descDiv = document.createElement('div');
+            descDiv.className = 'small';
+            descDiv.textContent = warning.description;
+            
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'text-muted small mt-1';
+            metaDiv.textContent = `Published: ${warning.pubDate}`;
+            
+            warningDiv.appendChild(titleDiv);
+            warningDiv.appendChild(descDiv);
+            warningDiv.appendChild(metaDiv);
+            landSection.appendChild(warningDiv);
+        });
+    }
+    
+    warningsContainer.appendChild(landSection);
+
+    // Add last updated timestamp BELOW the warnings
+    if (data.last_updated) {
+        const timestampDiv = document.createElement('div');
+        timestampDiv.className = 'text-muted small text-center mb-2';
+        timestampDiv.style.width = '100%';
+        timestampDiv.style.display = 'block';
+        timestampDiv.textContent = `Last updated: ${data.last_updated}`;
+        cardBody.appendChild(timestampDiv);
+    }
+
+    // Add BOM attribution BELOW the warnings and timestamp
+    const attributionDiv = document.createElement('div');
+    attributionDiv.className = 'text-center';
+    attributionDiv.style.width = '100%';
+    attributionDiv.style.display = 'block';
+    attributionDiv.style.borderTop = '1px solid #dee2e6';
+    attributionDiv.style.paddingTop = '10px';
+    attributionDiv.innerHTML = `
+        <div class="small text-muted">
+            <div class="mb-1">
+                <a href="https://www.bom.gov.au" target="_blank" style="text-decoration: none; color: #6c757d;">
+                    <strong>Bureau of Meteorology</strong>
+                </a>
+            </div>
+            <div style="font-size: 0.75rem;">
+                Weather warnings provided by the Australian Bureau of Meteorology
+            </div>
+        </div>
+    `;
+    cardBody.appendChild(attributionDiv);
 } 

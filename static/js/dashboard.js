@@ -102,6 +102,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize BOM Warnings
     fetchAndUpdateBOMWarnings();
     setInterval(fetchAndUpdateBOMWarnings, 30 * 60 * 1000); // Update every 30 minutes
+    
+    // Initialize Top Stats
+    fetchAndUpdateTopStats();
+    setInterval(fetchAndUpdateTopStats, 60 * 60 * 1000); // Update every hour
 });
 
 let latestData = null;
@@ -1927,3 +1931,116 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Top Stats functionality
+async function fetchAndUpdateTopStats() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+
+    try {
+        const response = await fetch(`${basePath}/api/top_stats`);
+        const data = await response.json();
+        updateTopStatsCard(data);
+    } catch (error) {
+        console.error('Error fetching top stats:', error);
+        updateTopStatsCard({ 
+            error: 'Failed to fetch statistics',
+            first_date: 'Unknown',
+            max_temp: null,
+            max_temp_date: 'Unknown',
+            min_temp: null,
+            min_temp_date: 'Unknown',
+            max_humidity: null,
+            max_humidity_temp: null,
+            max_humidity_date: 'Unknown',
+            max_wind_gust: null,
+            max_wind_gust_date: 'Unknown',
+            max_rainfall: null,
+            max_rainfall_date: 'Unknown',
+            max_uv: null,
+            max_uv_date: 'Unknown',
+            max_pm10: null,
+            max_pm10_date: 'Unknown',
+            max_lightning: null,
+            max_lightning_date: 'Unknown'
+        });
+    }
+}
+
+function updateTopStatsCard(data) {
+    // Update first date
+    const firstDateElement = document.getElementById('first-date');
+    if (firstDateElement) {
+        firstDateElement.textContent = data.first_date || 'Unknown';
+    }
+    
+    // Update maximum temperature
+    const maxTempElement = document.getElementById('max-temp');
+    const maxTempDateElement = document.getElementById('max-temp-date');
+    if (maxTempElement && maxTempDateElement) {
+        maxTempElement.textContent = data.max_temp !== null ? `${data.max_temp}°C` : '--°C';
+        maxTempDateElement.textContent = data.max_temp_date || '--';
+    }
+    
+    // Update minimum temperature
+    const minTempElement = document.getElementById('min-temp');
+    const minTempDateElement = document.getElementById('min-temp-date');
+    if (minTempElement && minTempDateElement) {
+        minTempElement.textContent = data.min_temp !== null ? `${data.min_temp}°C` : '--°C';
+        minTempDateElement.textContent = data.min_temp_date || '--';
+    }
+    
+    // Update maximum humidity
+    const maxHumidityElement = document.getElementById('max-humidity');
+    const maxHumidityTempElement = document.getElementById('max-humidity-temp');
+    const maxHumidityDateElement = document.getElementById('max-humidity-date');
+    if (maxHumidityElement && maxHumidityTempElement && maxHumidityDateElement) {
+        maxHumidityElement.textContent = data.max_humidity !== null ? `${data.max_humidity}%` : '--%';
+        maxHumidityTempElement.textContent = data.max_humidity_temp !== null ? `${data.max_humidity_temp}°C` : '--°C';
+        maxHumidityDateElement.textContent = data.max_humidity_date || '--';
+    }
+    
+    // Update maximum wind gust
+    const maxWindGustElement = document.getElementById('max-wind-gust');
+    const maxWindGustDateElement = document.getElementById('max-wind-gust-date');
+    if (maxWindGustElement && maxWindGustDateElement) {
+        maxWindGustElement.textContent = data.max_wind_gust !== null ? `${data.max_wind_gust} km/h` : '-- km/h';
+        maxWindGustDateElement.textContent = data.max_wind_gust_date || '--';
+    }
+    
+    // Update maximum rainfall
+    const maxRainfallElement = document.getElementById('max-rainfall');
+    const maxRainfallDateElement = document.getElementById('max-rainfall-date');
+    if (maxRainfallElement && maxRainfallDateElement) {
+        maxRainfallElement.textContent = data.max_rainfall !== null ? `${data.max_rainfall} mm` : '-- mm';
+        maxRainfallDateElement.textContent = data.max_rainfall_date || '--';
+    }
+    
+    // Update maximum UV
+    const maxUVElement = document.getElementById('max-uv');
+    const maxUVDateElement = document.getElementById('max-uv-date');
+    const maxUVRiskElement = document.getElementById('max-uv-risk');
+    if (maxUVElement && maxUVDateElement && maxUVRiskElement) {
+        maxUVElement.textContent = data.max_uv !== null ? data.max_uv : '--';
+        maxUVDateElement.textContent = data.max_uv_date || '--';
+        maxUVRiskElement.textContent = data.max_uv_risk ? `(${data.max_uv_risk})` : '(Unknown)';
+    }
+    
+    // Update maximum PM10
+    const maxPM10Element = document.getElementById('max-pm10');
+    const maxPM10DateElement = document.getElementById('max-pm10-date');
+    const maxPM10LevelElement = document.getElementById('max-pm10-level');
+    if (maxPM10Element && maxPM10DateElement && maxPM10LevelElement) {
+        maxPM10Element.textContent = data.max_pm10 !== null ? data.max_pm10 : '--';
+        maxPM10DateElement.textContent = data.max_pm10_date || '--';
+        maxPM10LevelElement.textContent = data.max_pm10_level ? `(${data.max_pm10_level})` : '(Unknown)';
+    }
+    
+    // Update maximum lightning strikes
+    const maxLightningElement = document.getElementById('max-lightning');
+    const maxLightningDateElement = document.getElementById('max-lightning-date');
+    if (maxLightningElement && maxLightningDateElement) {
+        maxLightningElement.textContent = data.max_lightning !== null ? data.max_lightning : '--';
+        maxLightningDateElement.textContent = data.max_lightning_date || '--';
+    }
+}

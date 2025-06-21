@@ -310,8 +310,8 @@
           <div id="weather-setup-content">
             <div class="row">
               <div class="col-md-4">
-                <h4 class="mb-3 text-center">My Ecowitt Weather Sensor Array</h4>
-                <ul class="list-unstyled text-center">
+                <h4 class="mb-3 text-justify">My Ecowitt Weather Sensor Array</h4>
+                <ul class="list-unstyled text-justify">
                   <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WS3900 Console</li>
                   <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WH32 External Temperature/Humidity Sensor</li>
                   <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WS69 Rain/Wind/Solar Sensor Array</li>
@@ -319,6 +319,12 @@
                   <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>HP10 Weather Cam</li>
                   <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>WH45 CO2/Pollution AQI Sensor</li>
                 </ul>
+                <p class="text-justify">
+                  This website draws weather data from the Ecowitt family of sensors (pictured here) and the current weather condition from WeatherAPI.com. Data is extracted by WeeWX and held in a MySQL Database.
+                </p>
+                <p class="text-justify">
+                  The site utilises Random Forest AI calculations to make local weather predictions about Temperature and Conditions, as well as the chance of Rain and Lightning in the next 24-48 hours.
+                </p>
               </div>
               <div class="col-md-4">
                 <div class="row">
@@ -332,7 +338,7 @@
                   </div>
                   <div class="col-3">
                     <div class="text-center" style="margin: 0 5px;">
-                      <img src="static/images/CO2Meter.jpeg" alt="CO2 Meter" class="img-fluid setup-image" style="max-height: 280px !important; object-fit: contain; border-radius: 0.5rem; cursor: pointer;" onclick="openSetupImageModal('static/images/CO2Meter.jpeg', 'CO2 Meter')">
+                      <img src="static/images/CO2Meter.jpeg" alt="CO2 Meter" class="img-fluid setup-image" style="max-height: 280px !important; object-fit: contain; border-radius: 0.5rem; cursor: pointer;" onclick="openSetupImageModal('static/images/CO2Meter.jpeg', 'CO2 and Pollution AQI Meter')">
                       <div class="mt-2">
                         <h6>WH45 CO2 and Air Quality Sensor</h6>
                       </div>
@@ -350,7 +356,7 @@
                     <div class="text-center" style="margin: 0 5px;">
                       <img src="static/images/WeatherCam_Lightning.jpeg" alt="HP10 | WH57" class="img-fluid setup-image" style="max-height: 200px; border-radius: 0.5rem; cursor: pointer;" onclick="openSetupImageModal('static/images/WeatherCam_Lightning.jpeg', 'Weather Cam and Lightning Sensor')">
                       <div class="mt-2">
-                        <h6>HP10 | WH57</h6>
+                        <h6>WH57 | HP10</h6>
                       </div>
                     </div>
                   </div>
@@ -362,8 +368,23 @@
                   Orkney Ridge is located in the leafy suburb of Ferny Grove on the north-western outskirts of the City of Brisbane, Queensland. Nestled in the foothills of Mt Nebo, Ferny Grove has a generally temperate climate with the exception of some sweltering summer months.
                 </p>
                 <p class="text-justify">
-                  This website utilises Random Forest AI calculations to make local weather predictions about Temperature and Conditions, as well as the chance of Rain and Lightning in the next 24-48 hours. Here's hoping this site provides you with some useful hyper-local weather information.
+                  Here's hoping this site provides you with some useful hyper-local weather information.
                 </p>
+                
+                <h4 class="mb-3 mt-4">Top Stats for Orkney Ridge</h4>
+                <p class="text-justify mb-3">
+                  Since data collection started on <span id="first-date">January 1, 2024</span> the following information has been noted:
+                </p>
+                <ul class="list-unstyled text-justify">
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>Maximum Temperature of <span id="max-temp">--°C</span> recorded on <span id="max-temp-date">--</span></li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>Minimum Temperature of <span id="min-temp">--°C</span> recorded on <span id="min-temp-date">--</span></li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>Highest Humidity of <span id="max-humidity">--%</span> with a temp of <span id="max-humidity-temp">--°C</span> recorded on <span id="max-humidity-date">--</span></li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>Strongest Wind Gust of <span id="max-wind-gust">-- km/h</span> recorded on <span id="max-wind-gust-date">--</span></li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>Most Rain fall of <span id="max-rainfall">-- mm</span> in 5 min recorded on <span id="max-rainfall-date">--</span></li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>Maximum UV of <span id="max-uv">--</span> <span id="max-uv-risk">(Unknown)</span> recorded on <span id="max-uv-date">--</span></li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>Worst PM 10 Pollution of <span id="max-pm10">--</span> <span id="max-pm10-level">(Unknown)</span> recorded on <span id="max-pm10-date">--</span></li>
+                  <li class="mb-2"><i class="fas fa-circle me-2" style="font-size: 0.5rem; color: #007bff;"></i>Most Lightning strikes of <span id="max-lightning">--</span> recorded on <span id="max-lightning-date">--</span></li>
+                </ul>
               </div>
             </div>
           </div>

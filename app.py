@@ -449,10 +449,8 @@ def api_qfd_alerts():
 
 @app.route('/api/bom_warnings')
 def api_bom_warnings():
-    """Fetch and parse BOM Queensland warnings from RSS feed"""
     now = time.time()
-    
-    # Try to load cache first
+    # Try to load cache
     if os.path.exists(BOM_WARNINGS_CACHE_PATH):
         with open(BOM_WARNINGS_CACHE_PATH, 'r') as f:
             try:
@@ -461,86 +459,47 @@ def api_bom_warnings():
                     return jsonify(cache['data'])
             except Exception:
                 pass
-    
+
     try:
-        # Fetch data from BOM RSS feed
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        response = requests.get(BOM_WARNINGS_URL, headers=headers, timeout=10)
+        response = requests.get(BOM_WARNINGS_URL, timeout=10)
         response.raise_for_status()
-        
-        # Parse XML
         root = ET.fromstring(response.content)
         
-        # Initialize warnings containers
         marine_warnings = []
         land_warnings = []
         
-        # Find all items - try different approaches for XML structure
-        items = root.findall('.//item')
-        if not items:
-            # Try alternative paths
-            items = root.findall('item')
-        if not items:
-            # Try with namespace
-            items = root.findall('.//{http://purl.org/rss/1.0/}item')
-        
-        print(f"Found {len(items)} items in RSS feed")
-        
-        for item in items:
-            try:
-                # Extract title, description, pubDate, and link
-                title_elem = item.find('title')
-                description_elem = item.find('description')
-                pubDate_elem = item.find('pubDate')
-                link_elem = item.find('link')
-                
-                # Get text content safely
-                title_text = title_elem.text.strip() if title_elem is not None and title_elem.text else ''
-                desc_text = description_elem.text.strip() if description_elem is not None and description_elem.text else ''
-                pub_date = pubDate_elem.text.strip() if pubDate_elem is not None and pubDate_elem.text else ''
-                link_url = link_elem.text.strip() if link_elem is not None and link_elem.text else ''
-                
-                print(f"Processing item: {title_text}")
-                
-                if title_text:  # Only process items with titles
-                    warning = {
-                        'title': title_text,
-                        'description': desc_text,
-                        'pubDate': pub_date,
-                        'link': link_url
-                    }
-                    
-                    # Categorize warnings based on title and description
-                    title_lower = title_text.lower()
-                    desc_lower = desc_text.lower()
-                    
-                    # Check for marine-related keywords
-                    marine_keywords = ['marine', 'coastal', 'boat', 'sailing', 'fishing', 'water', 'sea', 'ocean', 'harbour', 'port']
-                    is_marine = any(keyword in title_lower or keyword in desc_lower for keyword in marine_keywords)
-                    
-                    if is_marine:
-                        marine_warnings.append(warning)
-                        print(f"  -> Categorized as Marine warning")
-                    else:
-                        land_warnings.append(warning)
-                        print(f"  -> Categorized as Land warning")
-                        
-            except Exception as e:
-                print(f"Error parsing warning item: {e}")
-                continue
+        for warning in root.findall('.//warning'):
+            warning_type = warning.get('type', '').lower()
+            title = warning.find('title')
+            description = warning.find('description')
+            link = warning.find('link')
+            pubDate = warning.find('pubDate')
+            
+            warning_data = {
+                'title': title.text if title is not None else 'No title',
+                'description': description.text if description is not None else 'No description',
+                'link': link.text if link is not None else None,
+                'pubDate': pubDate.text if pubDate is not None else 'Unknown date'
+            }
+            
+            # Check if warning is relevant to Ferny Grove area
+            is_relevant = any(suburb in warning_data['title'].lower() or suburb in warning_data['description'].lower() 
+                            for suburb in FERNY_GROVE_AREA_SUBURBS)
+            
+            if warning_type == 'marine':
+                if is_relevant:
+                    marine_warnings.append(warning_data)
+            elif warning_type == 'land':
+                if is_relevant:
+                    land_warnings.append(warning_data)
         
         result = {
             'marine_warnings': marine_warnings,
             'land_warnings': land_warnings,
             'marine_count': len(marine_warnings),
             'land_count': len(land_warnings),
-            'total_count': len(marine_warnings) + len(land_warnings),
             'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
-        
-        print(f"Final result: {result['marine_count']} marine, {result['land_count']} land warnings")
         
         # Cache the result
         cache_data = {
@@ -554,24 +513,229 @@ def api_bom_warnings():
         
     except Exception as e:
         print(f"Error fetching BOM warnings: {e}")
-        # Return cached data if available, otherwise empty result
-        if os.path.exists(BOM_WARNINGS_CACHE_PATH):
-            with open(BOM_WARNINGS_CACHE_PATH, 'r') as f:
-                try:
-                    cache = json.load(f)
-                    return jsonify(cache['data'])
-                except Exception:
-                    pass
-        
         return jsonify({
             'marine_warnings': [],
             'land_warnings': [],
             'marine_count': 0,
             'land_count': 0,
-            'total_count': 0,
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'error': str(e)
         })
 
+@app.route('/api/top_stats')
+def api_top_stats():
+    engine = create_engine(DB_URI)
+    
+    try:
+        # Get first date in database
+        first_date_query = "SELECT MIN(dateTime) as first_date FROM archive"
+        first_date_df = pd.read_sql(first_date_query, engine)
+        first_date = None
+        if not first_date_df.empty and first_date_df['first_date'].iloc[0] is not None:
+            first_date = pd.to_datetime(first_date_df['first_date'].iloc[0], unit='s')
+            first_date = first_date.strftime('%B %d, %Y')
+        
+        # Maximum temperature
+        max_temp_query = """
+            SELECT outTemp, dateTime 
+            FROM archive 
+            WHERE outTemp IS NOT NULL 
+            ORDER BY outTemp DESC 
+            LIMIT 1
+        """
+        max_temp_df = pd.read_sql(max_temp_query, engine)
+        max_temp = None
+        max_temp_date = None
+        if not max_temp_df.empty:
+            max_temp = round((max_temp_df['outTemp'].iloc[0] - 32) * 5/9, 1)  # Convert F to C
+            max_temp_date = pd.to_datetime(max_temp_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+        
+        # Minimum temperature
+        min_temp_query = """
+            SELECT outTemp, dateTime 
+            FROM archive 
+            WHERE outTemp IS NOT NULL 
+            ORDER BY outTemp ASC 
+            LIMIT 1
+        """
+        min_temp_df = pd.read_sql(min_temp_query, engine)
+        min_temp = None
+        min_temp_date = None
+        if not min_temp_df.empty:
+            min_temp = round((min_temp_df['outTemp'].iloc[0] - 32) * 5/9, 1)  # Convert F to C
+            min_temp_date = pd.to_datetime(min_temp_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+        
+        # Highest humidity with corresponding temperature
+        max_humidity_query = """
+            SELECT outHumidity, outTemp, dateTime 
+            FROM archive 
+            WHERE outHumidity IS NOT NULL 
+            ORDER BY outHumidity DESC 
+            LIMIT 1
+        """
+        max_humidity_df = pd.read_sql(max_humidity_query, engine)
+        max_humidity = None
+        max_humidity_temp = None
+        max_humidity_date = None
+        if not max_humidity_df.empty:
+            max_humidity = int(max_humidity_df['outHumidity'].iloc[0])
+            max_humidity_temp = round((max_humidity_df['outTemp'].iloc[0] - 32) * 5/9, 1)  # Convert F to C
+            max_humidity_date = pd.to_datetime(max_humidity_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+        
+        # Strongest wind gust
+        max_wind_gust_query = """
+            SELECT windGust, dateTime 
+            FROM archive 
+            WHERE windGust IS NOT NULL 
+            ORDER BY windGust DESC 
+            LIMIT 1
+        """
+        max_wind_gust_df = pd.read_sql(max_wind_gust_query, engine)
+        max_wind_gust = None
+        max_wind_gust_date = None
+        if not max_wind_gust_df.empty:
+            max_wind_gust = round(max_wind_gust_df['windGust'].iloc[0] * 1.60934, 1)  # Convert mph to km/h
+            max_wind_gust_date = pd.to_datetime(max_wind_gust_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+        
+        # Most rainfall
+        max_rainfall_query = """
+            SELECT rain, dateTime 
+            FROM archive 
+            WHERE rain IS NOT NULL AND rain > 0
+            ORDER BY rain DESC 
+            LIMIT 1
+        """
+        max_rainfall_df = pd.read_sql(max_rainfall_query, engine)
+        max_rainfall = None
+        max_rainfall_date = None
+        if not max_rainfall_df.empty:
+            max_rainfall = round(max_rainfall_df['rain'].iloc[0] * 25.4, 1)  # Convert inches to mm
+            max_rainfall_date = pd.to_datetime(max_rainfall_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+        
+        # Maximum UV
+        max_uv_query = """
+            SELECT UV, dateTime 
+            FROM archive 
+            WHERE UV IS NOT NULL 
+            ORDER BY UV DESC 
+            LIMIT 1
+        """
+        max_uv_df = pd.read_sql(max_uv_query, engine)
+        max_uv = None
+        max_uv_date = None
+        max_uv_risk = None
+        if not max_uv_df.empty:
+            max_uv = int(max_uv_df['UV'].iloc[0])
+            max_uv_date = pd.to_datetime(max_uv_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+            
+            # Calculate risk level based on UV index
+            if max_uv <= 2:
+                max_uv_risk = 'Low'
+            elif max_uv <= 5:
+                max_uv_risk = 'Moderate'
+            elif max_uv <= 7:
+                max_uv_risk = 'High'
+            elif max_uv <= 10:
+                max_uv_risk = 'Very High'
+            else:
+                max_uv_risk = 'Extreme'
+        
+        # Worst PM10 pollution
+        max_pm10_query = """
+            SELECT pm10_0, dateTime 
+            FROM archive 
+            WHERE pm10_0 IS NOT NULL 
+            ORDER BY pm10_0 DESC 
+            LIMIT 1
+        """
+        max_pm10_df = pd.read_sql(max_pm10_query, engine)
+        max_pm10 = None
+        max_pm10_date = None
+        max_pm10_level = None
+        if not max_pm10_df.empty:
+            max_pm10 = int(max_pm10_df['pm10_0'].iloc[0])
+            max_pm10_date = pd.to_datetime(max_pm10_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+            
+            # Calculate pollution level based on PM10 value
+            if max_pm10 >= 0 and max_pm10 <= 12:
+                max_pm10_level = 'Good'
+            elif max_pm10 > 12 and max_pm10 <= 35.4:
+                max_pm10_level = 'Moderate'
+            elif max_pm10 > 35.4 and max_pm10 <= 55.4:
+                max_pm10_level = 'Poor'
+            elif max_pm10 > 55.4 and max_pm10 <= 150.4:
+                max_pm10_level = 'Unhealthy'
+            elif max_pm10 > 150.4 and max_pm10 <= 250.4:
+                max_pm10_level = 'Severe'
+            elif max_pm10 > 250.4:
+                max_pm10_level = 'Hazardous'
+            else:
+                max_pm10_level = 'Unknown'
+        
+        # Most lightning strikes
+        max_lightning_query = """
+            SELECT lightning_strike_count, dateTime 
+            FROM archive 
+            WHERE lightning_strike_count IS NOT NULL AND lightning_strike_count > 0
+            ORDER BY lightning_strike_count DESC 
+            LIMIT 1
+        """
+        max_lightning_df = pd.read_sql(max_lightning_query, engine)
+        max_lightning = None
+        max_lightning_date = None
+        if not max_lightning_df.empty:
+            max_lightning = int(max_lightning_df['lightning_strike_count'].iloc[0])
+            max_lightning_date = pd.to_datetime(max_lightning_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+        
+        result = {
+            'first_date': first_date,
+            'max_temp': max_temp,
+            'max_temp_date': max_temp_date,
+            'min_temp': min_temp,
+            'min_temp_date': min_temp_date,
+            'max_humidity': max_humidity,
+            'max_humidity_temp': max_humidity_temp,
+            'max_humidity_date': max_humidity_date,
+            'max_wind_gust': max_wind_gust,
+            'max_wind_gust_date': max_wind_gust_date,
+            'max_rainfall': max_rainfall,
+            'max_rainfall_date': max_rainfall_date,
+            'max_uv': max_uv,
+            'max_uv_date': max_uv_date,
+            'max_uv_risk': max_uv_risk,
+            'max_pm10': max_pm10,
+            'max_pm10_date': max_pm10_date,
+            'max_pm10_level': max_pm10_level,
+            'max_lightning': max_lightning,
+            'max_lightning_date': max_lightning_date
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching top stats: {e}")
+        return jsonify({
+            'error': str(e),
+            'first_date': 'Unknown',
+            'max_temp': None,
+            'max_temp_date': 'Unknown',
+            'min_temp': None,
+            'min_temp_date': 'Unknown',
+            'max_humidity': None,
+            'max_humidity_temp': None,
+            'max_humidity_date': 'Unknown',
+            'max_wind_gust': None,
+            'max_wind_gust_date': 'Unknown',
+            'max_rainfall': None,
+            'max_rainfall_date': 'Unknown',
+            'max_uv': None,
+            'max_uv_date': 'Unknown',
+            'max_uv_risk': None,
+            'max_pm10': None,
+            'max_pm10_date': 'Unknown',
+            'max_pm10_level': None,
+            'max_lightning': None,
+            'max_lightning_date': 'Unknown'
+        })
+
 if __name__ == '__main__':
-    app.run(debug=False) 
+    app.run(debug=True, host='0.0.0.0', port=5000) 

@@ -741,5 +741,33 @@ def api_top_stats():
             'max_lightning_date': 'Unknown'
         })
 
+@app.route('/api/rainfall_24h')
+def api_rainfall_24h():
+    engine = create_engine(DB_URI)
+    
+    try:
+        # Calculate 24-hour rainfall total
+        now = datetime.now()
+        start_time = int((now - timedelta(hours=24)).timestamp())
+        end_time = int(now.timestamp())
+        
+        rainfall_query = f"""
+            SELECT SUM(rain) as total_rainfall
+            FROM archive 
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time} AND rain IS NOT NULL AND rain > 0
+        """
+        
+        df = pd.read_sql(rainfall_query, engine)
+        
+        total_rainfall = 0
+        if not df.empty and df['total_rainfall'].iloc[0] is not None:
+            total_rainfall = round(df['total_rainfall'].iloc[0] * 25.4, 1)  # Convert inches to mm
+        
+        return jsonify({'rainfall_24h': total_rainfall})
+        
+    except Exception as e:
+        print(f"Error fetching 24-hour rainfall: {e}")
+        return jsonify({'rainfall_24h': 0, 'error': str(e)})
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 

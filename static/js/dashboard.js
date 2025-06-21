@@ -1175,17 +1175,30 @@ async function updateActualWeatherConditions(data) {
         UV: Math.round(getValue(data.uv)) // Round UV to whole number
     };
 
+    // Fetch 24-hour rainfall total
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    let rainfall24h = 0;
+    
+    try {
+        const rainfallResponse = await fetch(`${basePath}/api/rainfall_24h`);
+        const rainfallData = await rainfallResponse.json();
+        rainfall24h = rainfallData.rainfall_24h || 0;
+    } catch (error) {
+        console.error('Error fetching 24-hour rainfall:', error);
+        rainfall24h = 0;
+    }
+
     console.log('Raw data for debugging:', {
         windDir: data.windDir,
         uv: data.uv,
         lightning_strike_count: data.lightning_strike_count
     });
     console.log('Processed latest values:', latest);
+    console.log('24-hour rainfall total:', rainfall24h);
 
     const condition = await determineWeatherCondition(latest);
     console.log('Final condition object:', condition);
-    const isProd = window.location.hostname !== 'localhost';
-    const basePath = isProd ? '/njawa' : '';
     
     const cardBody = document.getElementById('actual-weather-conditions-body');
     if (!cardBody) {
@@ -1262,8 +1275,8 @@ async function updateActualWeatherConditions(data) {
                         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.barometer)} hPa</div>
                     </div>
                     <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">RAIN</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.rain)} mm</div>
+                        <div class="h6 mb-1" style="color: #666;">RAIN (24H)</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(rainfall24h)} mm</div>
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">UV RATING</div>

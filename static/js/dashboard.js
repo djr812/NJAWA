@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize BOM Warnings
     fetchAndUpdateBOMWarnings();
-    setInterval(fetchAndUpdateBOMWarnings, 30 * 60 * 1000); // Update every 30 minutes
+    setInterval(fetchAndUpdateBOMWarnings, 6 * 60 * 60 * 1000); // Update every 6 hours
     
     // Initialize Top Stats
     fetchAndUpdateTopStats();

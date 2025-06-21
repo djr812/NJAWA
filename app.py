@@ -596,20 +596,24 @@ def api_top_stats():
             max_wind_gust = round(max_wind_gust_df['windGust'].iloc[0] * 1.60934, 1)  # Convert mph to km/h
             max_wind_gust_date = pd.to_datetime(max_wind_gust_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
         
-        # Most rainfall
+        # Most rainfall (24-hour period)
         max_rainfall_query = """
-            SELECT rain, dateTime 
+            SELECT 
+                DATE(FROM_UNIXTIME(dateTime)) as rain_date,
+                SUM(rain) as daily_rainfall,
+                MAX(dateTime) as max_dateTime
             FROM archive 
             WHERE rain IS NOT NULL AND rain > 0
-            ORDER BY rain DESC 
+            GROUP BY DATE(FROM_UNIXTIME(dateTime))
+            ORDER BY daily_rainfall DESC 
             LIMIT 1
         """
         max_rainfall_df = pd.read_sql(max_rainfall_query, engine)
         max_rainfall = None
         max_rainfall_date = None
         if not max_rainfall_df.empty:
-            max_rainfall = round(max_rainfall_df['rain'].iloc[0] * 25.4, 1)  # Convert inches to mm
-            max_rainfall_date = pd.to_datetime(max_rainfall_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+            max_rainfall = round(max_rainfall_df['daily_rainfall'].iloc[0] * 25.4, 1)  # Convert inches to mm
+            max_rainfall_date = pd.to_datetime(max_rainfall_df['rain_date'].iloc[0]).strftime('%B %d, %Y')
         
         # Maximum UV
         max_uv_query = """

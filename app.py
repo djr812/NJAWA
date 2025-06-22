@@ -461,7 +461,8 @@ def api_bom_warnings():
                 pass
 
     try:
-        response = requests.get(BOM_WARNINGS_URL, timeout=10)
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"} 
+        response = requests.get(BOM_WARNINGS_URL, headers=headers, timeout=10)
         response.raise_for_status()
         root = ET.fromstring(response.content)
         
@@ -482,16 +483,10 @@ def api_bom_warnings():
                 'pubDate': pubDate.text if pubDate is not None else 'Unknown date'
             }
             
-            # Check if warning is relevant to Ferny Grove area
-            is_relevant = any(suburb in warning_data['title'].lower() or suburb in warning_data['description'].lower() 
-                            for suburb in FERNY_GROVE_AREA_SUBURBS)
-            
             if warning_type == 'marine':
-                if is_relevant:
-                    marine_warnings.append(warning_data)
+                marine_warnings.append(warning_data)
             elif warning_type == 'land':
-                if is_relevant:
-                    land_warnings.append(warning_data)
+                land_warnings.append(warning_data)
         
         result = {
             'marine_warnings': marine_warnings,

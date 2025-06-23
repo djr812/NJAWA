@@ -2056,4 +2056,147 @@ function updateTopStatsCard(data) {
         maxLightningElement.textContent = data.max_lightning !== null ? data.max_lightning : '--';
         maxLightningDateElement.textContent = data.max_lightning_date || '--';
     }
+    
+    // Update ticker feed
+    updateTickerFeed(data);
+}
+
+function updateTickerFeed(data) {
+    // Helper function to get UV rating
+    function getUVRating(uvValue) {
+        if (uvValue === null || uvValue === undefined) return '(Unknown)';
+        if (uvValue >= 11) return '(Extreme)';
+        else if (uvValue >= 8) return '(Very High)';
+        else if (uvValue >= 6) return '(High)';
+        else if (uvValue >= 3) return '(Moderate)';
+        else return '(Low)';
+    }
+    
+    // Helper function to get PM10 rating
+    function getPM10Rating(pm10Value) {
+        if (pm10Value === null || pm10Value === undefined) return '(Unknown)';
+        if (pm10Value > 250.4) return '(Hazardous)';
+        else if (pm10Value > 150.4) return '(Severe)';
+        else if (pm10Value > 55.4) return '(Unhealthy)';
+        else if (pm10Value > 35.4) return '(Poor)';
+        else if (pm10Value > 12) return '(Moderate)';
+        else return '(Good)';
+    }
+    
+    // Update ticker elements with values, dates, and ratings
+    const tickerUpdates = [
+        { valueId: 'ticker-max-temp', value: data.max_temp !== null ? `${data.max_temp}°C` : '--°C', dateId: 'ticker-max-temp-date', date: data.max_temp_date },
+        { valueId: 'ticker-min-temp', value: data.min_temp !== null ? `${data.min_temp}°C` : '--°C', dateId: 'ticker-min-temp-date', date: data.min_temp_date },
+        { valueId: 'ticker-max-humidity', value: data.max_humidity !== null ? `${data.max_humidity}%` : '--%', dateId: 'ticker-max-humidity-date', date: data.max_humidity_date },
+        { valueId: 'ticker-max-wind-gust', value: data.max_wind_gust !== null ? `${data.max_wind_gust} km/h` : '-- km/h', dateId: 'ticker-max-wind-gust-date', date: data.max_wind_gust_date },
+        { valueId: 'ticker-max-rainfall', value: data.max_rainfall !== null ? `${data.max_rainfall} mm` : '-- mm', dateId: 'ticker-max-rainfall-date', date: data.max_rainfall_date },
+        { valueId: 'ticker-max-uv', value: data.max_uv !== null ? data.max_uv : '--', dateId: 'ticker-max-uv-date', date: data.max_uv_date, ratingId: 'ticker-max-uv-rating', rating: getUVRating(data.max_uv) },
+        { valueId: 'ticker-max-pm10', value: data.max_pm10 !== null ? data.max_pm10 : '--', dateId: 'ticker-max-pm10-date', date: data.max_pm10_date, ratingId: 'ticker-max-pm10-rating', rating: getPM10Rating(data.max_pm10) },
+        { valueId: 'ticker-max-lightning', value: data.max_lightning !== null ? data.max_lightning : '--', dateId: 'ticker-max-lightning-date', date: data.max_lightning_date }
+    ];
+    
+    // Update all ticker elements
+    tickerUpdates.forEach(update => {
+        // Update value element
+        const valueElement = document.getElementById(update.valueId);
+        if (valueElement) {
+            valueElement.textContent = update.value;
+        }
+        
+        // Update date element
+        const dateElement = document.getElementById(update.dateId);
+        if (dateElement) {
+            if (update.date) {
+                // Format the date for display
+                const date = new Date(update.date);
+                const formattedDate = date.toLocaleDateString('en-AU', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+                dateElement.textContent = formattedDate;
+            } else {
+                dateElement.textContent = '--';
+            }
+        }
+        
+        // Update rating element (for UV and PM10)
+        if (update.ratingId) {
+            const ratingElement = document.getElementById(update.ratingId);
+            if (ratingElement) {
+                ratingElement.textContent = update.rating;
+            }
+        }
+        
+        // Also update the duplicate elements for seamless loop
+        const valueElement2 = document.getElementById(update.valueId + '-2');
+        if (valueElement2) {
+            valueElement2.textContent = update.value;
+        }
+        
+        const dateElement2 = document.getElementById(update.dateId + '-2');
+        if (dateElement2) {
+            if (update.date) {
+                // Format the date for display
+                const date = new Date(update.date);
+                const formattedDate = date.toLocaleDateString('en-AU', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+                dateElement2.textContent = formattedDate;
+            } else {
+                dateElement2.textContent = '--';
+            }
+        }
+        
+        // Update duplicate rating element (for UV and PM10)
+        if (update.ratingId) {
+            const ratingElement2 = document.getElementById(update.ratingId + '-2');
+            if (ratingElement2) {
+                ratingElement2.textContent = update.rating;
+            }
+        }
+    });
+    
+    // Calculate and set animation duration for smooth continuous scrolling
+    setTimeout(() => {
+        const tickerContent = document.querySelector('.ticker-content');
+        if (tickerContent) {
+            const contentWidth = tickerContent.scrollWidth;
+            const containerWidth = tickerContent.parentElement.offsetWidth;
+            
+            // Calculate duration based on content width (50% of total content since we have duplicates)
+            // Use a base speed of 50 pixels per second for smooth scrolling
+            const baseSpeed = 50; // pixels per second
+            const duration = (contentWidth / 2) / baseSpeed; // Duration for half the content
+            
+            // Set minimum and maximum duration limits
+            const minDuration = 30; // seconds
+            const maxDuration = 120; // seconds
+            const finalDuration = Math.max(minDuration, Math.min(maxDuration, duration));
+            
+            tickerContent.style.animationDuration = `${finalDuration}s`;
+        }
+    }, 100); // Small delay to ensure content is rendered
+}
+
+function updateRiskLevel(elementId, value, type) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    if (type === 'uv') {
+        if (value >= 11) element.textContent = '(Extreme)';
+        else if (value >= 8) element.textContent = '(Very High)';
+        else if (value >= 6) element.textContent = '(High)';
+        else if (value >= 3) element.textContent = '(Moderate)';
+        else element.textContent = '(Low)';
+    } else if (type === 'pm10') {
+        if (value > 250.4) element.textContent = '(Hazardous)';
+        else if (value > 150.4) element.textContent = '(Severe)';
+        else if (value > 55.4) element.textContent = '(Unhealthy)';
+        else if (value > 35.4) element.textContent = '(Poor)';
+        else if (value > 12) element.textContent = '(Moderate)';
+        else element.textContent = '(Good)';
+    }
 }

@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize theme
+    initializeTheme();
+    
     // Initialize all charts
     initializeCharts();
     
@@ -90,6 +93,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Theme toggle functionality
+    document.querySelectorAll('input[name="themeToggle"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            const theme = this.value;
+            setTheme(theme);
+            localStorage.setItem('theme', theme);
+        });
+    });
+    
     updateCurrentTime();
     setInterval(updateCurrentTime, 1000);
     fetchAndDisplaySunriseSunset();
@@ -106,7 +119,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Top Stats
     fetchAndUpdateTopStats();
     setInterval(fetchAndUpdateTopStats, 60 * 60 * 1000); // Update every hour
+    
+    // Initialize Tides
+    fetchAndUpdateTides();
+    setInterval(fetchAndUpdateTides, 60 * 60 * 1000); // Update every hour
+    
+    // Initialize Dam Levels
+    fetchAndUpdateDamLevels();
+    setInterval(fetchAndUpdateDamLevels, 60 * 60 * 1000); // Update every hour
 });
+
+// Theme management functions
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+    
+    // Set the correct radio button
+    const radioButton = document.getElementById(savedTheme + 'Mode');
+    if (radioButton) {
+        radioButton.checked = true;
+    }
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.querySelector('html').setAttribute('data-theme', theme);
+    
+    // Update Plotly charts theme if they exist
+    if (window.Plotly) {
+        const layout = {
+            paper_bgcolor: theme === 'dark' ? '#333333' : '#ffffff',
+            plot_bgcolor: theme === 'dark' ? '#333333' : '#ffffff',
+            font: {
+                color: theme === 'dark' ? '#ffffff' : '#000000'
+            }
+        };
+        
+        // Update all existing charts
+        const chartDivs = document.querySelectorAll('.plotly-graph');
+        chartDivs.forEach(div => {
+            if (div.data && div.layout) {
+                Plotly.relayout(div, layout);
+            }
+        });
+    }
+}
 
 let latestData = null;
 let latestForecast = null;
@@ -331,6 +388,10 @@ async function updatePredictedWeatherConditionsCard(forecast) {
 }
 
 function plotGraph(divId, traces, layout, legendAbove) {
+    // Get current theme
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const isDark = currentTheme === 'dark';
+    
     // Generate fixed 6-hour interval tickvals and ticktext for the x-axis
     if (traces.length && traces[0].x && traces[0].x.length) {
         const xVals = traces[0].x;
@@ -361,12 +422,23 @@ function plotGraph(divId, traces, layout, legendAbove) {
             margin: { t: legendAbove ? 60 : 20 },
             autosize: true,
             height: 320,
+            paper_bgcolor: isDark ? '#333333' : '#ffffff',
+            plot_bgcolor: isDark ? '#333333' : '#ffffff',
+            font: {
+                color: isDark ? '#ffffff' : '#000000'
+            },
             xaxis: {
                 title: 'Time',
                 tickangle: -45,
                 automargin: true,
                 tickvals: tickvals,
-                ticktext: ticktext
+                ticktext: ticktext,
+                gridcolor: isDark ? '#444444' : '#e1e5e9',
+                color: isDark ? '#cccccc' : '#666666'
+            },
+            yaxis: {
+                gridcolor: isDark ? '#444444' : '#e1e5e9',
+                color: isDark ? '#cccccc' : '#666666'
             }
         }, layout);
     } else {
@@ -374,10 +446,21 @@ function plotGraph(divId, traces, layout, legendAbove) {
             margin: { t: legendAbove ? 60 : 20 },
             autosize: true,
             height: 320,
+            paper_bgcolor: isDark ? '#333333' : '#ffffff',
+            plot_bgcolor: isDark ? '#333333' : '#ffffff',
+            font: {
+                color: isDark ? '#ffffff' : '#000000'
+            },
             xaxis: {
                 title: 'Time',
                 tickangle: -45,
-                automargin: true
+                automargin: true,
+                gridcolor: isDark ? '#444444' : '#e1e5e9',
+                color: isDark ? '#cccccc' : '#666666'
+            },
+            yaxis: {
+                gridcolor: isDark ? '#444444' : '#e1e5e9',
+                color: isDark ? '#cccccc' : '#666666'
             }
         }, layout);
     }
@@ -387,7 +470,12 @@ function plotGraph(divId, traces, layout, legendAbove) {
             yanchor: 'bottom',
             y: 1.12,
             xanchor: 'center',
-            x: 0.5
+            x: 0.5,
+            bgcolor: isDark ? 'rgba(51, 51, 51, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+            bordercolor: isDark ? '#444444' : '#e1e5e9',
+            font: {
+                color: isDark ? '#ffffff' : '#000000'
+            }
         };
     }
     Plotly.newPlot(divId, traces, layout, {responsive: true, displayModeBar: false, useResizeHandler: true});
@@ -2185,18 +2273,260 @@ function updateRiskLevel(elementId, value, type) {
     const element = document.getElementById(elementId);
     if (!element) return;
     
+    let rating, color;
+    
     if (type === 'uv') {
-        if (value >= 11) element.textContent = '(Extreme)';
-        else if (value >= 8) element.textContent = '(Very High)';
-        else if (value >= 6) element.textContent = '(High)';
-        else if (value >= 3) element.textContent = '(Moderate)';
-        else element.textContent = '(Low)';
+        if (value <= 2) { rating = 'Low'; color = 'success'; }
+        else if (value <= 5) { rating = 'Moderate'; color = 'warning'; }
+        else if (value <= 7) { rating = 'High'; color = 'danger'; }
+        else if (value <= 10) { rating = 'Very High'; color = 'danger'; }
+        else { rating = 'Extreme'; color = 'danger'; }
     } else if (type === 'pm10') {
-        if (value > 250.4) element.textContent = '(Hazardous)';
-        else if (value > 150.4) element.textContent = '(Severe)';
-        else if (value > 55.4) element.textContent = '(Unhealthy)';
-        else if (value > 35.4) element.textContent = '(Poor)';
-        else if (value > 12) element.textContent = '(Moderate)';
-        else element.textContent = '(Good)';
+        if (value <= 20) { rating = 'Good'; color = 'success'; }
+        else if (value <= 50) { rating = 'Moderate'; color = 'warning'; }
+        else if (value <= 100) { rating = 'Poor'; color = 'danger'; }
+        else if (value <= 150) { rating = 'Very Poor'; color = 'danger'; }
+        else { rating = 'Hazardous'; color = 'danger'; }
     }
+    
+    element.innerHTML = `<span class="badge bg-${color}">${rating}</span>`;
+}
+
+// Tides functionality
+async function fetchAndUpdateTides() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    
+    try {
+        const response = await fetch(`${basePath}/api/tides`);
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        updateTidesCard(data);
+    } catch (error) {
+        console.error('Error fetching tides data:', error);
+        showTidesError();
+    }
+}
+
+function updateTidesCard(data) {
+    const loadingElement = document.getElementById('tides-loading');
+    const contentElement = document.getElementById('tides-content');
+    const errorElement = document.getElementById('tides-error');
+    
+    // Hide loading and error, show content
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (errorElement) errorElement.style.display = 'none';
+    if (contentElement) contentElement.style.display = 'block';
+    
+    // Update station information
+    const stationNameElement = document.getElementById('tide-station-name');
+    const stationSourceElement = document.getElementById('tide-station-source');
+    const stationDistanceElement = document.getElementById('tide-station-distance');
+    
+    if (stationNameElement) {
+        const stationName = data.station_name || 'Unknown';
+        // Capitalize first letter, lowercase the rest
+        const formattedName = stationName.charAt(0).toUpperCase() + stationName.slice(1).toLowerCase();
+        stationNameElement.textContent = formattedName;
+    }
+    if (stationSourceElement) {
+        const stationSource = data.station_source || 'Unknown';
+        // Convert to uppercase
+        stationSourceElement.textContent = stationSource.toUpperCase();
+    }
+    if (stationDistanceElement) stationDistanceElement.textContent = data.station_distance || '0';
+    
+    // Update tides list
+    const tidesListElement = document.getElementById('tides-list');
+    if (tidesListElement) {
+        tidesListElement.innerHTML = '';
+        
+        if (data.tides && data.tides.length > 0) {
+            // Sort all tides by time
+            const sortedTides = data.tides.sort((a, b) => new Date(a.time_full) - new Date(b.time_full));
+            
+            // Create a container for the two-column layout
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'row';
+            
+            // Create left column
+            const leftColumn = document.createElement('div');
+            leftColumn.className = 'col-6';
+            
+            // Create right column
+            const rightColumn = document.createElement('div');
+            rightColumn.className = 'col-6';
+            
+            // Distribute tides chronologically across the two columns
+            sortedTides.forEach((tide, index) => {
+                const tideElement = createTideElement(tide);
+                
+                // Alternate between left and right columns
+                if (index % 2 === 0) {
+                    leftColumn.appendChild(tideElement);
+                } else {
+                    rightColumn.appendChild(tideElement);
+                }
+            });
+            
+            // Add columns to container
+            containerDiv.appendChild(leftColumn);
+            containerDiv.appendChild(rightColumn);
+            
+            // Add container to tides list
+            tidesListElement.appendChild(containerDiv);
+        } else {
+            tidesListElement.innerHTML = '<p class="text-muted">No tide data available for today</p>';
+        }
+    }
+}
+
+function createTideElement(tide) {
+    const tideDiv = document.createElement('div');
+    tideDiv.className = 'd-flex justify-content-between align-items-center mb-3 p-3 border rounded w-100';
+    
+    // Add future indicator styling
+    if (tide.is_future) {
+        tideDiv.classList.add('border-primary', 'bg-light');
+    } else {
+        tideDiv.classList.add('border-secondary', 'bg-light', 'opacity-75');
+    }
+    
+    const tideType = tide.type === 'high' ? 'High Tide' : 'Low Tide';
+    const tideIcon = tide.type === 'high' ? '🌊' : '🌊';
+    const tideColor = tide.type === 'high' ? 'text-primary' : 'text-info';
+    
+    // Parse the full time to get date and time
+    const tideDateTime = new Date(tide.time_full);
+    const tideDate = tideDateTime.toLocaleDateString('en-AU', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+    const tideTime = tideDateTime.toLocaleTimeString('en-AU', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+    });
+    
+    tideDiv.innerHTML = `
+        <div class="d-flex align-items-center flex-grow-1">
+            <span class="me-3" style="font-size: 1.5rem;">${tideIcon}</span>
+            <div class="flex-grow-1">
+                <div class="fw-bold ${tideColor} fs-6">${tideType}</div>
+                <div class="text-muted small">${tideDate} at ${tideTime}</div>
+            </div>
+        </div>
+        <div class="text-end ms-3">
+            <div class="fw-bold fs-5">${tide.height.toFixed(1)}m</div>
+            <div class="small">
+                ${tide.is_future ? '<span class="text-primary">Upcoming</span>' : '<span class="text-muted">Past</span>'}
+            </div>
+        </div>
+    `;
+    
+    return tideDiv;
+}
+
+function showTidesError() {
+    const loadingElement = document.getElementById('tides-loading');
+    const contentElement = document.getElementById('tides-content');
+    const errorElement = document.getElementById('tides-error');
+    
+    // Hide loading and content, show error
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (contentElement) contentElement.style.display = 'none';
+    if (errorElement) errorElement.style.display = 'block';
+}
+
+// Dam Levels functionality
+async function fetchAndUpdateDamLevels() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    
+    try {
+        const response = await fetch(`${basePath}/api/dam-levels`);
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        updateDamLevelsCard(data);
+    } catch (error) {
+        console.error('Error fetching dam levels data:', error);
+        showDamLevelsError();
+    }
+}
+
+function updateDamLevelsCard(data) {
+    const loadingElement = document.getElementById('dam-levels-loading');
+    const contentElement = document.getElementById('dam-levels-content');
+    const errorElement = document.getElementById('dam-levels-error');
+    
+    // Hide loading and error, show content
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (errorElement) errorElement.style.display = 'none';
+    if (contentElement) contentElement.style.display = 'block';
+    
+    // Update last updated timestamp
+    const updatedElement = document.getElementById('dam-levels-updated');
+    if (updatedElement) updatedElement.textContent = data.last_updated || 'Unknown';
+    
+    // Update dams list
+    const damsListElement = document.getElementById('dam-levels-list');
+    if (damsListElement) {
+        damsListElement.innerHTML = '';
+        
+        if (data.dams && data.dams.length > 0) {
+            data.dams.forEach(dam => {
+                const damElement = createDamElement(dam);
+                damsListElement.appendChild(damElement);
+            });
+        } else {
+            damsListElement.innerHTML = '<p class="text-muted">No dam data available</p>';
+        }
+    }
+}
+
+function createDamElement(dam) {
+    const damDiv = document.createElement('div');
+    damDiv.className = 'd-flex justify-content-between align-items-center mb-3 p-3 border rounded w-100';
+    
+    // Add styling based on dam level
+    damDiv.style.borderColor = dam.color;
+    damDiv.style.backgroundColor = dam.color + '10'; // Add slight tint
+    
+    // Format volume with commas for readability
+    const formattedVolume = dam.volume_ml.toLocaleString();
+    
+    damDiv.innerHTML = `
+        <div class="d-flex align-items-center flex-grow-1">
+            <div class="flex-grow-1">
+                <div class="fw-bold fs-6">${dam.name}</div>
+                <div class="text-muted small">Volume: ${formattedVolume} ML</div>
+            </div>
+        </div>
+        <div class="text-end ms-3">
+            <div class="fw-bold fs-5" style="color: ${dam.color};">${dam.percent_full.toFixed(1)}%</div>
+            <div class="small text-muted">Full</div>
+        </div>
+    `;
+    
+    return damDiv;
+}
+
+function showDamLevelsError() {
+    const loadingElement = document.getElementById('dam-levels-loading');
+    const contentElement = document.getElementById('dam-levels-content');
+    const errorElement = document.getElementById('dam-levels-error');
+    
+    // Hide loading and content, show error
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (contentElement) contentElement.style.display = 'none';
+    if (errorElement) errorElement.style.display = 'block';
 }

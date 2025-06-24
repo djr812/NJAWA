@@ -35,6 +35,10 @@ BATTERY_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'battery_cache.json
 BATTERY_CACHE_TTL = 43200  # 12 hours in seconds
 WEATHER_CAM_CACHE_TTL = 300  # 5 minutes in seconds
 WAPI_KEY = os.getenv('WAPI_KEY')
+SG_KEY = os.getenv('SG_KEY')
+MY_LAT = -27.40737
+MY_LNG = 152.91990
+
 
 # QFD Alerts configuration
 QFD_ALERTS_URL = "https://publiccontent-gis-psba-qld-gov-au.s3.amazonaws.com/content/Feeds/BushfireCurrentIncidents/bushfireAlert.json"
@@ -45,6 +49,14 @@ QFD_ALERTS_CACHE_TTL = 1800  # 30 minutes in seconds
 BOM_WARNINGS_URL = "http://www.bom.gov.au/fwo/IDZ00056.warnings_qld.xml"
 BOM_WARNINGS_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'bom_warnings_cache.json')
 BOM_WARNINGS_CACHE_TTL = 1800  # 30 minutes in seconds
+
+# Tides configuration
+TIDES_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'tides_cache.json')
+TIDES_CACHE_TTL = 86400  # 24 hours in seconds (cache for entire day)
+
+# Dam Levels configuration
+DAM_LEVELS_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'dam_levels_cache.json')
+DAM_LEVELS_CACHE_TTL = 86400  # 24 hours in seconds (cache for entire day)
 
 # Ferny Grove area suburbs for filtering alerts
 FERNY_GROVE_AREA_SUBURBS = [
@@ -739,30 +751,242 @@ def api_top_stats():
 @app.route('/api/rainfall_24h')
 def api_rainfall_24h():
     engine = create_engine(DB_URI)
+    now = datetime.now()
+    # Get rainfall for the last 24 hours
+    start_time = int((now - timedelta(hours=24)).timestamp())
+    end_time = int(now.timestamp())
     
+    query = f'''
+        SELECT SUM(rain) as total_rainfall
+        FROM archive
+        WHERE dateTime >= {start_time} AND dateTime <= {end_time}
+    '''
+    
+    df = pd.read_sql(query, engine)
+    total_rainfall = df['total_rainfall'].iloc[0] if not df.empty else 0
+    
+    return jsonify({'total_rainfall_24h': round(total_rainfall, 2)})
+
+@app.route('/api/tides')
+def api_tides():
+    now = time.time()
+    today = datetime.now().date().isoformat()
+    tomorrow = (datetime.now().date() + timedelta(days=1)).isoformat()
+    
+    # Try to load cache
+    if os.path.exists(TIDES_CACHE_PATH):
+        with open(TIDES_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if cache.get('date') == today and now - cache.get('timestamp', 0) < TIDES_CACHE_TTL:
+                    return jsonify(cache['data'])
+            except Exception:
+                pass
+    
+    # If no valid cache, fetch from API
     try:
-        # Calculate 24-hour rainfall total
-        now = datetime.now()
-        start_time = int((now - timedelta(hours=24)).timestamp())
-        end_time = int(now.timestamp())
+        url = "https://api.stormglass.io/v2/tide/extremes/point"
+        params = {
+            'lat': MY_LAT,
+            'lng': MY_LNG,
+            'start': today,
+            'end': tomorrow
+        }
+        headers = {
+            'Authorization': SG_KEY
+        }
         
-        rainfall_query = f"""
-            SELECT SUM(rain) as total_rainfall
-            FROM archive 
-            WHERE dateTime >= {start_time} AND dateTime <= {end_time} AND rain IS NOT NULL AND rain > 0
-        """
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()
         
-        df = pd.read_sql(rainfall_query, engine)
+        data = response.json()
         
-        total_rainfall = 0
-        if not df.empty and df['total_rainfall'].iloc[0] is not None:
-            total_rainfall = round(df['total_rainfall'].iloc[0] * 25.4, 1)  # Convert inches to mm
+        # Process the data
+        tides_data = {
+            'station_name': data['meta']['station']['name'],
+            'station_source': data['meta']['station']['source'],
+            'station_distance': data['meta']['station']['distance'],
+            'tides': []
+        }
         
-        return jsonify({'rainfall_24h': total_rainfall})
+        for tide in data['data']:
+            # Convert UTC time to Brisbane time
+            tide_time = datetime.fromisoformat(tide['time'].replace('Z', '+00:00'))
+            brisbane_tz = pytz.timezone('Australia/Brisbane')
+            tide_time_brisbane = tide_time.astimezone(brisbane_tz)
+            
+            tides_data['tides'].append({
+                'height': tide['height'],
+                'type': tide['type'],
+                'time': tide_time_brisbane.strftime('%H:%M'),
+                'time_full': tide_time_brisbane.strftime('%Y-%m-%d %H:%M'),
+                'is_future': tide_time_brisbane > datetime.now(brisbane_tz)
+            })
+        
+        # Sort tides by time
+        tides_data['tides'].sort(key=lambda x: x['time_full'])
+        
+        # Cache the result
+        cache_data = {
+            'timestamp': now,
+            'date': today,
+            'data': tides_data
+        }
+        
+        with open(TIDES_CACHE_PATH, 'w') as f:
+            json.dump(cache_data, f)
+        
+        return jsonify(tides_data)
         
     except Exception as e:
-        print(f"Error fetching 24-hour rainfall: {e}")
-        return jsonify({'rainfall_24h': 0, 'error': str(e)})
+        print(f"Error fetching tides data: {e}")
+        return jsonify({
+            'error': 'Failed to fetch tides data',
+            'station_name': 'Unknown',
+            'station_source': 'Unknown',
+            'station_distance': 0,
+            'tides': []
+        })
+
+@app.route('/api/dam-levels')
+def api_dam_levels():
+    now = time.time()
+    today = datetime.now().date().isoformat()
+    
+    # Try to load cache
+    if os.path.exists(DAM_LEVELS_CACHE_PATH):
+        with open(DAM_LEVELS_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if cache.get('date') == today and now - cache.get('timestamp', 0) < DAM_LEVELS_CACHE_TTL:
+                    return jsonify(cache['data'])
+            except Exception:
+                pass
+    
+    # If no valid cache, fetch from website
+    try:
+        url = "https://www.seqwater.com.au/dam-levels"
+        
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
+        
+        service = Service('/usr/bin/chromedriver')
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        
+        try:
+            driver.get(url)
+            # Wait for the page to load
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "table"))
+            )
+            
+            # Find the dam levels table
+            tables = driver.find_elements(By.TAG_NAME, "table")
+            dam_data = []
+            
+            for table in tables:
+                rows = table.find_elements(By.TAG_NAME, "tr")
+                for row in rows:
+                    cells = row.find_elements(By.TAG_NAME, "td")
+                    if len(cells) >= 4:
+                        dam_name = cells[0].text.strip()
+                        
+                        # Check if this is one of our target dams
+                        target_dams = ['North Pine', 'Somerset', 'Wivenhoe']
+                        if any(target in dam_name for target in target_dams):
+                            # Only process dams that have "View historical dam levels" (these have correct data)
+                            if 'View historical dam levels' not in dam_name:
+                                continue
+                                
+                            # Filter out "View historical dam levels" text
+                            dam_name = dam_name.replace('View historical dam levels', '').strip()
+                            
+                            try:
+                                # Extract volume and percentage - need to check which columns have the right data
+                                # Let's look at all cells to find the right data
+                                volume_ml = None
+                                percent_full = None
+                                
+                                for i, cell in enumerate(cells):
+                                    cell_text = cell.text.strip()
+                                    
+                                    # Skip cells that contain "View historical dam levels"
+                                    if 'View historical dam levels' in cell_text:
+                                        continue
+                                    
+                                    # Look for volume data (contains "ML")
+                                    if 'ML' in cell_text and volume_ml is None:
+                                        # Remove "ML" and any spaces, then convert to float
+                                        volume_text = cell_text.replace('ML', '').replace(' ', '').replace(',', '')
+                                        try:
+                                            volume_ml = float(volume_text)
+                                        except ValueError:
+                                            continue
+                                    
+                                    # Look for percentage data (contains "%")
+                                    elif '%' in cell_text and percent_full is None:
+                                        # Remove "%" and convert to float
+                                        percent_text = cell_text.replace('%', '').strip()
+                                        try:
+                                            percent_full = float(percent_text)
+                                        except ValueError:
+                                            continue
+                                
+                                # Only add if we found both volume and percentage
+                                if volume_ml is not None and percent_full is not None:
+                                    # Determine color based on percentage
+                                    if percent_full <= 19:
+                                        color = '#FF0000'  # Bright Red
+                                    elif percent_full <= 49:
+                                        color = '#FF8C00'  # Bright Orange
+                                    elif percent_full <= 70:
+                                        color = '#4169E1'  # Royal Blue
+                                    else:
+                                        color = '#00FF00'  # Bright Green
+                                    
+                                    dam_data.append({
+                                        'name': dam_name,
+                                        'volume_ml': volume_ml,
+                                        'percent_full': percent_full,
+                                        'color': color
+                                    })
+                                
+                            except (ValueError, AttributeError) as e:
+                                print(f"Error parsing dam data for {dam_name}: {e}")
+                                continue
+            
+            # Sort dams by name for consistent display
+            dam_data.sort(key=lambda x: x['name'])
+            
+            # Cache the result
+            cache_data = {
+                'timestamp': now,
+                'date': today,
+                'data': {
+                    'dams': dam_data,
+                    'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+            }
+            
+            with open(DAM_LEVELS_CACHE_PATH, 'w') as f:
+                json.dump(cache_data, f)
+            
+            return jsonify(cache_data['data'])
+            
+        finally:
+            driver.quit()
+        
+    except Exception as e:
+        print(f"Error fetching dam levels data: {e}")
+        return jsonify({
+            'error': 'Failed to fetch dam levels data',
+            'dams': [],
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 

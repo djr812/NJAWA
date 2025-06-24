@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,6 +27,23 @@
           <li><a class="dropdown-item period-option" href="#" data-period="28d">Last 28 days</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="static/videos/latest_tl.mp4" download>Download Timelapse</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li class="dropdown-item">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="themeToggle" id="lightMode" value="light" checked>
+              <label class="form-check-label" for="lightMode">
+                <i class="fas fa-sun me-2"></i>Light Mode
+              </label>
+            </div>
+          </li>
+          <li class="dropdown-item">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="themeToggle" id="darkMode" value="dark">
+              <label class="form-check-label" for="darkMode">
+                <i class="fas fa-moon me-2"></i>Dark Mode
+              </label>
+            </div>
+          </li>
         </ul>
       </div>
     </div>
@@ -130,7 +147,75 @@
         </div>
       </div>
     </div>
-    <!-- Row 4: Bar Area Metrics (4 cards) -->
+    <!-- Row 4: Tides | Dam Levels -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Tides <span class="period-label text-end flex-grow-1">Latest</span></div>
+        <div class="card-body position-relative" id="tides-body">
+          <div id="tides-loading" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading tide data...</p>
+          </div>
+          <div id="tides-content" style="display: none;">
+            <div class="row">
+              <div class="col-md-4">
+                <h6 class="mb-2 text-start">Station Information</h6>
+                <div class="mb-2 text-start">
+                  <strong>Name:</strong> <span id="tide-station-name">--</span>
+                </div>
+                <div class="mb-2 text-start">
+                  <strong>Source:</strong> <span id="tide-station-source">--</span>
+                </div>
+                <div class="mb-0 text-start">
+                  <strong>Distance:</strong> <span id="tide-station-distance">--</span> km
+                </div>
+              </div>
+              <div class="col-md-8">
+                <div id="tides-list">
+                  <!-- Tide entries will be populated here -->
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="tides-error" class="text-center" style="display: none;">
+            <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+            <p class="mt-2">Unable to load tide data</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Dam Levels <span class="period-label text-end flex-grow-1">Latest</span></div>
+        <div class="card-body position-relative" id="dam-levels-body">
+          <div id="dam-levels-loading" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading dam levels...</p>
+          </div>
+          <div id="dam-levels-content" style="display: none;">
+            <div class="row">
+              <div class="col-12">
+                <div id="dam-levels-list">
+                  <!-- Dam entries will be populated here -->
+                </div>
+                <div class="mt-3 text-center">
+                  <small class="text-muted">Last updated: <span id="dam-levels-updated">--</span></small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="dam-levels-error" class="text-center" style="display: none;">
+            <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+            <p class="mt-2">Unable to load dam levels</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Row 5: Bar Area Metrics (4 cards) -->
     <div class="row g-4 mt-2 mb-2">
       <div class="col-md-3 d-flex">
         <div class="card h-100 w-100">
@@ -167,7 +252,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 5: Local Weather Cards -->
+    <!-- Row 6: Local Weather Cards -->
     <div class="row g-4 mt-4">
         <div class="col-md-3">
             <div class="card">
@@ -210,7 +295,7 @@
             </div>
         </div>
     </div>
-    <!-- Row 6: Outside Temperature | Bar Comfort Level -->
+    <!-- Row 7: Outside Temperature | Bar Comfort Level -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
@@ -241,7 +326,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 7: Rainfall | Lightning -->
+    <!-- Row 8: Rainfall | Lightning -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
@@ -260,7 +345,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 8: Barometric Pressure | Humidity -->
+    <!-- Row 9: Barometric Pressure | Humidity -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Barometric Pressure <span id="pressure-period" class="period-label text-end flex-grow-1"></span></div>
@@ -279,7 +364,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 9: Solar Levels | Inside Temperature -->
+    <!-- Row 10: Solar Levels | Inside Temperature -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Solar Levels <span id="solar-period" class="period-label text-end flex-grow-1"></span></div>
@@ -298,7 +383,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 10: Heat Index | Wind Chill -->
+    <!-- Row 11: Heat Index | Wind Chill -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Heat Index <span id="heat-index-period" class="period-label text-end flex-grow-1"></span></div>
@@ -317,7 +402,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 11: Wind Speed & Direction, full width -->
+    <!-- Row 12: Wind Speed & Direction, full width -->
     <div class="col-12">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Wind Speed & Direction <span id="wind-period" class="period-label text-end flex-grow-1"></span></div>
@@ -327,7 +412,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 12: My Weather Setup, full width -->
+    <!-- Row 13: My Weather Setup, full width -->
     <div class="col-12">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">My Weather Setup <span class="period-label text-end flex-grow-1">Current Configuration</span></div>
@@ -409,7 +494,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 13: Battery Status Cards -->
+    <!-- Row 14: Battery Status Cards -->
     <div class="row g-4 mt-4">
       <div class="col-md-3">
         <div class="card">

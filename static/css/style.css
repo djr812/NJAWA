@@ -30,22 +30,22 @@ body {
     letter-spacing: 0.04em;
 }
 .card {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    box-shadow: var(--card-shadow);
     border-radius: 0.75rem;
     margin-left: 0;
     margin-right: 0;
-    border: 1.5px solid var(--powder-blue);
+    border: 1.5px solid var(--border-color);
     transition: all 0.3s ease;
 }
 .card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    box-shadow: var(--card-hover-shadow);
     transform: translateY(-2px);
 }
 .card-header {
     font-weight: 600;
     background: linear-gradient(90deg, var(--tufts-blue) 60%, var(--powder-blue) 100%);
     color: #fff;
-    border-bottom: 1px solid var(--powder-blue);
+    border-bottom: 1px solid var(--border-color);
     letter-spacing: 0.03em;
 }
 .card-body {
@@ -53,7 +53,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fafdff;
+    background: var(--bg-card);
     padding: 1.5rem;
 }
 .plotly-graph {
@@ -287,4 +287,189 @@ body {
 /* Pause ticker on hover */
 .ticker-container:hover .ticker-content {
     animation-play-state: paused;
+}
+
+/* Dark Mode Styles */
+html[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-card: #333333;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #999999;
+    --border-color: #444444;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    --card-hover-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+html[data-theme="dark"] body {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .container-fluid {
+    background: var(--bg-primary);
+}
+
+html[data-theme="dark"] .card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color);
+    box-shadow: var(--card-shadow);
+}
+
+html[data-theme="dark"] .card:hover {
+    box-shadow: var(--card-hover-shadow);
+}
+
+html[data-theme="dark"] .card-header {
+    background: linear-gradient(90deg, #1e3a8a 60%, #3b82f6 100%);
+    border-bottom-color: var(--border-color);
+}
+
+html[data-theme="dark"] .card-body {
+    background: var(--bg-card) !important;
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .navbar {
+    background: linear-gradient(90deg, #1e3a8a 60%, #3b82f6 100%) !important;
+}
+
+html[data-theme="dark"] .dropdown-menu {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+}
+
+html[data-theme="dark"] .dropdown-item {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .dropdown-item:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .dropdown-divider {
+    border-color: var(--border-color);
+}
+
+html[data-theme="dark"] .form-check-label {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .sunrise-sunset-info {
+    color: #60a5fa;
+}
+
+html[data-theme="dark"] .text-muted {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme="dark"] .period-label {
+    color: #a3bffa;
+}
+
+html[data-theme="dark"] .current-time-label {
+    color: #a3bffa;
+}
+
+html[data-theme="dark"] .card-overlay {
+    color: #60a5fa;
+    background: rgba(30, 58, 138, 0.1);
+}
+
+html[data-theme="dark"] .h6 {
+    color: var(--text-secondary);
+}
+
+html[data-theme="dark"] #predicted-weather-conditions-body {
+    background: var(--bg-card) !important;
+}
+
+html[data-theme="dark"] #actual-weather-conditions-body {
+    background: var(--bg-card) !important;
+}
+
+html[data-theme="dark"] #qfd-alerts-body {
+    background: var(--bg-card) !important;
+}
+
+html[data-theme="dark"] #bom-radar-body {
+    background: var(--bg-card) !important;
+}
+
+html[data-theme="dark"] .weather-condition .h2 {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .weather-condition .h6 {
+    color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .weather-condition div[style*="font-size: 1.8rem"] {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] #weather-setup-content {
+    background: var(--bg-card);
+}
+
+html[data-theme="dark"] .bar-metrics-row .card {
+    background: var(--bg-card) !important;
+}
+
+html[data-theme="dark"] .bar-metrics-row .card-body {
+    background: var(--bg-card) !important;
+}
+
+html[data-theme="dark"] .uv-card {
+    background: var(--bg-card) !important;
+}
+
+html[data-theme="dark"] .uv-card .card-body {
+    background: var(--bg-card) !important;
+}
+
+html[data-theme="dark"] .h1, html[data-theme="dark"] .h2, html[data-theme="dark"] .h3, html[data-theme="dark"] .h4, html[data-theme="dark"] .h5, html[data-theme="dark"] .h6 {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] p {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] li {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .list-unstyled li {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .text-justify {
+    color: var(--text-primary);
+}
+
+/* Theme transition */
+html, body, .card, .card-header, .card-body, .navbar, .dropdown-menu, .dropdown-item, .container-fluid {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Light Mode (default) */
+:root {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --text-primary: #000000;
+    --text-secondary: #666666;
+    --text-muted: #6c757d;
+    --border-color: #95B4D4;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    --card-hover-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+body {
+    background: var(--bg-primary);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    padding: 20px;
 } 

@@ -236,20 +236,18 @@ async function updatePredictedWeatherConditionsCard(forecast) {
     cardBody.innerHTML = '';
 
     if (forecast && forecast.ai_forecast) {
-        // Create main container with flex layout
+        // Create main container with responsive layout
         const mainContainer = document.createElement('div');
-        mainContainer.style.display = 'flex';
-        mainContainer.style.width = '100%';
-        mainContainer.style.gap = '20px';
+        mainContainer.className = 'row';
         cardBody.appendChild(mainContainer);
 
-        // Left Column: Image and Condition
-        const leftColumn = document.createElement('div');
-        leftColumn.style.flex = '1';
-        leftColumn.style.display = 'flex';
-        leftColumn.style.flexDirection = 'column';
-        leftColumn.style.alignItems = 'center';
-        mainContainer.appendChild(leftColumn);
+        // Top Section: Image and Condition (full width on mobile, left column on desktop)
+        const topSection = document.createElement('div');
+        topSection.className = 'col-12 col-md-6 mb-3 mb-md-0';
+        topSection.style.display = 'flex';
+        topSection.style.flexDirection = 'column';
+        topSection.style.alignItems = 'center';
+        mainContainer.appendChild(topSection);
 
         // Create image element
         const img = document.createElement('img');
@@ -258,7 +256,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         img.className = 'img-fluid weather-cam-img';
         img.style.maxHeight = '180px';
         img.style.marginBottom = '10px';
-        leftColumn.appendChild(img);
+        topSection.appendChild(img);
 
         // Create text element for forecast
         const textDiv = document.createElement('div');
@@ -291,15 +289,15 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         }
         
         textDiv.textContent = forecast.ai_forecast + windText;
-        leftColumn.appendChild(textDiv);
+        topSection.appendChild(textDiv);
 
-        // Right Column: Temperature Range and Probabilities
-        const rightColumn = document.createElement('div');
-        rightColumn.style.flex = '1';
-        rightColumn.style.display = 'flex';
-        rightColumn.style.flexDirection = 'column';
-        rightColumn.style.justifyContent = 'center';
-        mainContainer.appendChild(rightColumn);
+        // Bottom Section: Temperature Range and Probabilities (full width on mobile, right column on desktop)
+        const bottomSection = document.createElement('div');
+        bottomSection.className = 'col-12 col-md-6';
+        bottomSection.style.display = 'flex';
+        bottomSection.style.flexDirection = 'column';
+        bottomSection.style.justifyContent = 'center';
+        mainContainer.appendChild(bottomSection);
 
         // Add predicted minimum temperature with confidence and range
         if (forecast.predicted_min_temp !== undefined) {
@@ -311,7 +309,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
                 Predicted Min Temp: ${forecast.predicted_min_temp.toFixed(1)}°C (Confidence ${forecast.predicted_min_temp_confidence.toFixed(1)}%)<br>
                 Range: ${forecast.predicted_min_temp_range}
             `;
-            rightColumn.appendChild(minTempDiv);
+            bottomSection.appendChild(minTempDiv);
         }
 
         // Add predicted maximum temperature with confidence and range
@@ -324,7 +322,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
                 Predicted Max Temp: ${forecast.predicted_max_temp.toFixed(1)}°C (Confidence ${forecast.predicted_max_temp_confidence.toFixed(1)}%)<br>
                 Range: ${forecast.predicted_max_temp_range}
             `;
-            rightColumn.appendChild(maxTempDiv);
+            bottomSection.appendChild(maxTempDiv);
         }
 
         // Add chance of rain with confidence
@@ -334,7 +332,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             rainDiv.style.color = '#666';
             rainDiv.style.marginBottom = '15px';
             rainDiv.innerHTML = `Chance of Rain: ${forecast.chance_of_rain.toFixed(1)}% (Confidence ${forecast.chance_of_rain_confidence.toFixed(1)}%)`;
-            rightColumn.appendChild(rainDiv);
+            bottomSection.appendChild(rainDiv);
         }
 
         // Add chance of lightning with confidence
@@ -344,7 +342,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             lightningDiv.style.color = '#666';
             lightningDiv.style.marginBottom = '15px';
             lightningDiv.innerHTML = `Chance of Lightning: ${forecast.chance_of_lightning.toFixed(1)}% (Confidence ${forecast.chance_of_lightning_confidence.toFixed(1)}%)`;
-            rightColumn.appendChild(lightningDiv);
+            bottomSection.appendChild(lightningDiv);
         }
 
         // Fetch and display training days
@@ -354,11 +352,12 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             
             // Create container for bottom text
             const bottomTextContainer = document.createElement('div');
+            bottomTextContainer.className = 'col-12';
             bottomTextContainer.style.marginTop = '20px';
             bottomTextContainer.style.paddingTop = '10px';
             bottomTextContainer.style.borderTop = '1px solid #ddd';
             bottomTextContainer.style.width = '100%';
-            cardBody.appendChild(bottomTextContainer);
+            mainContainer.appendChild(bottomTextContainer);
 
             // Training days text
             const trainingDaysDiv = document.createElement('div');
@@ -2349,33 +2348,42 @@ function updateTidesCard(data) {
             // Sort all tides by time
             const sortedTides = data.tides.sort((a, b) => new Date(a.time_full) - new Date(b.time_full));
             
-            // Create a container for the two-column layout
+            // Create a container for responsive layout
             const containerDiv = document.createElement('div');
             containerDiv.className = 'row';
             
-            // Create left column
+            // Create left column for larger screens
             const leftColumn = document.createElement('div');
-            leftColumn.className = 'col-6';
+            leftColumn.className = 'col-md-6 d-none d-md-block';
             
-            // Create right column
+            // Create right column for larger screens
             const rightColumn = document.createElement('div');
-            rightColumn.className = 'col-6';
+            rightColumn.className = 'col-md-6 d-none d-md-block';
             
-            // Distribute tides chronologically across the two columns
+            // Create mobile column for smaller screens
+            const mobileColumn = document.createElement('div');
+            mobileColumn.className = 'col-12 d-md-none';
+            
+            // Distribute tides chronologically across the two columns for larger screens
             sortedTides.forEach((tide, index) => {
                 const tideElement = createTideElement(tide);
                 
-                // Alternate between left and right columns
+                // For larger screens: alternate between left and right columns
                 if (index % 2 === 0) {
                     leftColumn.appendChild(tideElement);
                 } else {
                     rightColumn.appendChild(tideElement);
                 }
+                
+                // For mobile: add all tides to single column in chronological order
+                const mobileTideElement = createTideElement(tide);
+                mobileColumn.appendChild(mobileTideElement);
             });
             
             // Add columns to container
             containerDiv.appendChild(leftColumn);
             containerDiv.appendChild(rightColumn);
+            containerDiv.appendChild(mobileColumn);
             
             // Add container to tides list
             tidesListElement.appendChild(containerDiv);

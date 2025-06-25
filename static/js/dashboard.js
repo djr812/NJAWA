@@ -1256,7 +1256,7 @@ async function updateActualWeatherConditions(data) {
         lightning_strike_count: Math.round(getValue(data.lightning_strike_count)),
         lightning_distance: getValue(data.lightning_distance) * 1.60934, // Convert miles to km
         rain: getValue(data.rain),
-        windSpeed: getValue(data.windSpeed),
+        windGust: getValue(data.windGust),
         windDir: getValue(data.windDir),
         outHumidity: getValue(data.outHumidity),
         cloudbase: getValue(data.cloudbase) * 0.3048, // Convert feet to meters
@@ -1382,8 +1382,8 @@ async function updateActualWeatherConditions(data) {
                         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outHumidity)}%</div>
                     </div>
                     <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">WIND SPEED</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.windSpeed)} km/h</div>
+                        <div class="h6 mb-1" style="color: #666;">WIND GUST</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.windGust)} km/h</div>
                     </div>
                     <div class="mb-4">
                         <div class="h6 mb-1" style="color: #666;">WIND DIRECTION</div>

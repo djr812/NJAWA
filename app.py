@@ -186,7 +186,7 @@ def api_data():
         start_time = int((now - timedelta(hours=24)).timestamp())
     end_time = int((now - timedelta(minutes=5)).timestamp())
     query = f'''
-        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windDir, heatIndex, windChill, lightning_strike_count, lightning_distance, luminosity, UV, cloudbase
+        SELECT dateTime, inTemp, outTemp, inHumidity, outHumidity, barometer, rain, windSpeed, windGust, windDir, heatIndex, windChill, lightning_strike_count, lightning_distance, luminosity, UV, cloudbase
         FROM archive
         WHERE dateTime >= {start_time} AND dateTime <= {end_time}
         ORDER BY dateTime ASC
@@ -199,6 +199,8 @@ def api_data():
     df['barometer'] = df['barometer'] * 33.8639  # Convert inHg to hPa
     df['heatIndex'] = (df['heatIndex'] - 32) * 5/9
     df['windChill'] = (df['windChill'] - 32) * 5/9
+    df['windSpeed'] = df['windSpeed'] * 1.60934  # Convert mph to km/h
+    df['windGust'] = df['windGust'] * 1.60934  # Convert mph to km/h
     df['lightning_distance'] = df['lightning_distance'] * 1.60934  # miles to km
     if 'luminosity' in df:
         df['luminosity'] = df['luminosity'] / 1000  # Lux to kLux
@@ -217,6 +219,7 @@ def api_data():
         'barometer': safe_list(df['barometer'].round(2)),
         'rain': safe_list(df['rain']),
         'windSpeed': safe_list(df['windSpeed']),
+        'windGust': safe_list(df['windGust']),
         'windDir': safe_list(df['windDir']),
         'heatIndex': safe_list(df['heatIndex'].round(2)),
         'windChill': safe_list(df['windChill'].round(2)),

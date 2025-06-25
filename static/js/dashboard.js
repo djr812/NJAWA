@@ -2525,7 +2525,7 @@ function createDamElement(dam) {
         </div>
         <div class="text-end ms-3">
             <div class="fw-bold fs-5" style="color: ${dam.color};">${dam.percent_full.toFixed(1)}%</div>
-            <div class="small text-muted">Full</div>
+            <div class="small text-muted">of Capacity</div>
         </div>
     `;
     

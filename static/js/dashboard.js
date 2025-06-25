@@ -127,6 +127,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Dam Levels
     fetchAndUpdateDamLevels();
     setInterval(fetchAndUpdateDamLevels, 60 * 60 * 1000); // Update every hour
+    
+    // Initialize Weekly Statistics
+    fetchAndUpdateWeeklyStats();
+    setInterval(fetchAndUpdateWeeklyStats, 60 * 60 * 1000); // Update every hour
 });
 
 // Theme management functions
@@ -2537,4 +2541,236 @@ function showDamLevelsError() {
     if (loadingElement) loadingElement.style.display = 'none';
     if (contentElement) contentElement.style.display = 'none';
     if (errorElement) errorElement.style.display = 'block';
+}
+
+async function fetchAndUpdateWeeklyStats() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    
+    try {
+        // Fetch trends data which includes both current and previous week data
+        const trendsResponse = await fetch(`${basePath}/api/weekly_stats_trends`);
+        const trendsData = await trendsResponse.json();
+        
+        if (trendsData.error) {
+            // Fallback to individual endpoints if trends endpoint fails
+            const currentResponse = await fetch(`${basePath}/api/weekly_stats_current`);
+            const currentData = await currentResponse.json();
+            updateWeeklyStatsCard('current', currentData);
+            
+            const previousResponse = await fetch(`${basePath}/api/weekly_stats_previous`);
+            const previousData = await previousResponse.json();
+            updateWeeklyStatsCard('previous', previousData);
+        } else {
+            // Use trends data with separate trend calculations for each week
+            updateWeeklyStatsCard('current', trendsData.current_week, trendsData.trends_current);
+            updateWeeklyStatsCard('previous', trendsData.previous_week, trendsData.trends_previous);
+        }
+        
+    } catch (error) {
+        console.error('Error fetching weekly stats:', error);
+        showWeeklyStatsError('current');
+        showWeeklyStatsError('previous');
+    }
+}
+
+function updateWeeklyStatsCard(type, data, trends = null) {
+    const loadingElement = document.getElementById(`weekly-stats-${type}-loading`);
+    const contentElement = document.getElementById(`weekly-stats-${type}-content`);
+    const errorElement = document.getElementById(`weekly-stats-${type}-error`);
+    
+    if (data.error) {
+        loadingElement.style.display = 'none';
+        contentElement.style.display = 'none';
+        errorElement.style.display = 'block';
+        return;
+    }
+    
+    loadingElement.style.display = 'none';
+    errorElement.style.display = 'none';
+    contentElement.style.display = 'block';
+    
+    // Format the date range
+    const weekStart = new Date(data.week_start);
+    const weekEnd = new Date(data.week_end);
+    const dateRange = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    
+    // Helper function to get trend icon
+    function getTrendIcon(metric, trends) {
+        if (!trends || !trends[metric]) return '';
+        
+        const trend = trends[metric];
+        let icon, color;
+        
+        switch (trend) {
+            case 'up':
+                icon = 'fa-arrow-up';
+                color = '#28a745'; // Green for increase
+                break;
+            case 'down':
+                icon = 'fa-arrow-down';
+                color = '#dc3545'; // Red for decrease
+                break;
+            case 'flat':
+            default:
+                icon = 'fa-equals';
+                color = '#6c757d'; // Gray for no change
+                break;
+        }
+        
+        return `<i class="fas ${icon} trend-icon" style="color: ${color}; margin-left: 0.25rem; font-size: 0.75rem;"></i>`;
+    }
+    
+    // Create the HTML content with improved layout and trend icons
+    const html = `
+        <div class="row mb-3">
+            <div class="col-12">
+                <h6 class="text-muted text-center border-bottom pb-2">${dateRange}</h6>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-6">
+                <div class="stat-group">
+                    <h6 class="text-muted mb-2 text-center">Temperature (°C)</h6>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <span class="stat-label">Min:</span>
+                            <span class="stat-value">${data.min_temp !== null ? data.min_temp + '°C' : '--'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Max:</span>
+                            <span class="stat-value">${data.max_temp !== null ? data.max_temp + '°C' : '--'}</span>
+                        </div>
+                    </div>
+                    <div class="stat-row text-center">
+                        <div class="stat-item single-value">
+                            <span class="stat-value fw-bold">Avg: ${data.avg_temp !== null ? data.avg_temp + '°C' : '--'}${getTrendIcon('avg_temp', trends)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-group">
+                    <h6 class="text-muted mb-2 text-center">Humidity (%)</h6>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <span class="stat-label">Min:</span>
+                            <span class="stat-value">${data.min_humidity !== null ? data.min_humidity + '%' : '--'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Max:</span>
+                            <span class="stat-value">${data.max_humidity !== null ? data.max_humidity + '%' : '--'}</span>
+                        </div>
+                    </div>
+                    <div class="stat-row text-center">
+                        <div class="stat-item single-value">
+                            <span class="stat-value fw-bold">Avg: ${data.avg_humidity !== null ? data.avg_humidity + '%' : '--'}${getTrendIcon('avg_humidity', trends)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-group">
+                    <h6 class="text-muted mb-2 text-center">Pressure (hPa)</h6>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <span class="stat-label">Min:</span>
+                            <span class="stat-value">${data.min_pressure !== null ? data.min_pressure : '--'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Max:</span>
+                            <span class="stat-value">${data.max_pressure !== null ? data.max_pressure : '--'}</span>
+                        </div>
+                    </div>
+                    <div class="stat-row text-center">
+                        <div class="stat-item single-value">
+                            <span class="stat-value fw-bold">Avg: ${data.avg_pressure !== null ? data.avg_pressure : '--'}${getTrendIcon('avg_pressure', trends)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-group">
+                    <h6 class="text-muted mb-2 text-center">Wind (km/h)</h6>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <span class="stat-label">Gust:</span>
+                            <span class="stat-value">${data.max_wind_gust !== null ? data.max_wind_gust : '--'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg:</span>
+                            <span class="stat-value">${data.avg_wind_speed !== null ? data.avg_wind_speed : '--'}${getTrendIcon('avg_wind_speed', trends)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-group">
+                    <h6 class="text-muted mb-2 text-center">Rainfall</h6>
+                    <div class="stat-row text-center">
+                        <div class="stat-item single-value">
+                            <span class="stat-value fw-bold fs-5">${data.total_rainfall !== null ? data.total_rainfall + ' mm' : '--'}${getTrendIcon('total_rainfall', trends)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-group">
+                    <h6 class="text-muted mb-2 text-center">UV Index</h6>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <span class="stat-label">Max:</span>
+                            <span class="stat-value">${data.max_uv !== null ? data.max_uv : '--'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg:</span>
+                            <span class="stat-value">${data.avg_uv !== null ? data.avg_uv : '--'}${getTrendIcon('avg_uv', trends)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-group">
+                    <h6 class="text-muted mb-2 text-center">Lightning</h6>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <span class="stat-label">Max:</span>
+                            <span class="stat-value">${data.max_lightning_strikes !== null ? data.max_lightning_strikes : '--'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total:</span>
+                            <span class="stat-value">${data.total_lightning_strikes !== null ? data.total_lightning_strikes : '--'}${getTrendIcon('total_lightning_strikes', trends)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-group">
+                    <h6 class="text-muted mb-2 text-center">PM10 (μg/m³)</h6>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <span class="stat-label">Max:</span>
+                            <span class="stat-value">${data.max_pm10 !== null ? data.max_pm10 : '--'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg:</span>
+                            <span class="stat-value">${data.avg_pm10 !== null ? data.avg_pm10 : '--'}${getTrendIcon('avg_pm10', trends)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    contentElement.innerHTML = html;
+}
+
+function showWeeklyStatsError(type) {
+    const loadingElement = document.getElementById(`weekly-stats-${type}-loading`);
+    const contentElement = document.getElementById(`weekly-stats-${type}-content`);
+    const errorElement = document.getElementById(`weekly-stats-${type}-error`);
+    
+    loadingElement.style.display = 'none';
+    contentElement.style.display = 'none';
+    errorElement.style.display = 'block';
 }

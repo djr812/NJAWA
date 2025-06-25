@@ -452,7 +452,7 @@ html[data-theme="dark"] .text-justify {
 
 /* Theme transition */
 html, body, .card, .card-header, .card-body, .navbar, .dropdown-menu, .dropdown-item, .container-fluid {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 /* Light Mode (default) */
@@ -472,4 +472,147 @@ body {
     background: var(--bg-primary);
     font-family: 'Segoe UI', Arial, sans-serif;
     padding: 20px;
+}
+
+/* Weekly Statistics Cards Styles */
+.stat-group {
+    background: rgba(42, 102, 182, 0.05);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(42, 102, 182, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stat-group:hover {
+    background: rgba(42, 102, 182, 0.08);
+    border-color: rgba(42, 102, 182, 0.2);
+    transform: translateY(-1px);
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.stat-row:last-child {
+    margin-bottom: 0;
+}
+
+.stat-row.text-center {
+    justify-content: center;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+}
+
+.stat-item.single-value {
+    flex: none;
+    width: 100%;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2A66B6;
+}
+
+.stat-value.fw-bold {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.stat-value.fs-5 {
+    font-size: 1.25rem !important;
+}
+
+/* Trend icon styles */
+.trend-icon {
+    transition: all 0.3s ease;
+    opacity: 0.8;
+}
+
+.trend-icon:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Dark theme styles for weekly statistics */
+html[data-theme="dark"] .stat-group {
+    background: rgba(149, 180, 212, 0.1);
+    border-color: rgba(149, 180, 212, 0.2);
+}
+
+html[data-theme="dark"] .stat-group:hover {
+    background: rgba(149, 180, 212, 0.15);
+    border-color: rgba(149, 180, 212, 0.3);
+}
+
+html[data-theme="dark"] .stat-label {
+    color: #ccc;
+}
+
+html[data-theme="dark"] .stat-value {
+    color: #95B4D4;
+}
+
+/* Responsive adjustments for weekly statistics */
+@media (max-width: 768px) {
+    .stat-group {
+        padding: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-row {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .stat-item {
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+        margin-bottom: 0;
+        margin-right: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 0.9rem;
+    }
+    
+    .stat-value.fs-5 {
+        font-size: 1.1rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .stat-group {
+        padding: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 0.85rem;
+    }
+    
+    .stat-value.fs-5 {
+        font-size: 1rem !important;
+    }
 } 

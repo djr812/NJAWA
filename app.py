@@ -67,6 +67,102 @@ FERNY_GROVE_AREA_SUBURBS = [
     'everton hills'
 ]
 
+def get_sunrise_sunset_times(date):
+    """Get sunrise and sunset times for a specific date"""
+    try:
+        url = f"https://api.sunrise-sunset.org/json?lat={MY_LAT}&lng={MY_LNG}&date={date.strftime('%Y-%m-%d')}&tzid=Australia/Brisbane"
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data['status'] == 'OK' and data['results']:
+            # Parse sunrise and sunset times
+            sunrise_str = data['results']['sunrise']
+            sunset_str = data['results']['sunset']
+            
+            # Convert to datetime objects in Brisbane timezone
+            brisbane_tz = pytz.timezone('Australia/Brisbane')
+            
+            # Parse the time strings (format: "6:15:23 AM")
+            def parse_time_string(time_str):
+                # Remove timezone info if present and parse
+                time_str = time_str.split(' ')[0] + ' ' + time_str.split(' ')[1]
+                time_obj = datetime.strptime(time_str, '%I:%M:%S %p')
+                # Combine with the date
+                combined = datetime.combine(date, time_obj.time())
+                return brisbane_tz.localize(combined)
+            
+            sunrise_time = parse_time_string(sunrise_str)
+            sunset_time = parse_time_string(sunset_str)
+            
+            return sunrise_time, sunset_time
+        else:
+            return None, None
+    except Exception as e:
+        print(f"Error fetching sunrise/sunset times for {date}: {e}")
+        return None, None
+
+def calculate_daylight_uv_average(engine, start_time, end_time, week_start, week_end, fallback_avg=None):
+    """Calculate average UV only during daylight hours for a given week"""
+    try:
+        # Get all UV data for the week with timestamps
+        uv_query = f"""
+            SELECT dateTime, UV
+            FROM archive
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time} AND UV IS NOT NULL
+            ORDER BY dateTime ASC
+        """
+        uv_df = pd.read_sql(uv_query, engine)
+        
+        if not uv_df.empty:
+            # Convert timestamps to datetime
+            uv_df['dateTime'] = pd.to_datetime(uv_df['dateTime'], unit='s', utc=True).dt.tz_convert('Australia/Brisbane')
+            
+            # Filter UV data to only include daylight hours
+            daylight_uv_values = []
+            
+            # Group by date to get sunrise/sunset for each day
+            # Convert week_start and week_end to datetime.date objects for the loop
+            week_start_date = week_start.date() if hasattr(week_start, 'date') else week_start
+            week_end_date = week_end.date() if hasattr(week_end, 'date') else week_end
+            
+            for date in pd.date_range(start=week_start_date, end=week_end_date, freq='D'):
+                sunrise_time, sunset_time = get_sunrise_sunset_times(date.date())
+                
+                if sunrise_time and sunset_time:
+                    # Create timezone-aware datetime objects for day boundaries
+                    brisbane_tz = pytz.timezone('Australia/Brisbane')
+                    day_start = brisbane_tz.localize(datetime.combine(date.date(), datetime.min.time()))
+                    day_end = brisbane_tz.localize(datetime.combine(date.date(), datetime.max.time().replace(microsecond=999999)))
+                    
+                    # Convert sunrise and sunset times to pandas Timestamp for comparison
+                    sunrise_ts = pd.Timestamp(sunrise_time)
+                    sunset_ts = pd.Timestamp(sunset_time)
+                    
+                    day_uv_data = uv_df[
+                        (uv_df['dateTime'] >= day_start) & 
+                        (uv_df['dateTime'] <= day_end) &
+                        (uv_df['dateTime'] >= sunrise_ts) & 
+                        (uv_df['dateTime'] <= sunset_ts)
+                    ]
+                    
+                    if not day_uv_data.empty:
+                        daylight_uv_values.extend(day_uv_data['UV'].tolist())
+            
+            # Calculate average of daylight UV values and round to whole number
+            if daylight_uv_values:
+                return round(sum(daylight_uv_values) / len(daylight_uv_values))
+            else:
+                # Fallback to the original average if no daylight data
+                return round(fallback_avg) if fallback_avg is not None else None
+        else:
+            # Fallback to the original average if no UV data
+            return round(fallback_avg) if fallback_avg is not None else None
+    except Exception as e:
+        print(f"Error calculating daylight UV average: {e}")
+        # Fallback to the original average if calculation fails
+        return round(fallback_avg) if fallback_avg is not None else None
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -127,7 +223,7 @@ def api_data():
         'lightning_strike_count': safe_list(df['lightning_strike_count']),
         'lightning_distance': safe_list(df['lightning_distance'].round(2)),
         'luminosity': safe_list(df['luminosity']),
-        'uv': safe_list(df['UV'].round(1)),
+        'uv': safe_list(df['UV'].round(0)),
         'cloudbase': safe_list(df['cloudbase'].round(0)),
     }
     return jsonify(result)
@@ -746,6 +842,467 @@ def api_top_stats():
             'max_pm10_level': None,
             'max_lightning': None,
             'max_lightning_date': 'Unknown'
+        })
+
+@app.route('/api/weekly_stats_current')
+def api_weekly_stats_current():
+    """Get weather statistics for the previous week (Sunday to Saturday)"""
+    engine = create_engine(DB_URI)
+    
+    try:
+        # Calculate the previous week (Sunday to Saturday)
+        now = datetime.now()
+        # Find the most recent Saturday
+        days_since_saturday = (now.weekday() - 5) % 7
+        last_saturday = now - timedelta(days=days_since_saturday)
+        # Previous week starts on Sunday (7 days before last Saturday)
+        week_start = last_saturday - timedelta(days=6)
+        week_end = last_saturday
+        
+        # Convert to timestamps
+        start_time = int(week_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        end_time = int(week_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp())
+        
+        # Query for weekly statistics
+        query = f"""
+            SELECT 
+                MIN(outTemp) as min_temp,
+                MAX(outTemp) as max_temp,
+                AVG(outTemp) as avg_temp,
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity,
+                MIN(barometer) as min_pressure,
+                MAX(barometer) as max_pressure,
+                AVG(barometer) as avg_pressure,
+                MAX(windGust) as max_wind_gust,
+                AVG(windSpeed) as avg_wind_speed,
+                SUM(rain) as total_rainfall,
+                MAX(UV) as max_uv,
+                AVG(UV) as avg_uv,
+                MAX(lightning_strike_count) as max_lightning_strikes,
+                SUM(lightning_strike_count) as total_lightning_strikes,
+                MAX(pm10_0) as max_pm10,
+                AVG(pm10_0) as avg_pm10
+            FROM archive
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time}
+        """
+        
+        df = pd.read_sql(query, engine)
+        
+        if not df.empty:
+            # Convert temperature from Fahrenheit to Celsius
+            min_temp = round((df['min_temp'].iloc[0] - 32) * 5/9, 1) if df['min_temp'].iloc[0] is not None else None
+            max_temp = round((df['max_temp'].iloc[0] - 32) * 5/9, 1) if df['max_temp'].iloc[0] is not None else None
+            avg_temp = round((df['avg_temp'].iloc[0] - 32) * 5/9, 1) if df['avg_temp'].iloc[0] is not None else None
+            
+            # Convert pressure from inHg to hPa
+            min_pressure = round(df['min_pressure'].iloc[0] * 33.8639, 1) if df['min_pressure'].iloc[0] is not None else None
+            max_pressure = round(df['max_pressure'].iloc[0] * 33.8639, 1) if df['max_pressure'].iloc[0] is not None else None
+            avg_pressure = round(df['avg_pressure'].iloc[0] * 33.8639, 1) if df['avg_pressure'].iloc[0] is not None else None
+            
+            # Convert wind speed from mph to km/h
+            max_wind_gust = round(df['max_wind_gust'].iloc[0] * 1.60934, 1) if df['max_wind_gust'].iloc[0] is not None else None
+            avg_wind_speed = round(df['avg_wind_speed'].iloc[0] * 1.60934, 1) if df['avg_wind_speed'].iloc[0] is not None else None
+            
+            # Convert rainfall from inches to mm
+            total_rainfall = round(df['total_rainfall'].iloc[0] * 25.4, 1) if df['total_rainfall'].iloc[0] is not None else 0
+            
+            # Calculate UV stats with daylight filtering and rounding
+            max_uv = int(df['max_uv'].iloc[0]) if df['max_uv'].iloc[0] is not None else None
+            
+            # Calculate average UV only during daylight hours
+            avg_uv = calculate_daylight_uv_average(engine, start_time, end_time, week_start, week_end, df['avg_uv'].iloc[0])
+            
+            result = {
+                'week_start': week_start.strftime('%Y-%m-%d'),
+                'week_end': week_end.strftime('%Y-%m-%d'),
+                'min_temp': min_temp,
+                'max_temp': max_temp,
+                'avg_temp': avg_temp,
+                'min_humidity': int(df['min_humidity'].iloc[0]) if df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(df['max_humidity'].iloc[0]) if df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(df['avg_humidity'].iloc[0], 1) if df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': min_pressure,
+                'max_pressure': max_pressure,
+                'avg_pressure': avg_pressure,
+                'max_wind_gust': max_wind_gust,
+                'avg_wind_speed': avg_wind_speed,
+                'total_rainfall': total_rainfall,
+                'max_uv': max_uv,
+                'avg_uv': avg_uv,
+                'max_lightning_strikes': int(df['max_lightning_strikes'].iloc[0]) if df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(df['total_lightning_strikes'].iloc[0]) if df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(df['max_pm10'].iloc[0]) if df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(df['avg_pm10'].iloc[0], 1) if df['avg_pm10'].iloc[0] is not None else None
+            }
+        else:
+            result = {
+                'week_start': week_start.strftime('%Y-%m-%d'),
+                'week_end': week_end.strftime('%Y-%m-%d'),
+                'error': 'No data available for this period'
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching current weekly stats: {e}")
+        return jsonify({
+            'error': str(e),
+            'week_start': 'Unknown',
+            'week_end': 'Unknown'
+        })
+
+@app.route('/api/weekly_stats_previous')
+def api_weekly_stats_previous():
+    """Get weather statistics for the week prior to the previous week (Sunday to Saturday)"""
+    engine = create_engine(DB_URI)
+    
+    try:
+        # Calculate the week prior to the previous week (Sunday to Saturday)
+        now = datetime.now()
+        # Find the most recent Saturday
+        days_since_saturday = (now.weekday() - 5) % 7
+        last_saturday = now - timedelta(days=days_since_saturday)
+        # Previous week starts on Sunday (7 days before last Saturday)
+        previous_week_start = last_saturday - timedelta(days=13)  # 13 days before last Saturday
+        previous_week_end = last_saturday - timedelta(days=7)     # 7 days before last Saturday
+        
+        # Convert to timestamps
+        start_time = int(previous_week_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        end_time = int(previous_week_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp())
+        
+        # Query for weekly statistics
+        query = f"""
+            SELECT 
+                MIN(outTemp) as min_temp,
+                MAX(outTemp) as max_temp,
+                AVG(outTemp) as avg_temp,
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity,
+                MIN(barometer) as min_pressure,
+                MAX(barometer) as max_pressure,
+                AVG(barometer) as avg_pressure,
+                MAX(windGust) as max_wind_gust,
+                AVG(windSpeed) as avg_wind_speed,
+                SUM(rain) as total_rainfall,
+                MAX(UV) as max_uv,
+                AVG(UV) as avg_uv,
+                MAX(lightning_strike_count) as max_lightning_strikes,
+                SUM(lightning_strike_count) as total_lightning_strikes,
+                MAX(pm10_0) as max_pm10,
+                AVG(pm10_0) as avg_pm10
+            FROM archive
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time}
+        """
+        
+        df = pd.read_sql(query, engine)
+        
+        if not df.empty:
+            # Convert temperature from Fahrenheit to Celsius
+            min_temp = round((df['min_temp'].iloc[0] - 32) * 5/9, 1) if df['min_temp'].iloc[0] is not None else None
+            max_temp = round((df['max_temp'].iloc[0] - 32) * 5/9, 1) if df['max_temp'].iloc[0] is not None else None
+            avg_temp = round((df['avg_temp'].iloc[0] - 32) * 5/9, 1) if df['avg_temp'].iloc[0] is not None else None
+            
+            # Convert pressure from inHg to hPa
+            min_pressure = round(df['min_pressure'].iloc[0] * 33.8639, 1) if df['min_pressure'].iloc[0] is not None else None
+            max_pressure = round(df['max_pressure'].iloc[0] * 33.8639, 1) if df['max_pressure'].iloc[0] is not None else None
+            avg_pressure = round(df['avg_pressure'].iloc[0] * 33.8639, 1) if df['avg_pressure'].iloc[0] is not None else None
+            
+            # Convert wind speed from mph to km/h
+            max_wind_gust = round(df['max_wind_gust'].iloc[0] * 1.60934, 1) if df['max_wind_gust'].iloc[0] is not None else None
+            avg_wind_speed = round(df['avg_wind_speed'].iloc[0] * 1.60934, 1) if df['avg_wind_speed'].iloc[0] is not None else None
+            
+            # Convert rainfall from inches to mm
+            total_rainfall = round(df['total_rainfall'].iloc[0] * 25.4, 1) if df['total_rainfall'].iloc[0] is not None else 0
+            
+            # Calculate UV stats with daylight filtering and rounding
+            max_uv = int(df['max_uv'].iloc[0]) if df['max_uv'].iloc[0] is not None else None
+            
+            # Calculate average UV only during daylight hours
+            avg_uv = calculate_daylight_uv_average(engine, start_time, end_time, previous_week_start, previous_week_end, df['avg_uv'].iloc[0])
+            
+            result = {
+                'week_start': previous_week_start.strftime('%Y-%m-%d'),
+                'week_end': previous_week_end.strftime('%Y-%m-%d'),
+                'min_temp': min_temp,
+                'max_temp': max_temp,
+                'avg_temp': avg_temp,
+                'min_humidity': int(df['min_humidity'].iloc[0]) if df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(df['max_humidity'].iloc[0]) if df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(df['avg_humidity'].iloc[0], 1) if df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': min_pressure,
+                'max_pressure': max_pressure,
+                'avg_pressure': avg_pressure,
+                'max_wind_gust': max_wind_gust,
+                'avg_wind_speed': avg_wind_speed,
+                'total_rainfall': total_rainfall,
+                'max_uv': max_uv,
+                'avg_uv': avg_uv,
+                'max_lightning_strikes': int(df['max_lightning_strikes'].iloc[0]) if df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(df['total_lightning_strikes'].iloc[0]) if df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(df['max_pm10'].iloc[0]) if df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(df['avg_pm10'].iloc[0], 1) if df['avg_pm10'].iloc[0] is not None else None
+            }
+        else:
+            result = {
+                'week_start': previous_week_start.strftime('%Y-%m-%d'),
+                'week_end': previous_week_end.strftime('%Y-%m-%d'),
+                'error': 'No data available for this period'
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching previous weekly stats: {e}")
+        return jsonify({
+            'error': str(e),
+            'week_start': 'Unknown',
+            'week_end': 'Unknown'
+        })
+
+@app.route('/api/weekly_stats_trends')
+def api_weekly_stats_trends():
+    """Get weekly statistics with trend calculations comparing current week to previous week"""
+    engine = create_engine(DB_URI)
+    
+    try:
+        # Calculate three consecutive weeks
+        now = datetime.now()
+        days_since_saturday = (now.weekday() - 5) % 7
+        last_saturday = now - timedelta(days=days_since_saturday)
+        
+        # Week 1 (current week - previous week)
+        week1_start = last_saturday - timedelta(days=6)
+        week1_end = last_saturday
+        
+        # Week 2 (week prior to previous week)
+        week2_start = last_saturday - timedelta(days=13)
+        week2_end = last_saturday - timedelta(days=7)
+        
+        # Week 3 (week prior to week 2)
+        week3_start = last_saturday - timedelta(days=20)
+        week3_end = last_saturday - timedelta(days=14)
+        
+        # Get week 1 data (current week)
+        week1_start_time = int(week1_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        week1_end_time = int(week1_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp())
+        
+        week1_query = f"""
+            SELECT 
+                MIN(outTemp) as min_temp,
+                MAX(outTemp) as max_temp,
+                AVG(outTemp) as avg_temp,
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity,
+                MIN(barometer) as min_pressure,
+                MAX(barometer) as max_pressure,
+                AVG(barometer) as avg_pressure,
+                MAX(windGust) as max_wind_gust,
+                AVG(windSpeed) as avg_wind_speed,
+                SUM(rain) as total_rainfall,
+                MAX(UV) as max_uv,
+                AVG(UV) as avg_uv,
+                MAX(lightning_strike_count) as max_lightning_strikes,
+                SUM(lightning_strike_count) as total_lightning_strikes,
+                MAX(pm10_0) as max_pm10,
+                AVG(pm10_0) as avg_pm10
+            FROM archive
+            WHERE dateTime >= {week1_start_time} AND dateTime <= {week1_end_time}
+        """
+        
+        # Get week 2 data
+        week2_start_time = int(week2_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        week2_end_time = int(week2_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp())
+        
+        week2_query = f"""
+            SELECT 
+                MIN(outTemp) as min_temp,
+                MAX(outTemp) as max_temp,
+                AVG(outTemp) as avg_temp,
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity,
+                MIN(barometer) as min_pressure,
+                MAX(barometer) as max_pressure,
+                AVG(barometer) as avg_pressure,
+                MAX(windGust) as max_wind_gust,
+                AVG(windSpeed) as avg_wind_speed,
+                SUM(rain) as total_rainfall,
+                MAX(UV) as max_uv,
+                AVG(UV) as avg_uv,
+                MAX(lightning_strike_count) as max_lightning_strikes,
+                SUM(lightning_strike_count) as total_lightning_strikes,
+                MAX(pm10_0) as max_pm10,
+                AVG(pm10_0) as avg_pm10
+            FROM archive
+            WHERE dateTime >= {week2_start_time} AND dateTime <= {week2_end_time}
+        """
+        
+        # Get week 3 data
+        week3_start_time = int(week3_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        week3_end_time = int(week3_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp())
+        
+        week3_query = f"""
+            SELECT 
+                MIN(outTemp) as min_temp,
+                MAX(outTemp) as max_temp,
+                AVG(outTemp) as avg_temp,
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity,
+                MIN(barometer) as min_pressure,
+                MAX(barometer) as max_pressure,
+                AVG(barometer) as avg_pressure,
+                MAX(windGust) as max_wind_gust,
+                AVG(windSpeed) as avg_wind_speed,
+                SUM(rain) as total_rainfall,
+                MAX(UV) as max_uv,
+                AVG(UV) as avg_uv,
+                MAX(lightning_strike_count) as max_lightning_strikes,
+                SUM(lightning_strike_count) as total_lightning_strikes,
+                MAX(pm10_0) as max_pm10,
+                AVG(pm10_0) as avg_pm10
+            FROM archive
+            WHERE dateTime >= {week3_start_time} AND dateTime <= {week3_end_time}
+        """
+        
+        week1_df = pd.read_sql(week1_query, engine)
+        week2_df = pd.read_sql(week2_query, engine)
+        week3_df = pd.read_sql(week3_query, engine)
+        
+        if not week1_df.empty and not week2_df.empty and not week3_df.empty:
+            # Calculate daylight UV averages for all three weeks
+            week1_avg_uv = calculate_daylight_uv_average(engine, week1_start_time, week1_end_time, week1_start, week1_end, week1_df['avg_uv'].iloc[0])
+            week2_avg_uv = calculate_daylight_uv_average(engine, week2_start_time, week2_end_time, week2_start, week2_end, week2_df['avg_uv'].iloc[0])
+            week3_avg_uv = calculate_daylight_uv_average(engine, week3_start_time, week3_end_time, week3_start, week3_end, week3_df['avg_uv'].iloc[0])
+            
+            # Process week 1 data
+            week1_data = {
+                'min_temp': round((week1_df['min_temp'].iloc[0] - 32) * 5/9, 1) if week1_df['min_temp'].iloc[0] is not None else None,
+                'max_temp': round((week1_df['max_temp'].iloc[0] - 32) * 5/9, 1) if week1_df['max_temp'].iloc[0] is not None else None,
+                'avg_temp': round((week1_df['avg_temp'].iloc[0] - 32) * 5/9, 1) if week1_df['avg_temp'].iloc[0] is not None else None,
+                'min_humidity': int(week1_df['min_humidity'].iloc[0]) if week1_df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(week1_df['max_humidity'].iloc[0]) if week1_df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(week1_df['avg_humidity'].iloc[0], 1) if week1_df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': round(week1_df['min_pressure'].iloc[0] * 33.8639, 1) if week1_df['min_pressure'].iloc[0] is not None else None,
+                'max_pressure': round(week1_df['max_pressure'].iloc[0] * 33.8639, 1) if week1_df['max_pressure'].iloc[0] is not None else None,
+                'avg_pressure': round(week1_df['avg_pressure'].iloc[0] * 33.8639, 1) if week1_df['avg_pressure'].iloc[0] is not None else None,
+                'max_wind_gust': round(week1_df['max_wind_gust'].iloc[0] * 1.60934, 1) if week1_df['max_wind_gust'].iloc[0] is not None else None,
+                'avg_wind_speed': round(week1_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if week1_df['avg_wind_speed'].iloc[0] is not None else None,
+                'total_rainfall': round(week1_df['total_rainfall'].iloc[0] * 25.4, 1) if week1_df['total_rainfall'].iloc[0] is not None else 0,
+                'max_uv': int(week1_df['max_uv'].iloc[0]) if week1_df['max_uv'].iloc[0] is not None else None,
+                'avg_uv': week1_avg_uv,
+                'max_lightning_strikes': int(week1_df['max_lightning_strikes'].iloc[0]) if week1_df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(week1_df['total_lightning_strikes'].iloc[0]) if week1_df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(week1_df['max_pm10'].iloc[0]) if week1_df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(week1_df['avg_pm10'].iloc[0], 1) if week1_df['avg_pm10'].iloc[0] is not None else None
+            }
+            
+            # Process week 2 data
+            week2_data = {
+                'min_temp': round((week2_df['min_temp'].iloc[0] - 32) * 5/9, 1) if week2_df['min_temp'].iloc[0] is not None else None,
+                'max_temp': round((week2_df['max_temp'].iloc[0] - 32) * 5/9, 1) if week2_df['max_temp'].iloc[0] is not None else None,
+                'avg_temp': round((week2_df['avg_temp'].iloc[0] - 32) * 5/9, 1) if week2_df['avg_temp'].iloc[0] is not None else None,
+                'min_humidity': int(week2_df['min_humidity'].iloc[0]) if week2_df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(week2_df['max_humidity'].iloc[0]) if week2_df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(week2_df['avg_humidity'].iloc[0], 1) if week2_df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': round(week2_df['min_pressure'].iloc[0] * 33.8639, 1) if week2_df['min_pressure'].iloc[0] is not None else None,
+                'max_pressure': round(week2_df['max_pressure'].iloc[0] * 33.8639, 1) if week2_df['max_pressure'].iloc[0] is not None else None,
+                'avg_pressure': round(week2_df['avg_pressure'].iloc[0] * 33.8639, 1) if week2_df['avg_pressure'].iloc[0] is not None else None,
+                'max_wind_gust': round(week2_df['max_wind_gust'].iloc[0] * 1.60934, 1) if week2_df['max_wind_gust'].iloc[0] is not None else None,
+                'avg_wind_speed': round(week2_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if week2_df['avg_wind_speed'].iloc[0] is not None else None,
+                'total_rainfall': round(week2_df['total_rainfall'].iloc[0] * 25.4, 1) if week2_df['total_rainfall'].iloc[0] is not None else 0,
+                'max_uv': int(week2_df['max_uv'].iloc[0]) if week2_df['max_uv'].iloc[0] is not None else None,
+                'avg_uv': week2_avg_uv,
+                'max_lightning_strikes': int(week2_df['max_lightning_strikes'].iloc[0]) if week2_df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(week2_df['total_lightning_strikes'].iloc[0]) if week2_df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(week2_df['max_pm10'].iloc[0]) if week2_df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(week2_df['avg_pm10'].iloc[0], 1) if week2_df['avg_pm10'].iloc[0] is not None else None
+            }
+            
+            # Process week 3 data
+            week3_data = {
+                'min_temp': round((week3_df['min_temp'].iloc[0] - 32) * 5/9, 1) if week3_df['min_temp'].iloc[0] is not None else None,
+                'max_temp': round((week3_df['max_temp'].iloc[0] - 32) * 5/9, 1) if week3_df['max_temp'].iloc[0] is not None else None,
+                'avg_temp': round((week3_df['avg_temp'].iloc[0] - 32) * 5/9, 1) if week3_df['avg_temp'].iloc[0] is not None else None,
+                'min_humidity': int(week3_df['min_humidity'].iloc[0]) if week3_df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(week3_df['max_humidity'].iloc[0]) if week3_df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(week3_df['avg_humidity'].iloc[0], 1) if week3_df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': round(week3_df['min_pressure'].iloc[0] * 33.8639, 1) if week3_df['min_pressure'].iloc[0] is not None else None,
+                'max_pressure': round(week3_df['max_pressure'].iloc[0] * 33.8639, 1) if week3_df['max_pressure'].iloc[0] is not None else None,
+                'avg_pressure': round(week3_df['avg_pressure'].iloc[0] * 33.8639, 1) if week3_df['avg_pressure'].iloc[0] is not None else None,
+                'max_wind_gust': round(week3_df['max_wind_gust'].iloc[0] * 1.60934, 1) if week3_df['max_wind_gust'].iloc[0] is not None else None,
+                'avg_wind_speed': round(week3_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if week3_df['avg_wind_speed'].iloc[0] is not None else None,
+                'total_rainfall': round(week3_df['total_rainfall'].iloc[0] * 25.4, 1) if week3_df['total_rainfall'].iloc[0] is not None else 0,
+                'max_uv': int(week3_df['max_uv'].iloc[0]) if week3_df['max_uv'].iloc[0] is not None else None,
+                'avg_uv': week3_avg_uv,
+                'max_lightning_strikes': int(week3_df['max_lightning_strikes'].iloc[0]) if week3_df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(week3_df['total_lightning_strikes'].iloc[0]) if week3_df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(week3_df['max_pm10'].iloc[0]) if week3_df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(week3_df['avg_pm10'].iloc[0], 1) if week3_df['avg_pm10'].iloc[0] is not None else None
+            }
+            
+            # Calculate trends
+            def calculate_trend(current, previous, threshold=0.1):
+                if current is None or previous is None:
+                    return 'flat'
+                diff = current - previous
+                if abs(diff) <= threshold:
+                    return 'flat'
+                return 'up' if diff > 0 else 'down'
+            
+            # Calculate trends for week 1 (comparing to week 2)
+            trends_week1 = {
+                'avg_temp': calculate_trend(week1_data['avg_temp'], week2_data['avg_temp'], 0.5),
+                'avg_humidity': calculate_trend(week1_data['avg_humidity'], week2_data['avg_humidity'], 2.0),
+                'avg_pressure': calculate_trend(week1_data['avg_pressure'], week2_data['avg_pressure'], 0.5),
+                'avg_wind_speed': calculate_trend(week1_data['avg_wind_speed'], week2_data['avg_wind_speed'], 0.1),
+                'total_rainfall': calculate_trend(week1_data['total_rainfall'], week2_data['total_rainfall'], 0.1),
+                'avg_uv': calculate_trend(week1_data['avg_uv'], week2_data['avg_uv'], 0.1),
+                'total_lightning_strikes': calculate_trend(week1_data['total_lightning_strikes'], week2_data['total_lightning_strikes'], 0),
+                'avg_pm10': calculate_trend(week1_data['avg_pm10'], week2_data['avg_pm10'], 0.5)
+            }
+            
+            # Calculate trends for week 2 (comparing to week 3)
+            trends_week2 = {
+                'avg_temp': calculate_trend(week2_data['avg_temp'], week3_data['avg_temp'], 0.5),
+                'avg_humidity': calculate_trend(week2_data['avg_humidity'], week3_data['avg_humidity'], 2.0),
+                'avg_pressure': calculate_trend(week2_data['avg_pressure'], week3_data['avg_pressure'], 0.5),
+                'avg_wind_speed': calculate_trend(week2_data['avg_wind_speed'], week3_data['avg_wind_speed'], 0.1),
+                'total_rainfall': calculate_trend(week2_data['total_rainfall'], week3_data['total_rainfall'], 0.1),
+                'avg_uv': calculate_trend(week2_data['avg_uv'], week3_data['avg_uv'], 0.1),
+                'total_lightning_strikes': calculate_trend(week2_data['total_lightning_strikes'], week3_data['total_lightning_strikes'], 0),
+                'avg_pm10': calculate_trend(week2_data['avg_pm10'], week3_data['avg_pm10'], 0.5)
+            }
+            
+            result = {
+                'current_week': {
+                    'week_start': week1_start.strftime('%Y-%m-%d'),
+                    'week_end': week1_end.strftime('%Y-%m-%d'),
+                    **week1_data
+                },
+                'previous_week': {
+                    'week_start': week2_start.strftime('%Y-%m-%d'),
+                    'week_end': week2_end.strftime('%Y-%m-%d'),
+                    **week2_data
+                },
+                'trends_current': trends_week1,
+                'trends_previous': trends_week2
+            }
+        else:
+            result = {
+                'error': 'No data available for trend calculation'
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching weekly stats trends: {e}")
+        return jsonify({
+            'error': str(e)
         })
 
 @app.route('/api/rainfall_24h')

@@ -295,6 +295,49 @@
             </div>
         </div>
     </div>
+    <!-- Row 6.5: Local Weather Statistics Cards -->
+    <div class="row g-4 mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">Local Weather Statistics <span class="period-label text-end flex-grow-1">Previous Week (Sun-Sat)</span></div>
+                <div class="card-body position-relative" id="weekly-stats-current-body">
+                    <div id="weekly-stats-current-loading" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading weekly statistics...</p>
+                    </div>
+                    <div id="weekly-stats-current-content" style="display: none;">
+                        <!-- Weekly statistics content will be populated here -->
+                    </div>
+                    <div id="weekly-stats-current-error" class="text-center" style="display: none;">
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                        <p class="mt-2">Unable to load weekly statistics</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">Local Weather Statistics <span class="period-label text-end flex-grow-1">Week Prior (Sun-Sat)</span></div>
+                <div class="card-body position-relative" id="weekly-stats-previous-body">
+                    <div id="weekly-stats-previous-loading" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading weekly statistics...</p>
+                    </div>
+                    <div id="weekly-stats-previous-content" style="display: none;">
+                        <!-- Weekly statistics content will be populated here -->
+                    </div>
+                    <div id="weekly-stats-previous-error" class="text-center" style="display: none;">
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                        <p class="mt-2">Unable to load weekly statistics</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Row 7: Outside Temperature | Bar Comfort Level -->
     <div class="col-md-6">
       <div class="card">

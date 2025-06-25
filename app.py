@@ -1506,7 +1506,7 @@ def api_dam_levels():
                                     elif percent_full <= 70:
                                         color = '#4169E1'  # Royal Blue
                                     else:
-                                        color = '#00FF00'  # Bright Green
+                                        color = '#006400'  # Dark Green
                                     
                                     dam_data.append({
                                         'name': dam_name,

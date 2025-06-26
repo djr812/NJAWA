@@ -18,6 +18,7 @@ from selenium.webdriver.chrome.service import Service
 import re
 import requests
 import xml.etree.ElementTree as ET
+import math
 
 load_dotenv()
 
@@ -162,6 +163,69 @@ def calculate_daylight_uv_average(engine, start_time, end_time, week_start, week
         print(f"Error calculating daylight UV average: {e}")
         # Fallback to the original average if calculation fails
         return round(fallback_avg) if fallback_avg is not None else None
+
+def calculate_average_wind_direction(engine, start_time, end_time):
+    """Calculate average wind direction for a given time period"""
+    try:
+        # Get all wind direction data for the period
+        wind_query = f"""
+            SELECT windDir
+            FROM archive
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time} AND windDir IS NOT NULL
+        """
+        wind_df = pd.read_sql(wind_query, engine)
+        
+        if not wind_df.empty:
+            # Calculate the average wind direction using vector math
+            # Convert degrees to radians and calculate x,y components
+            wind_df['radians'] = wind_df['windDir'] * (3.14159 / 180)
+            wind_df['x_component'] = wind_df['radians'].apply(lambda x: -1 * math.sin(x))  # Negative because wind direction is "from"
+            wind_df['y_component'] = wind_df['radians'].apply(lambda x: -1 * math.cos(x))  # Negative because wind direction is "from"
+            
+            # Calculate average components
+            avg_x = wind_df['x_component'].mean()
+            avg_y = wind_df['y_component'].mean()
+            
+            # Convert back to degrees
+            avg_degrees = math.atan2(avg_x, avg_y) * (180 / 3.14159)
+            
+            # Normalize to 0-360 range
+            if avg_degrees < 0:
+                avg_degrees += 360
+            
+            # Convert to compass direction
+            directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+            index = round(avg_degrees / 22.5) % 16
+            return directions[index]
+        else:
+            return None
+    except Exception as e:
+        print(f"Error calculating average wind direction: {e}")
+        return None
+
+def get_wind_gust_direction(engine, start_time, end_time):
+    """Get wind direction for the maximum wind gust in a given time period"""
+    try:
+        # Get the wind direction for the maximum wind gust
+        gust_query = f"""
+            SELECT windDir
+            FROM archive
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time} AND windGust IS NOT NULL
+            ORDER BY windGust DESC
+            LIMIT 1
+        """
+        gust_df = pd.read_sql(gust_query, engine)
+        
+        if not gust_df.empty and gust_df['windDir'].iloc[0] is not None:
+            wind_dir_degrees = gust_df['windDir'].iloc[0]
+            directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+            index = round(wind_dir_degrees / 22.5) % 16
+            return directions[index]
+        else:
+            return None
+    except Exception as e:
+        print(f"Error getting wind gust direction: {e}")
+        return None
 
 @app.route('/')
 def index():
@@ -918,6 +982,9 @@ def api_weekly_stats_current():
             max_wind_gust = round(df['max_wind_gust'].iloc[0] * 1.60934, 1) if df['max_wind_gust'].iloc[0] is not None else None
             avg_wind_speed = round(df['avg_wind_speed'].iloc[0] * 1.60934, 1) if df['avg_wind_speed'].iloc[0] is not None else None
             
+            # Calculate wind directions
+            max_wind_gust_direction = get_wind_gust_direction(engine, start_time, end_time)
+            
             # Convert rainfall from inches to mm
             total_rainfall = round(df['total_rainfall'].iloc[0] * 25.4, 1) if df['total_rainfall'].iloc[0] is not None else 0
             
@@ -940,6 +1007,7 @@ def api_weekly_stats_current():
                 'max_pressure': max_pressure,
                 'avg_pressure': avg_pressure,
                 'max_wind_gust': max_wind_gust,
+                'max_wind_gust_direction': max_wind_gust_direction,
                 'avg_wind_speed': avg_wind_speed,
                 'total_rainfall': total_rainfall,
                 'max_uv': max_uv,
@@ -1027,6 +1095,9 @@ def api_weekly_stats_previous():
             max_wind_gust = round(df['max_wind_gust'].iloc[0] * 1.60934, 1) if df['max_wind_gust'].iloc[0] is not None else None
             avg_wind_speed = round(df['avg_wind_speed'].iloc[0] * 1.60934, 1) if df['avg_wind_speed'].iloc[0] is not None else None
             
+            # Calculate wind directions
+            max_wind_gust_direction = get_wind_gust_direction(engine, start_time, end_time)
+            
             # Convert rainfall from inches to mm
             total_rainfall = round(df['total_rainfall'].iloc[0] * 25.4, 1) if df['total_rainfall'].iloc[0] is not None else 0
             
@@ -1049,6 +1120,7 @@ def api_weekly_stats_previous():
                 'max_pressure': max_pressure,
                 'avg_pressure': avg_pressure,
                 'max_wind_gust': max_wind_gust,
+                'max_wind_gust_direction': max_wind_gust_direction,
                 'avg_wind_speed': avg_wind_speed,
                 'total_rainfall': total_rainfall,
                 'max_uv': max_uv,
@@ -1204,6 +1276,7 @@ def api_weekly_stats_trends():
                 'max_pressure': round(week1_df['max_pressure'].iloc[0] * 33.8639, 1) if week1_df['max_pressure'].iloc[0] is not None else None,
                 'avg_pressure': round(week1_df['avg_pressure'].iloc[0] * 33.8639, 1) if week1_df['avg_pressure'].iloc[0] is not None else None,
                 'max_wind_gust': round(week1_df['max_wind_gust'].iloc[0] * 1.60934, 1) if week1_df['max_wind_gust'].iloc[0] is not None else None,
+                'max_wind_gust_direction': get_wind_gust_direction(engine, week1_start_time, week1_end_time),
                 'avg_wind_speed': round(week1_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if week1_df['avg_wind_speed'].iloc[0] is not None else None,
                 'total_rainfall': round(week1_df['total_rainfall'].iloc[0] * 25.4, 1) if week1_df['total_rainfall'].iloc[0] is not None else 0,
                 'max_uv': int(week1_df['max_uv'].iloc[0]) if week1_df['max_uv'].iloc[0] is not None else None,
@@ -1226,6 +1299,7 @@ def api_weekly_stats_trends():
                 'max_pressure': round(week2_df['max_pressure'].iloc[0] * 33.8639, 1) if week2_df['max_pressure'].iloc[0] is not None else None,
                 'avg_pressure': round(week2_df['avg_pressure'].iloc[0] * 33.8639, 1) if week2_df['avg_pressure'].iloc[0] is not None else None,
                 'max_wind_gust': round(week2_df['max_wind_gust'].iloc[0] * 1.60934, 1) if week2_df['max_wind_gust'].iloc[0] is not None else None,
+                'max_wind_gust_direction': get_wind_gust_direction(engine, week2_start_time, week2_end_time),
                 'avg_wind_speed': round(week2_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if week2_df['avg_wind_speed'].iloc[0] is not None else None,
                 'total_rainfall': round(week2_df['total_rainfall'].iloc[0] * 25.4, 1) if week2_df['total_rainfall'].iloc[0] is not None else 0,
                 'max_uv': int(week2_df['max_uv'].iloc[0]) if week2_df['max_uv'].iloc[0] is not None else None,
@@ -1248,6 +1322,7 @@ def api_weekly_stats_trends():
                 'max_pressure': round(week3_df['max_pressure'].iloc[0] * 33.8639, 1) if week3_df['max_pressure'].iloc[0] is not None else None,
                 'avg_pressure': round(week3_df['avg_pressure'].iloc[0] * 33.8639, 1) if week3_df['avg_pressure'].iloc[0] is not None else None,
                 'max_wind_gust': round(week3_df['max_wind_gust'].iloc[0] * 1.60934, 1) if week3_df['max_wind_gust'].iloc[0] is not None else None,
+                'max_wind_gust_direction': get_wind_gust_direction(engine, week3_start_time, week3_end_time),
                 'avg_wind_speed': round(week3_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if week3_df['avg_wind_speed'].iloc[0] is not None else None,
                 'total_rainfall': round(week3_df['total_rainfall'].iloc[0] * 25.4, 1) if week3_df['total_rainfall'].iloc[0] is not None else 0,
                 'max_uv': int(week3_df['max_uv'].iloc[0]) if week3_df['max_uv'].iloc[0] is not None else None,

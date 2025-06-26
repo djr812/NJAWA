@@ -2179,7 +2179,7 @@ function updateTickerFeed(data) {
         { valueId: 'ticker-max-temp', value: data.max_temp !== null ? `${data.max_temp}°C` : '--°C', dateId: 'ticker-max-temp-date', date: data.max_temp_date },
         { valueId: 'ticker-min-temp', value: data.min_temp !== null ? `${data.min_temp}°C` : '--°C', dateId: 'ticker-min-temp-date', date: data.min_temp_date },
         { valueId: 'ticker-max-humidity', value: data.max_humidity !== null ? `${data.max_humidity}%` : '--%', dateId: 'ticker-max-humidity-date', date: data.max_humidity_date, tempId: 'ticker-max-humidity-temp', temp: data.max_humidity_temp },
-        { valueId: 'ticker-max-wind-gust', value: data.max_wind_gust !== null ? `${data.max_wind_gust} km/h` : '-- km/h', dateId: 'ticker-max-wind-gust-date', date: data.max_wind_gust_date, directionId: 'ticker-max-wind-gust-direction', direction: data.max_wind_gust_direction },
+        { valueId: 'ticker-max-wind-gust', value: data.max_wind_gust !== null ? `${data.max_wind_gust} km/h from ${data.max_wind_gust_direction || '--'}` : '-- km/h', dateId: 'ticker-max-wind-gust-date', date: data.max_wind_gust_date, directionId: 'ticker-max-wind-gust-direction', direction: data.max_wind_gust_direction },
         { valueId: 'ticker-max-rainfall', value: data.max_rainfall !== null ? `${data.max_rainfall} mm` : '-- mm', dateId: 'ticker-max-rainfall-date', date: data.max_rainfall_date },
         { valueId: 'ticker-max-uv', value: data.max_uv !== null ? data.max_uv : '--', dateId: 'ticker-max-uv-date', date: data.max_uv_date, ratingId: 'ticker-max-uv-rating', rating: getUVRating(data.max_uv) },
         { valueId: 'ticker-max-pm10', value: data.max_pm10 !== null ? data.max_pm10 : '--', dateId: 'ticker-max-pm10-date', date: data.max_pm10_date, ratingId: 'ticker-max-pm10-rating', rating: getPM10Rating(data.max_pm10) },
@@ -2756,11 +2756,11 @@ function updateWeeklyStatsCard(type, data, trends = null) {
                     <div class="stat-row">
                         <div class="stat-item">
                             <span class="stat-label">Gust:</span>
-                            <span class="stat-value">${data.max_wind_gust !== null ? data.max_wind_gust : '--'}</span>
+                            <span class="stat-value">${data.max_wind_gust !== null ? data.max_wind_gust + ' km/h from ' + (data.max_wind_gust_direction || '--') : '--'}</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">Avg:</span>
-                            <span class="stat-value">${data.avg_wind_speed !== null ? data.avg_wind_speed : '--'}${getTrendIcon('avg_wind_speed', trends)}</span>
+                            <span class="stat-value">${data.avg_wind_speed !== null ? data.avg_wind_speed + ' km/h' : '--'}${getTrendIcon('avg_wind_speed', trends)}</span>
                         </div>
                     </div>
                 </div>

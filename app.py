@@ -689,7 +689,7 @@ def api_top_stats():
         
         # Strongest wind gust
         max_wind_gust_query = """
-            SELECT windGust, dateTime 
+            SELECT windGust, windDir, dateTime 
             FROM archive 
             WHERE windGust IS NOT NULL 
             ORDER BY windGust DESC 
@@ -697,10 +697,18 @@ def api_top_stats():
         """
         max_wind_gust_df = pd.read_sql(max_wind_gust_query, engine)
         max_wind_gust = None
+        max_wind_gust_direction = None
         max_wind_gust_date = None
         if not max_wind_gust_df.empty:
             max_wind_gust = round(max_wind_gust_df['windGust'].iloc[0] * 1.60934, 1)  # Convert mph to km/h
             max_wind_gust_date = pd.to_datetime(max_wind_gust_df['dateTime'].iloc[0], unit='s').strftime('%B %d, %Y')
+            
+            # Convert wind direction from degrees to compass direction
+            wind_dir_degrees = max_wind_gust_df['windDir'].iloc[0]
+            if wind_dir_degrees is not None:
+                directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+                index = round(wind_dir_degrees / 22.5) % 16
+                max_wind_gust_direction = directions[index]
         
         # Most rainfall (24-hour period)
         max_rainfall_query = """
@@ -807,6 +815,7 @@ def api_top_stats():
             'max_humidity_date': max_humidity_date,
             'max_wind_gust': max_wind_gust,
             'max_wind_gust_date': max_wind_gust_date,
+            'max_wind_gust_direction': max_wind_gust_direction,
             'max_rainfall': max_rainfall,
             'max_rainfall_date': max_rainfall_date,
             'max_uv': max_uv,
@@ -835,6 +844,7 @@ def api_top_stats():
             'max_humidity_date': 'Unknown',
             'max_wind_gust': None,
             'max_wind_gust_date': 'Unknown',
+            'max_wind_gust_direction': None,
             'max_rainfall': None,
             'max_rainfall_date': 'Unknown',
             'max_uv': None,

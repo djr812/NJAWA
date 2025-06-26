@@ -2600,25 +2600,54 @@ function updateWeeklyStatsCard(type, data, trends = null) {
         if (!trends || !trends[metric]) return '';
         
         const trend = trends[metric];
-        let icon, color;
+        let icon, color, text;
         
         switch (trend) {
             case 'up':
                 icon = 'fa-arrow-up';
                 color = '#28a745'; // Green for increase
+                text = '(increasing)';
                 break;
             case 'down':
                 icon = 'fa-arrow-down';
                 color = '#dc3545'; // Red for decrease
+                text = '(decreasing)';
                 break;
             case 'flat':
             default:
-                icon = 'fa-equals';
+                icon = '';
                 color = '#6c757d'; // Gray for no change
+                text = '(stable)';
                 break;
         }
         
-        return `<i class="fas ${icon} trend-icon" style="color: ${color}; margin-left: 0.25rem; font-size: 0.75rem;"></i>`;
+        if (icon) {
+            return `<i class="fas ${icon} trend-icon" style="color: ${color}; margin-left: 0.25rem; font-size: 0.75rem;"></i><span style="color: ${color}; margin-left: 0.25rem; font-size: 0.75rem;">${text}</span>`;
+        } else {
+            return `<span style="color: ${color}; margin-left: 0.25rem; font-size: 0.75rem;">${text}</span>`;
+        }
+    }
+    
+    // Helper function to get UV risk level
+    function getUVRiskLevel(uvValue) {
+        if (uvValue === null || uvValue === undefined) return '';
+        if (uvValue <= 2) return '(Low)';
+        else if (uvValue <= 5) return '(Moderate)';
+        else if (uvValue <= 7) return '(High)';
+        else if (uvValue <= 10) return '(Very High)';
+        else return '(Extreme)';
+    }
+    
+    // Helper function to get PM10 scale
+    function getPM10Scale(pm10Value) {
+        if (pm10Value === null || pm10Value === undefined) return '';
+        if (pm10Value >= 0 && pm10Value <= 12) return '(Good)';
+        else if (pm10Value > 12 && pm10Value <= 35.4) return '(Moderate)';
+        else if (pm10Value > 35.4 && pm10Value <= 55.4) return '(Poor)';
+        else if (pm10Value > 55.4 && pm10Value <= 150.4) return '(Unhealthy)';
+        else if (pm10Value > 150.4 && pm10Value <= 250.4) return '(Severe)';
+        else if (pm10Value > 250.4) return '(Hazardous)';
+        else return '';
     }
     
     // Create the HTML content with improved layout and trend icons
@@ -2720,11 +2749,11 @@ function updateWeeklyStatsCard(type, data, trends = null) {
                     <div class="stat-row">
                         <div class="stat-item">
                             <span class="stat-label">Max:</span>
-                            <span class="stat-value">${data.max_uv !== null ? data.max_uv : '--'}</span>
+                            <span class="stat-value">${data.max_uv !== null ? data.max_uv : '--'}${getUVRiskLevel(data.max_uv)}</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">Avg:</span>
-                            <span class="stat-value">${data.avg_uv !== null ? data.avg_uv : '--'}${getTrendIcon('avg_uv', trends)}</span>
+                            <span class="stat-value">${data.avg_uv !== null ? data.avg_uv : '--'}${getUVRiskLevel(data.avg_uv)}${getTrendIcon('avg_uv', trends)}</span>
                         </div>
                     </div>
                 </div>
@@ -2750,11 +2779,11 @@ function updateWeeklyStatsCard(type, data, trends = null) {
                     <div class="stat-row">
                         <div class="stat-item">
                             <span class="stat-label">Max:</span>
-                            <span class="stat-value">${data.max_pm10 !== null ? data.max_pm10 : '--'}</span>
+                            <span class="stat-value">${data.max_pm10 !== null ? data.max_pm10 : '--'}${getPM10Scale(data.max_pm10)}</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">Avg:</span>
-                            <span class="stat-value">${data.avg_pm10 !== null ? data.avg_pm10 : '--'}${getTrendIcon('avg_pm10', trends)}</span>
+                            <span class="stat-value">${data.avg_pm10 !== null ? data.avg_pm10 : '--'}${getPM10Scale(data.avg_pm10)}${getTrendIcon('avg_pm10', trends)}</span>
                         </div>
                     </div>
                 </div>

@@ -1633,5 +1633,64 @@ def api_dam_levels():
             'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
 
+@app.route('/api/download_csv')
+def api_download_csv():
+    """Download weather data as CSV for the specified period"""
+    try:
+        period = request.args.get('period', '7d')
+        
+        # Calculate the date range based on the period
+        now = datetime.now()
+        if period == '7d':
+            start_date = now - timedelta(days=7)
+        elif period == '30d':
+            start_date = now - timedelta(days=30)
+        else:
+            return jsonify({'error': 'Invalid period specified'}), 400
+        
+        # Convert to Unix timestamps
+        start_time = int(start_date.timestamp())
+        end_time = int(now.timestamp())
+        
+        # Create database connection
+        engine = create_engine(DB_URI)
+        
+        # Query all data from archive table for the specified period
+        query = f"""
+            SELECT dateTime,appTemp,barometer,cloudbase,co2,dewpoint,heatindex,humidex,inDewpoint,inHumidity,inTemp,lightning_distance,lightning_strike_count,luminosity,maxSolarRad,outHumidity,outTemp,pm10_0,pressure,rain,rainRate,UV,windchill,windDir,windGust,windGustDir,windrun,windSpeed,conditions
+            FROM archive
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time}
+            ORDER BY dateTime ASC
+        """
+        
+        # Execute query and get data as DataFrame
+        df = pd.read_sql(query, engine)
+        
+        if df.empty:
+            return jsonify({'error': 'No data found for the specified period'}), 404
+        
+        # Convert Unix timestamps to readable datetime
+        df['dateTime'] = pd.to_datetime(df['dateTime'], unit='s', utc=True).dt.tz_convert('Australia/Brisbane')
+        
+        # Generate filename with current date and period
+        filename = f"weather_data_{period}_{now.strftime('%Y%m%d_%H%M%S')}.csv"
+        
+        # Create CSV content
+        csv_content = df.to_csv(index=False)
+        
+        # Create response with CSV content
+        response = app.response_class(
+            response=csv_content,
+            status=200,
+            mimetype='text/csv'
+        )
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+        
+        return response
+        
+    except Exception as e:
+        print(f"Error generating CSV download: {e}")
+        return jsonify({'error': 'Failed to generate CSV download'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 

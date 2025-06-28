@@ -103,6 +103,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // CSV download functionality
+    document.querySelectorAll('.csv-download').forEach(function(item) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const period = this.getAttribute('data-period');
+            if (period) {
+                downloadCSV(period);
+            }
+        });
+    });
+    
     updateCurrentTime();
     setInterval(updateCurrentTime, 1000);
     fetchAndDisplaySunriseSunset();
@@ -2834,4 +2845,31 @@ function showWeeklyStatsError(type) {
     loadingElement.style.display = 'none';
     contentElement.style.display = 'none';
     errorElement.style.display = 'block';
+}
+
+function downloadCSV(period) {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    
+    // Show loading indicator or disable button
+    const downloadButton = document.querySelector(`[data-period="${period}"]`);
+    const originalText = downloadButton.textContent;
+    downloadButton.textContent = 'Downloading...';
+    downloadButton.style.pointerEvents = 'none';
+    
+    // Create a temporary link element to trigger the download
+    const link = document.createElement('a');
+    link.href = `${basePath}/api/download_csv?period=${period}`;
+    link.download = `weather_data_${period}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`;
+    
+    // Append to body, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Reset button after a short delay
+    setTimeout(() => {
+        downloadButton.textContent = originalText;
+        downloadButton.style.pointerEvents = 'auto';
+    }, 2000);
 }

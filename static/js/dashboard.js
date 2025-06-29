@@ -1,3 +1,11 @@
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Main initialization function that sets up all dashboard functionality when the DOM is loaded.
+ * Initializes theme, charts, data updates, timelapse video, weather cam modal, and various API endpoints.
+ *
+ * @listens DOMContentLoaded
+ */
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize theme
     initializeTheme();
@@ -144,7 +152,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(fetchAndUpdateWeeklyStats, 60 * 60 * 1000); // Update every hour
 });
 
-// Theme management functions
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Initializes the theme system by loading the saved theme from localStorage and applying it.
+ * Sets the correct radio button state and applies the theme to the document.
+ */
 function initializeTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     setTheme(savedTheme);
@@ -156,6 +169,14 @@ function initializeTheme() {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Sets the application theme and updates all UI elements including Plotly charts to match the theme.
+ * Supports both light and dark themes with appropriate color schemes.
+ *
+ * @param {string} theme - The theme to apply ('light' or 'dark').
+ */
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     document.querySelector('html').setAttribute('data-theme', theme);
@@ -195,6 +216,14 @@ const COLORS = {
     gold: '#F0CD28',
 };
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches weather data and forecast from the API and updates all dashboard components.
+ * Updates graphs, overlays, weather conditions, and period labels based on the current time period.
+ *
+ * @async
+ */
 function fetchAndUpdateAll() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -240,6 +269,15 @@ function fetchAndUpdateAll() {
     fetchAndUpdateBarMetrics();
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the predicted weather conditions card with AI forecast data including temperature ranges,
+ * wind conditions, rain and lightning probabilities, and training information.
+ *
+ * @async
+ * @param {Object} forecast - The forecast data object containing AI predictions and confidence levels.
+ */
 async function updatePredictedWeatherConditionsCard(forecast) {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -401,6 +439,17 @@ async function updatePredictedWeatherConditionsCard(forecast) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Creates or updates a Plotly chart with the specified traces and layout configuration.
+ * Handles theme-aware styling, responsive design, and automatic tick generation for time-based charts.
+ *
+ * @param {string} divId - The ID of the HTML element where the chart will be rendered.
+ * @param {Array} traces - Array of trace objects defining the data series to plot.
+ * @param {Object} layout - Layout configuration object for the chart appearance and behavior.
+ * @param {boolean} legendAbove - Whether to position the legend above the chart (true) or use default positioning (false).
+ */
 function plotGraph(divId, traces, layout, legendAbove) {
     // Get current theme
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -495,6 +544,17 @@ function plotGraph(divId, traces, layout, legendAbove) {
     Plotly.newPlot(divId, traces, layout, {responsive: true, displayModeBar: false, useResizeHandler: true});
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Sets the overlay value for a specified element with optional decimal formatting.
+ * Updates the text content of the element with the formatted value and unit.
+ *
+ * @param {string} id - The ID of the HTML element to update.
+ * @param {number|null} value - The numeric value to display, or null/undefined for '--'.
+ * @param {string} unit - The unit of measurement to append to the value.
+ * @param {number} [decimals=1] - Number of decimal places to format the value.
+ */
 function setOverlay(id, value, unit, decimals = 1) {
     const el = document.getElementById(id);
     if (el) {
@@ -506,10 +566,27 @@ function setOverlay(id, value, unit, decimals = 1) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Formats a numeric value to a specified number of decimal places.
+ *
+ * @param {number} val - The numeric value to format.
+ * @param {number} decimals - Number of decimal places to include.
+ * @returns {string} The formatted number as a string.
+ */
 function formatValue(val, decimals) {
     return Number(val).toFixed(decimals);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the inside temperature graph with the latest data and sets the overlay value.
+ * Creates a line chart showing temperature trends over time.
+ *
+ * @param {Object} data - Weather data object containing dateTime and inTemp arrays.
+ */
 function updateInsideTempGraph(data) {
     plotGraph('inside-temp-graph', [{
         x: data.dateTime,
@@ -522,6 +599,14 @@ function updateInsideTempGraph(data) {
     setOverlay('inside-temp-overlay', lastValid(data.inTemp), '°C', 1);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the outside temperature graph with the latest data and sets the overlay value.
+ * Creates a line chart showing temperature trends over time.
+ *
+ * @param {Object} data - Weather data object containing dateTime and outTemp arrays.
+ */
 function updateOutsideTempGraph(data) {
     let traces = [{
         x: data.dateTime,
@@ -536,10 +621,26 @@ function updateOutsideTempGraph(data) {
     setOverlay('outside-temp-overlay', lastValid(data.outTemp), '°C', 1);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the outside temperature graph with forecast data overlay.
+ * Re-renders the temperature chart if forecast data is available.
+ *
+ * @param {Object} forecast - Forecast data object containing temperature predictions.
+ */
 function updateForecastOnOutsideTemp(forecast) {
     if (latestData) updateOutsideTempGraph(latestData);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the humidity graph showing both inside and outside humidity levels.
+ * Creates a dual-line chart with legend positioned to the right of the chart.
+ *
+ * @param {Object} data - Weather data object containing dateTime, inHumidity, and outHumidity arrays.
+ */
 function updateHumidityGraph(data) {
     plotGraph('humidity-graph', [
         {
@@ -571,6 +672,14 @@ function updateHumidityGraph(data) {
     setOverlay('humidity-overlay', lastValid(data.outHumidity), '%', 2);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the barometric pressure graph with the latest data and sets the overlay value.
+ * Creates a line chart showing pressure trends over time.
+ *
+ * @param {Object} data - Weather data object containing dateTime and barometer arrays.
+ */
 function updatePressureGraph(data) {
     plotGraph('pressure-graph', [{
         x: data.dateTime,
@@ -583,6 +692,15 @@ function updatePressureGraph(data) {
     setOverlay('pressure-overlay', lastValid(data.barometer), 'hPa', 1);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the rainfall graph with the latest data and fetches 24-hour rainfall total for overlay.
+ * Creates a bar chart showing rainfall amounts and displays the 24-hour total in the overlay.
+ *
+ * @async
+ * @param {Object} data - Weather data object containing dateTime and rain arrays.
+ */
 async function updateRainfallGraph(data) {
     plotGraph('rainfall-graph', [{
         x: data.dateTime,
@@ -615,6 +733,14 @@ async function updateRainfallGraph(data) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the wind graph showing both wind speed and direction data.
+ * Creates a dual-axis chart with wind speed as a line and wind direction as markers.
+ *
+ * @param {Object} data - Weather data object containing dateTime, windSpeed, and windDir arrays.
+ */
 function updateWindGraph(data) {
     // Convert wind speed from m/s to km/h
     const windSpeedKmh = data.windSpeed.map(v => v == null ? null : Math.round(v * 3.6 * 100) / 100);
@@ -658,6 +784,14 @@ function updateWindGraph(data) {
     setWindOverlay(lastValid(windSpeedKmh), lastValid(data.windDir));
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the wind chill graph with the latest data and sets the overlay value.
+ * Creates a line chart showing wind chill temperature trends over time.
+ *
+ * @param {Object} data - Weather data object containing dateTime and windChill arrays.
+ */
 function updateWindChillGraph(data) {
     plotGraph('wind-chill-graph', [{
         x: data.dateTime,
@@ -670,6 +804,14 @@ function updateWindChillGraph(data) {
     setOverlay('wind-chill-overlay', lastValid(data.windChill), '°C', 1);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the lightning graph showing both distance and strike count data.
+ * Creates a grouped bar chart with distance bars only shown when strike count is 1 or more.
+ *
+ * @param {Object} data - Weather data object containing dateTime, lightning_distance, and lightning_strike_count arrays.
+ */
 function updateLightningGraph(data) {
     // Only show distance bar when strike count is 1 or more
     const filteredDistance = data.lightning_distance.map((dist, i) => {
@@ -716,6 +858,14 @@ function updateLightningGraph(data) {
     setOverlay('lightning-overlay', lastValid(data.lightning_strike_count), 'strikes', 0);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the solar graph showing both luminosity and UV index data.
+ * Creates a dual-axis chart with solar radiation as a line and UV index as a separate line.
+ *
+ * @param {Object} data - Weather data object containing dateTime, luminosity, and uv arrays.
+ */
 function updateSolarGraph(data) {
     plotGraph('solar-graph', [
         {
@@ -758,6 +908,14 @@ function updateSolarGraph(data) {
     setOverlay('solar-overlay', lastValid(data.luminosity), 'kLux', 2);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the heat index graph with the latest data and sets the overlay value.
+ * Creates a line chart showing heat index temperature trends over time.
+ *
+ * @param {Object} data - Weather data object containing dateTime and heatIndex arrays.
+ */
 function updateHeatIndexGraph(data) {
     plotGraph('heat-index-graph', [{
         x: data.dateTime,
@@ -770,6 +928,15 @@ function updateHeatIndexGraph(data) {
     setOverlay('heat-index-overlay', lastValid(data.heatIndex), '°C', 1);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Returns the last valid (non-null, non-undefined, non-NaN) value from an array.
+ * Searches from the end of the array backwards to find the most recent valid value.
+ *
+ * @param {Array} arr - Array of values to search through.
+ * @returns {*} The last valid value found, or null if no valid values exist.
+ */
 function lastValid(arr) {
     if (!arr || !arr.length) return null;
     for (let i = arr.length - 1; i >= 0; --i) {
@@ -778,6 +945,15 @@ function lastValid(arr) {
     return null;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Sets the wind overlay display with formatted speed and direction information.
+ * Converts wind direction from degrees to compass bearing and formats the display text.
+ *
+ * @param {number|null} speed - Wind speed in km/h, or null/undefined for '--'.
+ * @param {number|null} dir - Wind direction in degrees, or null/undefined for '--'.
+ */
 function setWindOverlay(speed, dir) {
     const el = document.getElementById('wind-overlay');
     if (el) {
@@ -789,6 +965,15 @@ function setWindOverlay(speed, dir) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Converts wind direction from degrees to compass bearing (N, NE, E, SE, S, SW, W, NW).
+ * Uses 16-point compass system with 22.5-degree sectors for each direction.
+ *
+ * @param {number} deg - Wind direction in degrees (0-360).
+ * @returns {string} Compass bearing as a string (N, NE, E, SE, S, SW, W, NW, or '--' for invalid values).
+ */
 function degToCompass(deg) {
     if (deg === null || deg === undefined || isNaN(deg)) return '--';
     if ((deg >= 337.5 && deg <= 360) || (deg >= 0 && deg < 22.5)) return 'N';
@@ -802,6 +987,12 @@ function degToCompass(deg) {
     return '--';
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the period labels for all graph sections based on the current time period and screen size.
+ * Shows abbreviated labels on smaller screens and full descriptions on larger screens.
+ */
 function updatePeriodLabels() {
     let label;
     if (window.innerWidth <= 1024 || window.innerHeight <= 768) {
@@ -826,6 +1017,12 @@ function updatePeriodLabels() {
 
 window.addEventListener('resize', updatePeriodLabels);
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the current time display in Brisbane, Australia timezone.
+ * Shows both time and date in a formatted string.
+ */
 function updateCurrentTime() {
     const el = document.getElementById('current-time');
     if (!el) return;
@@ -837,6 +1034,15 @@ function updateCurrentTime() {
     el.textContent = `Local Time in Brisbane, Australia is ${timeStr} on ${dateStr}`;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Parses a local time string in 'h:mm:ss AM/PM' format and converts it to a Date object.
+ * Creates the date in Brisbane timezone for sunrise/sunset calculations.
+ *
+ * @param {string} timeStr - Time string in 'h:mm:ss AM/PM' format.
+ * @returns {Date} Date object representing the parsed time in Brisbane timezone.
+ */
 function parseLocalTimeString(timeStr) {
     // Expects 'h:mm:ss AM/PM' format
     const [time, period] = timeStr.split(' ');
@@ -851,6 +1057,14 @@ function parseLocalTimeString(timeStr) {
     return new Date(brisbaneDate.getFullYear(), brisbaneDate.getMonth(), brisbaneDate.getDate(), hour, minutes, seconds);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches sunrise and sunset times from the sunrise-sunset.org API for Brisbane coordinates.
+ * Updates the display with formatted times and stores the parsed times for weather cam functionality.
+ *
+ * @async
+ */
 function fetchAndDisplaySunriseSunset() {
     const lat = -27.407259185389066;
     const lon = 152.9198965081402;
@@ -883,6 +1097,12 @@ function fetchAndDisplaySunriseSunset() {
         });
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Schedules the next sunrise/sunset update to occur at 00:01 the following day.
+ * Uses setTimeout to ensure daily updates of sunrise and sunset information.
+ */
 function scheduleSunriseSunsetUpdate() {
     // Calculate ms until next 00:01
     const now = new Date();
@@ -896,6 +1116,14 @@ function scheduleSunriseSunsetUpdate() {
     }, msUntilNext);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Determines if the weather camera should be active based on sunrise and sunset times.
+ * Returns true if current time is within 15 minutes before sunrise to 15 minutes after sunset.
+ *
+ * @returns {boolean} True if camera should be active, false otherwise.
+ */
 function isCamActiveNow() {
     if (!sunriseTime || !sunsetTime) return true; // fallback: always active
     const now = new Date();
@@ -904,6 +1132,12 @@ function isCamActiveNow() {
     return now >= beforeSunrise && now <= afterSunset;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Refreshes the weather camera image with cache-busting and handles offline overlay.
+ * Shows/hides offline overlay based on camera active status and updates image source with timestamp.
+ */
 function refreshWeatherCamImage() {
     const camImg = document.querySelector('img[alt="Weather Cam"]');
     const overlay = document.getElementById('weather-cam-offline-overlay');
@@ -921,6 +1155,12 @@ function refreshWeatherCamImage() {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the weather camera timestamp display with the last modified time of the image.
+ * Fetches the image headers to get the Last-Modified date and formats it for display.
+ */
 function updateWeatherCamTimestamp() {
     if (!isCamActiveNow()) {
         const el = document.getElementById('weather-cam-timestamp');
@@ -942,7 +1182,14 @@ function updateWeatherCamTimestamp() {
         });
 }
 
-// Function to fetch and update battery status
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches battery status for all weather station components from the API.
+ * Updates the battery status display for console, outdoor sensor, solar array, and lightning detector.
+ *
+ * @async
+ */
 function fetchAndUpdateBattery() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -956,7 +1203,14 @@ function fetchAndUpdateBattery() {
         });
 }
 
-// Function to update battery status
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the battery status display for all weather station components.
+ * Calls updateBatteryCard for each component type with their respective status information.
+ *
+ * @param {Object} data - Battery status data object containing status for each component.
+ */
 function updateBatteryStatus(data) {
     updateBatteryCard('console', data.console);
     updateBatteryCard('outdoor', data.outdoor);
@@ -964,7 +1218,15 @@ function updateBatteryStatus(data) {
     updateBatteryCard('lightning', data.lightning);
 }
 
-// Function to update battery card
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the battery status card for a specific component type.
+ * Sets the appropriate SVG icon and status text based on battery health.
+ *
+ * @param {string} type - Component type ('console', 'outdoor', 'array', or 'lightning').
+ * @param {Object} info - Battery information object containing status and label properties.
+ */
 function updateBatteryCard(type, info) {
     const iconDiv = document.getElementById(`${type}-battery-icon`);
     const statusDiv = document.getElementById(`${type}-battery-status`);
@@ -983,6 +1245,14 @@ function updateBatteryCard(type, info) {
     statusDiv.textContent = info.label;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches bar area metrics including temperature, humidity, CO2, and particulate matter data.
+ * Updates all bar area displays including comfort level calculations.
+ *
+ * @async
+ */
 function fetchAndUpdateBarMetrics() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -996,6 +1266,14 @@ function fetchAndUpdateBarMetrics() {
         });
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the bar area temperature and humidity displays and calculates comfort level.
+ * Parses temperature and humidity values from strings and updates the comfort level card.
+ *
+ * @param {Object} data - Bar metrics data object containing bar_area_temp and bar_area_humidity.
+ */
 function updateBarAreaTempHumidity(data) {
     const tempElement = document.getElementById('bar-area-temp');
     const humidityElement = document.getElementById('bar-area-humidity');
@@ -1032,6 +1310,14 @@ function updateBarAreaTempHumidity(data) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the outside CO2 level card with value, scale rating, and appropriate styling.
+ * Determines air quality scale based on CO2 concentration and updates background color and image.
+ *
+ * @param {Object} data - Bar metrics data object containing outside_co2 value.
+ */
 function updateOutsideCO2Card(data) {
     const co2Div = document.getElementById('outside-co2');
     if (!co2Div) return;
@@ -1058,6 +1344,14 @@ function updateOutsideCO2Card(data) {
     `;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the PM2.5 particulate matter card with value, scale rating, and appropriate styling.
+ * Determines air quality scale based on PM2.5 concentration and updates background color and image.
+ *
+ * @param {Object} data - Bar metrics data object containing pm25 value.
+ */
 function updatePM25Card(data) {
     const pm25Div = document.getElementById('outside-pm25');
     if (!pm25Div) return;
@@ -1085,6 +1379,14 @@ function updatePM25Card(data) {
     `;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the PM10 particulate matter card with value, scale rating, and appropriate styling.
+ * Determines air quality scale based on PM10 concentration and updates background color and image.
+ *
+ * @param {Object} data - Bar metrics data object containing pm10 value.
+ */
 function updatePM10Card(data) {
     const pm10Div = document.getElementById('outside-pm10');
     if (!pm10Div) return;
@@ -1112,6 +1414,12 @@ function updatePM10Card(data) {
     `;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the timelapse video date display with the last modified time of the video file.
+ * Fetches the video file headers to get the Last-Modified date and formats it for display.
+ */
 function updateTimelapseDate() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -1130,6 +1438,15 @@ function updateTimelapseDate() {
         });
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the bar area comfort level card based on temperature and humidity values.
+ * Determines comfort level (Chilly, Perfect, Good, Reasonable, Toasty, Way too hot) and updates styling.
+ *
+ * @param {number|null} temp - Temperature in Celsius, or null if unavailable.
+ * @param {number|null} humidity - Humidity percentage, or null if unavailable.
+ */
 function updateBarAreaComfortLevel(temp, humidity) {
     const comfortImg = document.getElementById('bar-area-comfort-img');
     const comfortText = document.getElementById('bar-area-comfort-text');
@@ -1198,6 +1515,14 @@ function updateBarAreaComfortLevel(temp, humidity) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the outside CO2 display with formatted value and unit.
+ * Legacy function for simple CO2 value display without scale ratings.
+ *
+ * @param {Object} data - Data object containing outside_co2 value.
+ */
 function updateOutsideCO2(data) {
     const co2Div = document.getElementById('outside-co2');
     if (co2Div) {
@@ -1211,6 +1536,14 @@ function updateOutsideCO2(data) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the outside PM2.5 display with formatted value and unit.
+ * Legacy function for simple PM2.5 value display without scale ratings.
+ *
+ * @param {Object} data - Data object containing outside_pm25 value.
+ */
 function updateOutsidePM25(data) {
     const pm25Div = document.getElementById('outside-pm25');
     if (pm25Div) {
@@ -1224,6 +1557,14 @@ function updateOutsidePM25(data) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the outside PM10 display with formatted value and unit.
+ * Legacy function for simple PM10 value display without scale ratings.
+ *
+ * @param {Object} data - Data object containing outside_pm10 value.
+ */
 function updateOutsidePM10(data) {
     const pm10Div = document.getElementById('outside-pm10');
     if (pm10Div) {
@@ -1237,6 +1578,20 @@ function updateOutsidePM10(data) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Determines the current weather condition by calling the weather condition API.
+ * Returns weather text and icon information based on current meteorological data.
+ *
+ * @async
+ * @param {Object} data - Weather data object containing current meteorological readings.
+ * @returns {Object} Object containing weather text and icon information.
+ * @returns {string} returns.text - Description of current weather condition.
+ * @returns {string|null} returns.icon - Path to weather condition icon, or null if unavailable.
+ *
+ * @throws {Error} When API call fails or returns invalid response.
+ */
 async function determineWeatherCondition(data) {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -1263,6 +1618,15 @@ async function determineWeatherCondition(data) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the actual weather conditions card with current meteorological data.
+ * Displays weather condition, temperature, pressure, rainfall, UV, humidity, wind, and lightning information.
+ *
+ * @async
+ * @param {Object} data - Weather data object containing current meteorological readings.
+ */
 async function updateActualWeatherConditions(data) {
     // Helper function to safely get value (handles both arrays and single values)
     const getValue = (value, defaultValue = 0) => {
@@ -1431,7 +1795,12 @@ async function updateActualWeatherConditions(data) {
     console.log('Updated card with condition:', condition);
 }
 
-// Initialize all charts
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Initializes all Chart.js charts for the dashboard including temperature, rainfall, and lightning charts.
+ * Sets up responsive chart configurations with appropriate styling and data bindings.
+ */
 function initializeCharts() {
     // Outside Temperature Graph
     const outsideTempCtx = document.getElementById('outside-temp-chart');
@@ -1588,7 +1957,17 @@ function initializeCharts() {
     }
 }
 
-// Function to get UV risk level and time to sunburn
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Determines UV risk level and time to sunburn based on UV index value.
+ * Returns risk assessment and sunburn time information for UV safety guidance.
+ *
+ * @param {number} uvIndex - UV index value to assess.
+ * @returns {Object} Object containing risk level and time to sunburn information.
+ * @returns {string} returns.riskLevel - Risk level description (Low, Moderate, High, Very High, Extreme).
+ * @returns {string} returns.timeToBurn - Estimated time to sunburn for the UV level.
+ */
 function getUVInfo(uvIndex) {
     let riskLevel, timeToBurn;
     
@@ -1612,7 +1991,14 @@ function getUVInfo(uvIndex) {
     return { riskLevel, timeToBurn };
 }
 
-// Function to update UV Level card
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the UV Level card with current UV index, risk level, and appropriate styling.
+ * Sets background color, risk level text, and image based on UV index value.
+ *
+ * @param {number} uvIndex - Current UV index value to display.
+ */
 function updateUVLevelCard(uvIndex) {
     console.log('Updating UV Level card with index:', uvIndex);
     
@@ -1676,7 +2062,14 @@ function updateUVLevelCard(uvIndex) {
     console.log('UV Level card updated successfully');
 }
 
-// Update the updateWeatherData function to include UV level
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates weather data by fetching current weather condition and updating the actual weather conditions card.
+ * Called periodically to keep weather information current.
+ *
+ * @async
+ */
 async function updateWeatherData() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -1693,7 +2086,14 @@ async function updateWeatherData() {
     }
 }
 
-// QFD Alerts functionality
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches Queensland Fire and Emergency Services (QFES) alerts for the Ferny Grove area.
+ * Updates the QFD alerts card with current emergency warnings and information.
+ *
+ * @async
+ */
 async function fetchAndUpdateQFDAlerts() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -1708,6 +2108,17 @@ async function fetchAndUpdateQFDAlerts() {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the QFD alerts card with emergency warning information.
+ * Displays alerts with warning levels, titles, descriptions, and metadata in a scrollable container.
+ *
+ * @param {Object} data - QFD alerts data object containing alerts array and metadata.
+ * @param {Array} data.alerts - Array of alert objects with warning information.
+ * @param {number} data.count - Number of active alerts.
+ * @param {string} [data.error] - Error message if alerts could not be fetched.
+ */
 function updateQFDAlertsCard(data) {
     const cardBody = document.getElementById('qfd-alerts-body');
     if (!cardBody) return;
@@ -1804,6 +2215,15 @@ function updateQFDAlertsCard(data) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Returns the appropriate background color for alert styling based on warning level.
+ * Maps warning levels to color-coded background colors for visual alert categorization.
+ *
+ * @param {string} warningLevel - Warning level string (Emergency Warning, Watch and Act, Advice, Information).
+ * @returns {string} CSS color value for the alert background.
+ */
 function getAlertBackgroundColor(warningLevel) {
     const level = warningLevel.toLowerCase();
     switch (level) {
@@ -1820,6 +2240,15 @@ function getAlertBackgroundColor(warningLevel) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Returns the appropriate badge color for alert styling based on warning level.
+ * Maps warning levels to color-coded badge colors for visual alert categorization.
+ *
+ * @param {string} warningLevel - Warning level string (Emergency Warning, Watch and Act, Advice, Information).
+ * @returns {string} CSS color value for the alert badge.
+ */
 function getAlertBadgeColor(warningLevel) {
     const level = warningLevel.toLowerCase();
     switch (level) {
@@ -1836,7 +2265,14 @@ function getAlertBadgeColor(warningLevel) {
     }
 }
 
-// BOM Warnings functionality
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches Bureau of Meteorology (BOM) warnings including marine and land warnings.
+ * Updates the BOM warnings card with current weather warnings and alerts.
+ *
+ * @async
+ */
 async function fetchAndUpdateBOMWarnings() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -1857,6 +2293,19 @@ async function fetchAndUpdateBOMWarnings() {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the BOM warnings card with marine and land warning information.
+ * Displays warnings in separate sections with links, descriptions, and metadata.
+ *
+ * @param {Object} data - BOM warnings data object containing marine and land warnings.
+ * @param {Array} data.marine_warnings - Array of marine warning objects.
+ * @param {Array} data.land_warnings - Array of land warning objects.
+ * @param {number} data.marine_count - Number of active marine warnings.
+ * @param {number} data.land_count - Number of active land warnings.
+ * @param {string} [data.error] - Error message if warnings could not be fetched.
+ */
 function updateBOMWarningsCard(data) {
     const cardBody = document.getElementById('bom-radar-body');
     if (!cardBody) return;
@@ -2030,7 +2479,15 @@ function updateBOMWarningsCard(data) {
     cardBody.appendChild(attributionDiv);
 } 
 
-// Setup Images Modal functionality
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Opens the setup image modal with the specified image and title.
+ * Displays a modal dialog showing weather station setup images in full size.
+ *
+ * @param {string} imageSrc - Source URL of the image to display in the modal.
+ * @param {string} imageTitle - Title text to display in the modal header.
+ */
 function openSetupImageModal(imageSrc, imageTitle) {
     const modal = document.getElementById('setupImageModal');
     const modalImg = document.getElementById('setupModalImage');
@@ -2041,6 +2498,12 @@ function openSetupImageModal(imageSrc, imageTitle) {
     modalTitle.textContent = imageTitle;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Closes the setup image modal by hiding the modal element.
+ * Hides the modal dialog and clears the displayed image and title.
+ */
 function closeSetupImageModal() {
     const modal = document.getElementById('setupImageModal');
     modal.style.display = "none";
@@ -2066,7 +2529,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Top Stats functionality
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches top statistics data including maximum and minimum values for all weather metrics.
+ * Updates the top stats card with historical record information and ticker feed.
+ *
+ * @async
+ */
 async function fetchAndUpdateTopStats() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -2101,6 +2571,14 @@ async function fetchAndUpdateTopStats() {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the top statistics card with historical record data for all weather metrics.
+ * Displays maximum and minimum values with dates for temperature, humidity, wind, rainfall, UV, PM10, and lightning.
+ *
+ * @param {Object} data - Top statistics data object containing maximum and minimum values with dates.
+ */
 function updateTopStatsCard(data) {
     // Update first date
     const firstDateElement = document.getElementById('first-date');
@@ -2182,6 +2660,14 @@ function updateTopStatsCard(data) {
     updateTickerFeed(data);
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the ticker feed with top statistics data for continuous scrolling display.
+ * Formats values with appropriate units and ratings, and calculates animation duration for smooth scrolling.
+ *
+ * @param {Object} data - Top statistics data object containing maximum values and dates for ticker display.
+ */
 function updateTickerFeed(data) {
     // Helper function to get UV rating
     function getUVRating(uvValue) {
@@ -2334,6 +2820,16 @@ function updateTickerFeed(data) {
     }, 100); // Small delay to ensure content is rendered
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the risk level display for UV or PM10 values with color-coded badges.
+ * Sets appropriate Bootstrap badge styling based on the value and type of measurement.
+ *
+ * @param {string} elementId - ID of the HTML element to update with the risk level badge.
+ * @param {number} value - Numeric value to assess for risk level (UV index or PM10 concentration).
+ * @param {string} type - Type of measurement ('uv' or 'pm10') to determine risk thresholds.
+ */
 function updateRiskLevel(elementId, value, type) {
     const element = document.getElementById(elementId);
     if (!element) return;
@@ -2357,7 +2853,14 @@ function updateRiskLevel(elementId, value, type) {
     element.innerHTML = `<span class="badge bg-${color}">${rating}</span>`;
 }
 
-// Tides functionality
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches tide data from the API and updates the tides card display.
+ * Handles errors gracefully and shows appropriate error messages if tide data is unavailable.
+ *
+ * @async
+ */
 async function fetchAndUpdateTides() {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';
@@ -2377,6 +2880,18 @@ async function fetchAndUpdateTides() {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the tides card with tide data including station information and tide times.
+ * Displays high and low tide information in a responsive layout with future/past indicators.
+ *
+ * @param {Object} data - Tide data object containing station info and tide times.
+ * @param {string} data.station_name - Name of the tide station.
+ * @param {string} data.station_source - Source of the tide data.
+ * @param {string} data.station_distance - Distance to the tide station.
+ * @param {Array} data.tides - Array of tide objects with time and height information.
+ */
 function updateTidesCard(data) {
     const loadingElement = document.getElementById('tides-loading');
     const contentElement = document.getElementById('tides-content');
@@ -2459,6 +2974,19 @@ function updateTidesCard(data) {
     }
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Creates a tide element for display in the tides list.
+ * Generates HTML for individual tide entries with appropriate styling and future/past indicators.
+ *
+ * @param {Object} tide - Tide object containing time, height, type, and future status.
+ * @param {string} tide.time_full - Full timestamp of the tide.
+ * @param {number} tide.height - Height of the tide in meters.
+ * @param {string} tide.type - Type of tide ('high' or 'low').
+ * @param {boolean} tide.is_future - Whether the tide is in the future.
+ * @returns {HTMLElement} DOM element representing the tide entry.
+ */
 function createTideElement(tide) {
     const tideDiv = document.createElement('div');
     tideDiv.className = 'd-flex justify-content-between align-items-center mb-3 p-3 border rounded w-100';
@@ -2506,6 +3034,12 @@ function createTideElement(tide) {
     return tideDiv;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Shows the tides error state by hiding loading and content elements and displaying error message.
+ * Handles error display when tide data cannot be fetched or processed.
+ */
 function showTidesError() {
     const loadingElement = document.getElementById('tides-loading');
     const contentElement = document.getElementById('tides-content');
@@ -2856,6 +3390,14 @@ function updateWeeklyStatsCard(type, data, trends = null) {
     contentElement.innerHTML = html;
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Shows the weekly stats error state by hiding loading and content elements and displaying error message.
+ * Handles error display when weekly statistics data cannot be fetched or processed.
+ *
+ * @param {string} type - Type of weekly stats ('current' or 'previous') to show error for.
+ */
 function showWeeklyStatsError(type) {
     const loadingElement = document.getElementById(`weekly-stats-${type}-loading`);
     const contentElement = document.getElementById(`weekly-stats-${type}-content`);
@@ -2866,6 +3408,14 @@ function showWeeklyStatsError(type) {
     errorElement.style.display = 'block';
 }
 
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Initiates CSV download for weather data based on the specified time period.
+ * Creates a temporary download link and triggers the file download with appropriate filename.
+ *
+ * @param {string} period - Time period for the CSV data ('24h', '72h', '7d', or '28d').
+ */
 function downloadCSV(period) {
     const isProd = window.location.hostname !== 'localhost';
     const basePath = isProd ? '/njawa' : '';

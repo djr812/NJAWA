@@ -204,13 +204,13 @@ function fetchAndUpdateAll() {
 
     fetch(`${basePath}/api/data?period=${currentPeriod}`)
         .then(res => res.json())
-        .then(data => {
+        .then(async data => {
             latestData = data;
             updateInsideTempGraph(data);
             updateOutsideTempGraph(data);
             updateHumidityGraph(data);
             updatePressureGraph(data);
-            updateRainfallGraph(data);
+            await updateRainfallGraph(data);
             updateWindGraph(data);
             updateHeatIndexGraph(data);
             updateWindChillGraph(data);
@@ -583,7 +583,7 @@ function updatePressureGraph(data) {
     setOverlay('pressure-overlay', lastValid(data.barometer), 'hPa', 1);
 }
 
-function updateRainfallGraph(data) {
+async function updateRainfallGraph(data) {
     plotGraph('rainfall-graph', [{
         x: data.dateTime,
         y: data.rain,
@@ -593,7 +593,26 @@ function updateRainfallGraph(data) {
     }], {
         yaxis: { title: 'mm', rangemode: 'tozero', zeroline: true, zerolinewidth: 2, zerolinecolor: '#888' }
     });
-    setOverlay('rainfall-overlay', lastValid(data.rain), 'mm', 2);
+    
+    // Fetch 24-hour rainfall total for the overlay
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
+    let rainfall24h = 0;
+    
+    try {
+        const rainfallResponse = await fetch(`${basePath}/api/rainfall_24h`);
+        const rainfallData = await rainfallResponse.json();
+        rainfall24h = rainfallData.total_rainfall_24h || 0;
+    } catch (error) {
+        console.error('Error fetching 24-hour rainfall for overlay:', error);
+        rainfall24h = 0;
+    }
+    
+    // Update overlay with 24-hour total
+    const overlayElement = document.getElementById('rainfall-overlay');
+    if (overlayElement) {
+        overlayElement.textContent = `${rainfall24h.toFixed(1)}mm (24h)`;
+    }
 }
 
 function updateWindGraph(data) {

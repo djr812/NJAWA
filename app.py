@@ -1767,6 +1767,110 @@ def api_rainfall_24h():
     
     return jsonify({'total_rainfall_24h': round(total_rainfall_mm, 2)})
 
+@app.route('/api/weather_24h')
+def api_weather_24h():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get weather statistics for the last 24 hours including max/min temperature, max wind gust, and total rainfall.
+    Description:
+    	Queries the weather database to get maximum and minimum temperatures, maximum wind gust with direction,
+    	and total rainfall for the last 24 hours. All values are converted to metric units and returned as JSON.
+    Args:
+        None
+    Returns:
+        json: JSON object containing 24-hour weather statistics with converted metric values.
+    Raises:
+        Exception: When database connection fails or query execution errors occur.
+    """
+    engine = create_engine(DB_URI)
+    now = datetime.now()
+    # Get data for the last 24 hours
+    start_time = int((now - timedelta(hours=24)).timestamp())
+    end_time = int(now.timestamp())
+    
+    try:
+        # Get maximum temperature
+        max_temp_query = f"""
+            SELECT outTemp, dateTime 
+            FROM archive 
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time} AND outTemp IS NOT NULL 
+            ORDER BY outTemp DESC 
+            LIMIT 1
+        """
+        max_temp_df = pd.read_sql(max_temp_query, engine)
+        max_temp = None
+        if not max_temp_df.empty:
+            max_temp = round((max_temp_df['outTemp'].iloc[0] - 32) * 5/9, 1)  # Convert F to C
+        
+        # Get minimum temperature
+        min_temp_query = f"""
+            SELECT outTemp, dateTime 
+            FROM archive 
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time} AND outTemp IS NOT NULL 
+            ORDER BY outTemp ASC 
+            LIMIT 1
+        """
+        min_temp_df = pd.read_sql(min_temp_query, engine)
+        min_temp = None
+        if not min_temp_df.empty:
+            min_temp = round((min_temp_df['outTemp'].iloc[0] - 32) * 5/9, 1)  # Convert F to C
+        
+        # Get maximum wind gust with direction
+        max_wind_gust_query = f"""
+            SELECT windGust, windDir, dateTime 
+            FROM archive 
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time} AND windGust IS NOT NULL 
+            ORDER BY windGust DESC 
+            LIMIT 1
+        """
+        max_wind_gust_df = pd.read_sql(max_wind_gust_query, engine)
+        max_wind_gust = None
+        max_wind_gust_direction = None
+        if not max_wind_gust_df.empty:
+            max_wind_gust = round(max_wind_gust_df['windGust'].iloc[0] * 1.60934, 1)  # Convert mph to km/h
+            
+            # Convert wind direction from degrees to compass direction
+            wind_dir_degrees = max_wind_gust_df['windDir'].iloc[0]
+            if wind_dir_degrees is not None:
+                directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+                index = round(wind_dir_degrees / 22.5) % 16
+                max_wind_gust_direction = directions[index]
+        
+        # Get total rainfall
+        rainfall_query = f'''
+            SELECT SUM(rain) as total_rainfall
+            FROM archive
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time}
+        '''
+        rainfall_df = pd.read_sql(rainfall_query, engine)
+        total_rainfall = rainfall_df['total_rainfall'].iloc[0] if not rainfall_df.empty else 0
+        total_rainfall_mm = round(total_rainfall * 25.4, 1)  # Convert inches to mm
+        
+        result = {
+            'max_temp_24h': max_temp,
+            'min_temp_24h': min_temp,
+            'max_wind_gust_24h': max_wind_gust,
+            'max_wind_gust_direction_24h': max_wind_gust_direction,
+            'total_rainfall_24h': total_rainfall_mm
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching 24-hour weather stats: {e}")
+        return jsonify({
+            'error': str(e),
+            'max_temp_24h': None,
+            'min_temp_24h': None,
+            'max_wind_gust_24h': None,
+            'max_wind_gust_direction_24h': None,
+            'total_rainfall_24h': None
+        })
+
 @app.route('/api/tides')
 def api_tides():
     """

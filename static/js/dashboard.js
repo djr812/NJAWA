@@ -2542,9 +2542,22 @@ async function fetchAndUpdateTopStats() {
     const basePath = isProd ? '/njawa' : '';
 
     try {
-        const response = await fetch(`${basePath}/api/top_stats`);
-        const data = await response.json();
-        updateTopStatsCard(data);
+        // Fetch both top stats and 24-hour weather data
+        const [topStatsResponse, weather24hResponse] = await Promise.all([
+            fetch(`${basePath}/api/top_stats`),
+            fetch(`${basePath}/api/weather_24h`)
+        ]);
+        
+        const topStatsData = await topStatsResponse.json();
+        const weather24hData = await weather24hResponse.json();
+        
+        // Combine the data
+        const combinedData = {
+            ...topStatsData,
+            ...weather24hData
+        };
+        
+        updateTopStatsCard(combinedData);
     } catch (error) {
         console.error('Error fetching top stats:', error);
         updateTopStatsCard({ 
@@ -2566,7 +2579,12 @@ async function fetchAndUpdateTopStats() {
             max_pm10: null,
             max_pm10_date: 'Unknown',
             max_lightning: null,
-            max_lightning_date: 'Unknown'
+            max_lightning_date: 'Unknown',
+            max_temp_24h: null,
+            min_temp_24h: null,
+            max_wind_gust_24h: null,
+            max_wind_gust_direction_24h: null,
+            total_rainfall_24h: null
         });
     }
 }
@@ -2699,7 +2717,12 @@ function updateTickerFeed(data) {
         { valueId: 'ticker-max-rainfall', value: data.max_rainfall !== null ? `${data.max_rainfall} mm` : '-- mm', dateId: 'ticker-max-rainfall-date', date: data.max_rainfall_date },
         { valueId: 'ticker-max-uv', value: data.max_uv !== null ? data.max_uv : '--', dateId: 'ticker-max-uv-date', date: data.max_uv_date, ratingId: 'ticker-max-uv-rating', rating: getUVRating(data.max_uv) },
         { valueId: 'ticker-max-pm10', value: data.max_pm10 !== null ? data.max_pm10 : '--', dateId: 'ticker-max-pm10-date', date: data.max_pm10_date, ratingId: 'ticker-max-pm10-rating', rating: getPM10Rating(data.max_pm10) },
-        { valueId: 'ticker-max-lightning', value: data.max_lightning !== null ? data.max_lightning : '--', dateId: 'ticker-max-lightning-date', date: data.max_lightning_date }
+        { valueId: 'ticker-max-lightning', value: data.max_lightning !== null ? data.max_lightning : '--', dateId: 'ticker-max-lightning-date', date: data.max_lightning_date },
+        { valueId: 'ticker-24h-max-temp', value: data.max_temp_24h !== null ? `${data.max_temp_24h}°C` : '--°C' },
+        { valueId: 'ticker-24h-min-temp', value: data.min_temp_24h !== null ? `${data.min_temp_24h}°C` : '--°C' },
+        { valueId: 'ticker-24h-max-wind-gust', value: data.max_wind_gust_24h !== null ? `${data.max_wind_gust_24h} km/h` : '-- km/h' },
+        { valueId: 'ticker-24h-max-wind-gust-direction', value: data.max_wind_gust_direction_24h || '--' },
+        { valueId: 'ticker-24h-total-rainfall', value: data.total_rainfall_24h !== null ? `${data.total_rainfall_24h} mm` : '-- mm' }
     ];
     
     // Update all ticker elements
@@ -2795,6 +2818,22 @@ function updateTickerFeed(data) {
             if (ratingElement2) {
                 ratingElement2.textContent = update.rating;
             }
+        }
+    });
+    
+    // Update duplicate 24-hour weather elements
+    const duplicate24hUpdates = [
+        { valueId: 'ticker-24h-max-temp', value: data.max_temp_24h !== null ? `${data.max_temp_24h}°C` : '--°C' },
+        { valueId: 'ticker-24h-min-temp', value: data.min_temp_24h !== null ? `${data.min_temp_24h}°C` : '--°C' },
+        { valueId: 'ticker-24h-max-wind-gust', value: data.max_wind_gust_24h !== null ? `${data.max_wind_gust_24h} km/h` : '-- km/h' },
+        { valueId: 'ticker-24h-max-wind-gust-direction', value: data.max_wind_gust_direction_24h || '--' },
+        { valueId: 'ticker-24h-total-rainfall', value: data.total_rainfall_24h !== null ? `${data.total_rainfall_24h} mm` : '-- mm' }
+    ];
+    
+    duplicate24hUpdates.forEach(update => {
+        const valueElement2 = document.getElementById(update.valueId + '-2');
+        if (valueElement2) {
+            valueElement2.textContent = update.value;
         }
     });
     

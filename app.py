@@ -49,7 +49,7 @@ QFD_ALERTS_CACHE_TTL = 1800  # 30 minutes in seconds
 # BOM Warnings configuration
 BOM_WARNINGS_URL = "http://www.bom.gov.au/fwo/IDZ00056.warnings_qld.xml"
 BOM_WARNINGS_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'bom_warnings_cache.json')
-BOM_WARNINGS_CACHE_TTL = 1800  # 30 minutes in seconds
+BOM_WARNINGS_CACHE_TTL = 36000  # 6 hours in seconds
 
 # Tides configuration
 TIDES_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'tides_cache.json')
@@ -69,7 +69,24 @@ FERNY_GROVE_AREA_SUBURBS = [
 ]
 
 def get_sunrise_sunset_times(date):
-    """Get sunrise and sunset times for a specific date"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get sunrise and sunset times for a specific date using the sunrise-sunset.org API.
+    Description:
+    	Fetches sunrise and sunset times for the specified date using the sunrise-sunset.org API.
+    	The times are converted to Brisbane timezone and returned as timezone-aware datetime objects.
+    	If the API call fails or returns invalid data, None values are returned for both times.
+    Args:
+        date (datetime.date): The date for which to fetch sunrise and sunset times.
+    Returns:
+        tuple: A tuple containing (sunrise_time, sunset_time) as timezone-aware datetime objects, or (None, None) if an error occurs.
+    Raises:
+        Exception: When API request fails or data parsing errors occur.
+    """
     try:
         url = f"https://api.sunrise-sunset.org/json?lat={MY_LAT}&lng={MY_LNG}&date={date.strftime('%Y-%m-%d')}&tzid=Australia/Brisbane"
         response = requests.get(url, timeout=10)
@@ -104,7 +121,30 @@ def get_sunrise_sunset_times(date):
         return None, None
 
 def calculate_daylight_uv_average(engine, start_time, end_time, week_start, week_end, fallback_avg=None):
-    """Calculate average UV only during daylight hours for a given week"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Calculate average UV index only during daylight hours for a given week period.
+    Description:
+    	Retrieves UV data from the database for the specified time period and filters it to only include
+    	measurements taken during daylight hours (between sunrise and sunset). This provides a more accurate
+    	representation of UV exposure during active hours. If no daylight data is available, falls back to
+    	the provided fallback average or returns None.
+    Args:
+        engine (sqlalchemy.engine.Engine): Database engine for querying weather data.
+        start_time (int): Unix timestamp for the start of the time period.
+        end_time (int): Unix timestamp for the end of the time period.
+        week_start (datetime): Start date of the week for sunrise/sunset calculations.
+        week_end (datetime): End date of the week for sunrise/sunset calculations.
+        fallback_avg (float, optional): Fallback average UV value if daylight calculation fails. Defaults to None.
+    Returns:
+        int: Average UV index during daylight hours, rounded to nearest whole number, or None if no data available.
+    Raises:
+        Exception: When database query fails or UV calculation errors occur.
+    """
     try:
         # Get all UV data for the week with timestamps
         uv_query = f"""
@@ -165,7 +205,27 @@ def calculate_daylight_uv_average(engine, start_time, end_time, week_start, week
         return round(fallback_avg) if fallback_avg is not None else None
 
 def calculate_average_wind_direction(engine, start_time, end_time):
-    """Calculate average wind direction for a given time period"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Calculate the average wind direction for a given time period using vector mathematics.
+    Description:
+    	Retrieves wind direction data from the database and calculates the average direction using vector math.
+    	Wind directions are converted from degrees to x,y components, averaged, then converted back to degrees
+    	and finally to compass direction (N, NNE, NE, etc.). This method properly handles the circular nature
+    	of wind direction data.
+    Args:
+        engine (sqlalchemy.engine.Engine): Database engine for querying weather data.
+        start_time (int): Unix timestamp for the start of the time period.
+        end_time (int): Unix timestamp for the end of the time period.
+    Returns:
+        str: Average wind direction as a compass direction (N, NNE, NE, ENE, E, ESE, SE, SSE, S, SSW, SW, WSW, W, WNW, NW, NNW), or None if no data available.
+    Raises:
+        Exception: When database query fails or wind direction calculation errors occur.
+    """
     try:
         # Get all wind direction data for the period
         wind_query = f"""
@@ -176,7 +236,6 @@ def calculate_average_wind_direction(engine, start_time, end_time):
         wind_df = pd.read_sql(wind_query, engine)
         
         if not wind_df.empty:
-            # Calculate the average wind direction using vector math
             # Convert degrees to radians and calculate x,y components
             wind_df['radians'] = wind_df['windDir'] * (3.14159 / 180)
             wind_df['x_component'] = wind_df['radians'].apply(lambda x: -1 * math.sin(x))  # Negative because wind direction is "from"
@@ -204,7 +263,26 @@ def calculate_average_wind_direction(engine, start_time, end_time):
         return None
 
 def get_wind_gust_direction(engine, start_time, end_time):
-    """Get wind direction for the maximum wind gust in a given time period"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get the wind direction for the maximum wind gust in a given time period.
+    Description:
+    	Queries the database to find the record with the highest wind gust value within the specified
+    	time period and returns the corresponding wind direction. The wind direction is converted from
+    	degrees to compass direction (N, NNE, NE, etc.) for easier interpretation.
+    Args:
+        engine (sqlalchemy.engine.Engine): Database engine for querying weather data.
+        start_time (int): Unix timestamp for the start of the time period.
+        end_time (int): Unix timestamp for the end of the time period.
+    Returns:
+        str: Wind direction as a compass direction (N, NNE, NE, ENE, E, ESE, SE, SSE, S, SSW, SW, WSW, W, WNW, NW, NNW), or None if no data available.
+    Raises:
+        Exception: When database query fails or wind direction calculation errors occur.
+    """
     try:
         # Get the wind direction for the maximum wind gust
         gust_query = f"""
@@ -229,14 +307,67 @@ def get_wind_gust_direction(engine, start_time, end_time):
 
 @app.route('/')
 def index():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Render the main index page of the weather application.
+    Description:
+    	Returns the main HTML template for the weather application's home page.
+    	This is the entry point for users accessing the weather dashboard.
+    Args:
+        None
+    Returns:
+        str: Rendered HTML template for the index page.
+    Raises:
+        None
+    """
     return render_template('index.html')
 
 @app.route('/dashboard')
 def dashboard():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Render the dashboard page of the weather application.
+    Description:
+    	Returns the HTML template for the weather dashboard page which displays
+    	detailed weather information and statistics in a dashboard format.
+    Args:
+        None
+    Returns:
+        str: Rendered HTML template for the dashboard page.
+    Raises:
+        None
+    """
     return render_template('dashboard.html')
 
 @app.route('/api/data')
 def api_data():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Retrieve weather data from the database for a specified time period.
+    Description:
+    	Queries the weather database for historical weather data within the specified time period.
+    	Supports multiple time periods (24h, 72h, 7d, 28d) and converts all measurements to metric units.
+    	Data is returned as JSON with timestamps and various weather parameters including temperature,
+    	humidity, pressure, wind, rain, lightning, UV, and cloudbase information.
+    Args:
+        period (str, optional): Time period for data retrieval. Options: '24h', '72h', '7d', '28d'. Defaults to '24h'.
+    Returns:
+        json: JSON object containing weather data arrays with timestamps and converted metric values.
+    Raises:
+        Exception: When database connection fails or query execution errors occur.
+    """
     period = request.args.get('period', '24h')
     engine = create_engine(DB_URI)
     now = datetime.now()
@@ -297,6 +428,24 @@ def api_data():
 
 @app.route('/api/training_days')
 def api_training_days():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get the total number of days of weather data available in the database.
+    Description:
+    	Calculates the span of weather data by finding the first and last timestamps
+    	in the archive table and computing the difference in days. This is useful for
+    	understanding the historical data coverage available for training or analysis.
+    Args:
+        None
+    Returns:
+        json: JSON object containing the number of days of data available.
+    Raises:
+        Exception: When database connection fails or query execution errors occur.
+    """
     engine = create_engine(DB_URI)
     query = """
         SELECT MIN(dateTime) as first_date, MAX(dateTime) as last_date
@@ -312,6 +461,24 @@ def api_training_days():
 
 @app.route('/api/forecast')
 def api_forecast():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Retrieve weather forecast data from the local forecasts file.
+    Description:
+    	Reads weather forecast data from a local JSON file containing pre-generated forecasts.
+    	If today's forecast is not available, returns the most recent available forecast.
+    	The forecast data is generated by external prediction models and stored locally.
+    Args:
+        None
+    Returns:
+        json: JSON object containing forecast data for the current or most recent available date.
+    Raises:
+        Exception: When forecast file is missing or JSON parsing errors occur.
+    """
     # Get today's date
     today = datetime.now().date().isoformat()
     if not os.path.exists(FORECASTS_PATH):
@@ -327,6 +494,26 @@ def api_forecast():
 
 @app.route('/api/battery')
 def api_battery():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Retrieve battery status information for weather station sensors using web scraping.
+    Description:
+    	Uses Selenium WebDriver to log into the Ecowitt weather station dashboard and scrape
+    	battery status information for various sensors (console, outdoor sensor, sensor array).
+    	Also fetches lightning detector battery status from a local API. Results are cached
+    	for 12 hours to reduce load on external services. Battery levels are categorized as
+    	'OK' or 'LOW' based on voltage thresholds.
+    Args:
+        None
+    Returns:
+        json: JSON object containing battery status for console, outdoor sensor, sensor array, and lightning detector.
+    Raises:
+        Exception: When web scraping fails, login errors occur, or API requests fail.
+    """
     now = time.time()
     # Try to load cache
     if os.path.exists(BATTERY_CACHE_PATH):
@@ -464,6 +651,24 @@ def api_battery():
 
 @app.route('/api/bar_metrics')
 def api_bar_metrics():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Retrieve environmental metrics from the bar area CO2 sensor.
+    Description:
+    	Fetches real-time environmental data from a local CO2 sensor located in the bar area.
+    	Returns temperature, humidity, CO2 levels, and particulate matter (PM2.5, PM10) readings.
+    	This data is used to monitor outdoor air quality and environmental conditions.
+    Args:
+        None
+    Returns:
+        json: JSON object containing bar area temperature, humidity, CO2, PM2.5, and PM10 readings.
+    Raises:
+        Exception: When API request to the CO2 sensor fails or data parsing errors occur.
+    """
     try:
         response = requests.get('http://10.1.1.184/get_livedata_info', timeout=5)
         if response.status_code == 200:
@@ -488,6 +693,24 @@ def api_bar_metrics():
 
 @app.route('/api/weather_condition')
 def api_weather_condition():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Retrieve current weather condition information from WeatherAPI.com.
+    Description:
+    	Fetches current weather conditions for Samford, Queensland (closest locality) from the WeatherAPI.com service.
+    	Returns the weather condition text description and corresponding icon URL.
+    	This provides a standardized weather condition description for display purposes.
+    Args:
+        None
+    Returns:
+        json: JSON object containing weather condition text and icon URL, or error information.
+    Raises:
+        Exception: When API request fails or weather data parsing errors occur.
+    """
     try:
         response = requests.get(f'http://api.weatherapi.com/v1/current.json?key={WAPI_KEY}&q=Samford&aqi=no')
         if response.status_code == 200:
@@ -505,7 +728,25 @@ def api_weather_condition():
 
 @app.route('/api/qfd_alerts')
 def api_qfd_alerts():
-    """Fetch and filter QFD alerts for the Ferny Grove area"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Fetch and filter Queensland Fire and Emergency Services (QFES) bushfire alerts for the Ferny Grove area.
+    Description:
+    	Retrieves bushfire alert data from the Queensland Government's public API and filters alerts
+    	to only include those relevant to the Ferny Grove area and surrounding suburbs. Results are
+    	cached for 30 minutes to reduce API load. Alerts are filtered by checking warning areas,
+    	localities, and warning text for matches with predefined suburb names.
+    Args:
+        None
+    Returns:
+        json: JSON object containing filtered bushfire alerts with warning levels, titles, publish dates, and locations.
+    Raises:
+        Exception: When API request fails, data parsing errors occur, or cache operations fail.
+    """
     now = time.time()
     
     # Try to load cache first
@@ -624,6 +865,25 @@ def api_qfd_alerts():
 
 @app.route('/api/bom_warnings')
 def api_bom_warnings():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Fetch Bureau of Meteorology (BOM) weather warnings for Queensland.
+    Description:
+    	Retrieves weather warnings from the Bureau of Meteorology's XML feed for Queensland.
+    	Parses both marine and land warnings, extracting titles, descriptions, links, and publication dates.
+    	Results are cached for 6 hours to reduce load on the BOM servers. Warnings are categorized
+    	by type (marine or land) for separate display and processing.
+    Args:
+        None
+    Returns:
+        json: JSON object containing marine and land warnings with counts and last updated timestamp.
+    Raises:
+        Exception: When API request fails, XML parsing errors occur, or cache operations fail.
+    """
     now = time.time()
     # Try to load cache
     if os.path.exists(BOM_WARNINGS_CACHE_PATH):
@@ -693,6 +953,25 @@ def api_bom_warnings():
 
 @app.route('/api/top_stats')
 def api_top_stats():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Retrieve historical weather records and extreme values from the weather database.
+    Description:
+    	Queries the weather database to find all-time records including maximum and minimum temperatures,
+    	highest humidity, strongest wind gusts, most rainfall in a day, maximum UV index, worst air quality,
+    	and most lightning strikes. All values are converted to metric units and include the dates when
+    	these records occurred. UV and air quality values include risk level classifications.
+    Args:
+        None
+    Returns:
+        json: JSON object containing historical weather records with dates and converted metric values.
+    Raises:
+        Exception: When database connection fails, query execution errors occur, or data conversion errors occur.
+    """
     engine = create_engine(DB_URI)
     
     try:
@@ -923,7 +1202,25 @@ def api_top_stats():
 
 @app.route('/api/weekly_stats_current')
 def api_weekly_stats_current():
-    """Get weather statistics for the previous week (Sunday to Saturday)"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get weather statistics for the previous week (Sunday to Saturday).
+    Description:
+    	Calculates comprehensive weather statistics for the most recent completed week (Sunday to Saturday).
+    	Includes minimum, maximum, and average values for temperature, humidity, pressure, wind speed,
+    	rainfall, UV index, lightning strikes, and air quality. All values are converted to metric units.
+    	UV calculations use daylight-only filtering for more accurate representation of exposure.
+    Args:
+        None
+    Returns:
+        json: JSON object containing weekly weather statistics with converted metric values and date ranges.
+    Raises:
+        Exception: When database connection fails, query execution errors occur, or data conversion errors occur.
+    """
     engine = create_engine(DB_URI)
     
     try:
@@ -1036,7 +1333,25 @@ def api_weekly_stats_current():
 
 @app.route('/api/weekly_stats_previous')
 def api_weekly_stats_previous():
-    """Get weather statistics for the week prior to the previous week (Sunday to Saturday)"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get weather statistics for the week prior to the previous week (Sunday to Saturday).
+    Description:
+    	Calculates comprehensive weather statistics for the week before the most recent completed week.
+    	This provides historical data for comparison with current week statistics. Includes the same
+    	metrics as the current week function: temperature, humidity, pressure, wind, rainfall, UV,
+    	lightning, and air quality, all converted to metric units with daylight UV filtering.
+    Args:
+        None
+    Returns:
+        json: JSON object containing weekly weather statistics with converted metric values and date ranges.
+    Raises:
+        Exception: When database connection fails, query execution errors occur, or data conversion errors occur.
+    """
     engine = create_engine(DB_URI)
     
     try:
@@ -1149,7 +1464,25 @@ def api_weekly_stats_previous():
 
 @app.route('/api/weekly_stats_trends')
 def api_weekly_stats_trends():
-    """Get weekly statistics with trend calculations comparing current week to previous week"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get weekly weather statistics and trends comparing current and previous weeks.
+    Description:
+    	Calculates weather statistics for the last three completed weeks and computes trends by comparing
+    	current week to previous week, and previous week to the week before. Trends are determined for
+    	average temperature, humidity, pressure, wind speed, rainfall, UV, lightning, and air quality.
+    	All values are converted to metric units and UV averages use daylight-only filtering.
+    Args:
+        None
+    Returns:
+        json: JSON object containing weekly statistics for current and previous weeks, and trend indicators for each metric.
+    Raises:
+        Exception: When database connection fails, query execution errors occur, or data conversion errors occur.
+    """
     engine = create_engine(DB_URI)
     
     try:
@@ -1395,6 +1728,24 @@ def api_weekly_stats_trends():
 
 @app.route('/api/rainfall_24h')
 def api_rainfall_24h():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get total rainfall for the last 24 hours.
+    Description:
+    	Queries the weather database to sum all rainfall measurements recorded in the last 24 hours.
+    	Returns the total rainfall in inches (as stored in the database) rounded to two decimal places.
+    	This provides a quick summary of recent precipitation for display on the dashboard.
+    Args:
+        None
+    Returns:
+        json: JSON object containing the total rainfall for the last 24 hours in inches.
+    Raises:
+        Exception: When database connection fails or query execution errors occur.
+    """
     engine = create_engine(DB_URI)
     now = datetime.now()
     # Get rainfall for the last 24 hours
@@ -1414,6 +1765,23 @@ def api_rainfall_24h():
 
 @app.route('/api/tides')
 def api_tides():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Fetch tide extremes for today and tomorrow from the Stormglass API.
+    Description:
+    	Retrieves tide extreme data (high and low tides) for the current and next day from the Stormglass API.
+    	Converts tide times to Brisbane timezone and sorts them chronologically. Results are cached for 24 hours.
+    Args:
+        None
+    Returns:
+        json: JSON object containing tide heights, types, times, and station metadata.
+    Raises:
+        Exception: When API request fails, data parsing errors occur, or cache operations fail.
+    """
     now = time.time()
     today = datetime.now().date().isoformat()
     tomorrow = (datetime.now().date() + timedelta(days=1)).isoformat()
@@ -1495,6 +1863,24 @@ def api_tides():
 
 @app.route('/api/dam-levels')
 def api_dam_levels():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Fetch dam level data for key dams from the Seqwater website using web scraping.
+    Description:
+    	Uses Selenium WebDriver to scrape dam level data for North Pine, Somerset, and Wivenhoe dams from the Seqwater website.
+    	Extracts volume and percentage full for each dam, assigns a color code based on percentage, and caches results for 24 hours.
+    	This provides critical water supply information for the Brisbane region.
+    Args:
+        None
+    Returns:
+        json: JSON object containing dam names, volumes, percentage full, color codes, and last updated timestamp.
+    Raises:
+        Exception: When web scraping fails, data parsing errors occur, or cache operations fail.
+    """
     now = time.time()
     today = datetime.now().date().isoformat()
     
@@ -1635,7 +2021,24 @@ def api_dam_levels():
 
 @app.route('/api/download_csv')
 def api_download_csv():
-    """Download weather data as CSV for the specified period"""
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Download weather data as a CSV file for a specified period.
+    Description:
+    	Allows users to download historical weather data as a CSV file for the last 7 or 30 days.
+    	Queries the database for the specified period, converts timestamps to local time, and returns
+    	the data as a downloadable CSV file with appropriate headers.
+    Args:
+        period (str, optional): Time period for data download. Options: '7d', '30d'. Defaults to '7d'.
+    Returns:
+        Response: Flask response object containing the CSV file for download.
+    Raises:
+        Exception: When database query fails, CSV generation errors occur, or invalid period is specified.
+    """
     try:
         period = request.args.get('period', '7d')
         
@@ -1693,4 +2096,4 @@ def api_download_csv():
         return jsonify({'error': 'Failed to generate CSV download'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=False, host='0.0.0.0', port=5000) 

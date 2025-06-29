@@ -397,6 +397,7 @@ def api_data():
     df['windSpeed'] = df['windSpeed'] * 1.60934  # Convert mph to km/h
     df['windGust'] = df['windGust'] * 1.60934  # Convert mph to km/h
     df['lightning_distance'] = df['lightning_distance'] * 1.60934  # miles to km
+    df['rain'] = df['rain'] * 25.4  # Convert inches to mm
     if 'luminosity' in df:
         df['luminosity'] = df['luminosity'] / 1000  # Lux to kLux
     if 'cloudbase' in df:
@@ -1737,12 +1738,12 @@ def api_rainfall_24h():
 	    Get total rainfall for the last 24 hours.
     Description:
     	Queries the weather database to sum all rainfall measurements recorded in the last 24 hours.
-    	Returns the total rainfall in inches (as stored in the database) rounded to two decimal places.
-    	This provides a quick summary of recent precipitation for display on the dashboard.
+    	Converts the total from inches (as stored in the database) to millimeters and returns the result
+    	rounded to two decimal places. This provides a quick summary of recent precipitation for display on the dashboard.
     Args:
         None
     Returns:
-        json: JSON object containing the total rainfall for the last 24 hours in inches.
+        json: JSON object containing the total rainfall for the last 24 hours in millimeters.
     Raises:
         Exception: When database connection fails or query execution errors occur.
     """
@@ -1761,7 +1762,10 @@ def api_rainfall_24h():
     df = pd.read_sql(query, engine)
     total_rainfall = df['total_rainfall'].iloc[0] if not df.empty else 0
     
-    return jsonify({'total_rainfall_24h': round(total_rainfall, 2)})
+    # Convert from inches to millimeters (like all other rainfall functions)
+    total_rainfall_mm = total_rainfall * 25.4
+    
+    return jsonify({'total_rainfall_24h': round(total_rainfall_mm, 2)})
 
 @app.route('/api/tides')
 def api_tides():

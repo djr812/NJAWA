@@ -1285,7 +1285,7 @@ async function updateActualWeatherConditions(data) {
     try {
         const rainfallResponse = await fetch(`${basePath}/api/rainfall_24h`);
         const rainfallData = await rainfallResponse.json();
-        rainfall24h = rainfallData.rainfall_24h || 0;
+        rainfall24h = rainfallData.total_rainfall_24h || 0;
     } catch (error) {
         console.error('Error fetching 24-hour rainfall:', error);
         rainfall24h = 0;

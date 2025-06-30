@@ -26,6 +26,26 @@ FORECAST_HOURS = 24
 MIN_RECORDS_REQUIRED = 500
 
 def get_data(days):
+    """
+    Author:
+        David Rogers
+    Email:
+        dave@djrogers.net.au
+    Summary:
+        Retrieve historical weather data from the weewx database for model training and prediction.
+    Description:
+        Connects to the weewx MySQL database and queries the archive table for weather data
+        from the specified number of days ago up to the current time. Extracts key weather
+        metrics including pressure, temperature, humidity, wind speed, rainfall, and lightning
+        data. Converts the Unix timestamp to a pandas datetime index for time-series analysis.
+        This function serves as the primary data source for the AI weather forecasting system.
+    Args:
+        days (int): Number of days of historical data to retrieve from the database.
+    Returns:
+        pandas.DataFrame: DataFrame containing historical weather data with timestamp index.
+    Raises:
+        Exception: When database connection fails or query execution errors occur.
+    """
     engine = create_engine(f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}')
     query = f"""
         SELECT dateTime, pressure, outTemp, outHumidity, windSpeed, rain,
@@ -40,6 +60,28 @@ def get_data(days):
     return df
 
 def engineer_features(df):
+    """
+    Author:
+        David Rogers
+    Email:
+        dave@djrogers.net.au
+    Summary:
+        Create engineered features from raw weather data for machine learning model training.
+    Description:
+        Transforms raw weather data into features suitable for machine learning by creating
+        derived metrics and temporal features. Calculates pressure, temperature, and humidity
+        changes over 12-hour periods. Computes rolling averages for rainfall and wind speed.
+        Converts lightning distance to kilometers and creates lightning-related features.
+        Adds seasonal and temporal features including month, day of year, hour, and cyclical
+        encoding of day of year using sine and cosine transformations. Handles missing data
+        through forward-fill and dropna operations to ensure data quality for model training.
+    Args:
+        df (pandas.DataFrame): Raw weather data DataFrame with timestamp index.
+    Returns:
+        pandas.DataFrame: DataFrame with engineered features ready for model training.
+    Raises:
+        None: Function handles data cleaning internally.
+    """
     df = df.copy()
 
     df['pressure_change'] = df['pressure'].diff(periods=12)
@@ -69,6 +111,31 @@ def engineer_features(df):
     return df
 
 def label_weather(df):
+    """
+    Author:
+        David Rogers
+    Email:
+        dave@djrogers.net.au
+    Summary:
+        Create target labels for weather conditions, wind conditions, and temperature ranges.
+    Description:
+        Generates supervised learning targets by analyzing future weather patterns and
+        current conditions. Creates weather condition labels (Storm, Rain, Cloudy, Clear)
+        based on future rainfall, wind conditions, lightning activity, and humidity levels.
+        Categorizes wind conditions into five levels (Calm, Light Breeze, Stiff Breeze,
+        Windy, High Winds) using rolling average wind speeds. Calculates future maximum
+        and minimum temperatures for temperature range prediction. Applies business rules
+        to determine weather conditions: storms require high rainfall/wind or lightning
+        activity, rain requires measurable precipitation, cloudy conditions are identified
+        by high humidity and low temperature variability. Filters out records with missing
+        labels and ensures minimum data requirements are met for model training.
+    Args:
+        df (pandas.DataFrame): DataFrame with engineered features and weather data.
+    Returns:
+        pandas.DataFrame: DataFrame with target labels for weather, wind, and temperature prediction.
+    Raises:
+        SystemExit: When insufficient data remains after filtering and labeling.
+    """
     df = df.copy()
 
     rain_future = df['rain'].shift(-FORECAST_HOURS * 12).fillna(0)
@@ -105,6 +172,34 @@ def label_weather(df):
     return df
 
 def train_model(df):
+    """
+    Author:
+        David Rogers
+    Email:
+        dave@djrogers.net.au
+    Summary:
+        Train multiple machine learning models for weather, wind, and temperature prediction.
+    Description:
+        Trains four separate machine learning models using Random Forest algorithms:
+        1. Weather condition classifier (Clear, Cloudy, Rain, Storm)
+        2. Wind condition classifier (Calm, Light Breeze, Stiff Breeze, Windy, High Winds)
+        3. Maximum temperature regressor
+        4. Minimum temperature regressor
+        
+        Uses engineered features including pressure changes, temperature trends, humidity
+        patterns, rainfall accumulation, wind averages, lightning activity, and temporal
+        features. Splits data into training and testing sets (80/20) with stratification
+        for classification tasks. Trains models with 150 estimators and balanced class
+        weights for classification models. Evaluates model performance using classification
+        reports for categorical predictions and R² scores for temperature regression.
+        Saves all trained models to a single pickle file for later use in predictions.
+    Args:
+        df (pandas.DataFrame): DataFrame with engineered features and target labels.
+    Returns:
+        dict: Dictionary containing four trained machine learning models.
+    Raises:
+        Exception: When model training fails or file saving errors occur.
+    """
     features = [
         'pressure', 'pressure_change', 'outTemp', 'temp_change',
         'outHumidity', 'humidity_change', 'rolling_rain', 'wind_avg',
@@ -152,6 +247,34 @@ def train_model(df):
     return models
 
 def predict_future(df, models):
+    """
+    Author:
+        David Rogers
+    Email:
+        dave@djrogers.net.au
+    Summary:
+        Generate weather predictions for the next 24 hours using trained machine learning models.
+    Description:
+        Uses the most recent weather data to predict future weather conditions, wind patterns,
+        and temperature ranges. Extracts features from the latest data point and applies
+        all four trained models (weather, wind, max temp, min temp) to generate predictions.
+        Calculates probability distributions for weather conditions to determine chance of
+        rain and lightning. Uses ensemble predictions from individual decision trees to
+        estimate prediction uncertainty and confidence levels. Converts temperature predictions
+        from Fahrenheit to Celsius and calculates error margins. Computes confidence levels
+        for all predictions based on model uncertainty and probability distributions.
+        Returns comprehensive prediction results including weather conditions, wind patterns,
+        temperature ranges with error margins, precipitation probabilities, and confidence
+        levels for all predictions.
+    Args:
+        df (pandas.DataFrame): DataFrame with engineered features and historical data.
+        models (dict): Dictionary containing four trained machine learning models.
+    Returns:
+        tuple: Tuple containing weather prediction, wind prediction, temperature predictions,
+               error margins, probabilities, and confidence levels for all predictions.
+    Raises:
+        Exception: When prediction fails or model inference errors occur.
+    """
     latest = df.tail(1)
     features = [
         'pressure', 'pressure_change', 'outTemp', 'temp_change',
@@ -207,6 +330,42 @@ def predict_future(df, models):
 def save_predictions(weather_pred, wind_pred, min_temp, max_temp, min_temp_err, max_temp_err, 
                     chance_of_rain, chance_of_lightning, rain_confidence, lightning_confidence,
                     max_temp_confidence, min_temp_confidence):
+    """
+    Author:
+        David Rogers
+    Email:
+        dave@djrogers.net.au
+    Summary:
+        Save weather predictions to a JSON file for display on the web dashboard.
+    Description:
+        Creates a structured JSON object containing all weather predictions and metadata
+        for the current date. Formats temperature predictions with error margins and
+        confidence levels. Includes weather condition forecasts, wind predictions,
+        precipitation probabilities, and lightning chances. Creates the forecasts
+        directory if it doesn't exist. Loads existing predictions from the JSON file
+        and updates with new predictions for the current date. Handles JSON file
+        corruption by creating a new file if loading fails. Saves the updated
+        predictions with proper formatting and indentation for readability.
+        The saved predictions are used by the web dashboard to display AI weather
+        forecasts to users.
+    Args:
+        weather_pred (str): Predicted weather condition (Clear, Cloudy, Rain, Storm).
+        wind_pred (str): Predicted wind condition (Calm, Light Breeze, etc.).
+        min_temp (float): Predicted minimum temperature in Celsius.
+        max_temp (float): Predicted maximum temperature in Celsius.
+        min_temp_err (float): Error margin for minimum temperature prediction.
+        max_temp_err (float): Error margin for maximum temperature prediction.
+        chance_of_rain (float): Probability of rain as a percentage.
+        chance_of_lightning (float): Probability of lightning as a percentage.
+        rain_confidence (float): Confidence level for rain prediction.
+        lightning_confidence (float): Confidence level for lightning prediction.
+        max_temp_confidence (float): Confidence level for maximum temperature prediction.
+        min_temp_confidence (float): Confidence level for minimum temperature prediction.
+    Returns:
+        None: Predictions are saved to file system.
+    Raises:
+        Exception: When file operations fail or JSON serialization errors occur.
+    """
     forecasts_file = "/home/dave/projects/weather_predictor/forecasts/forecasts.json"
     os.makedirs(os.path.dirname(forecasts_file), exist_ok=True)
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -246,6 +405,31 @@ def save_predictions(weather_pred, wind_pred, min_temp, max_temp, min_temp_err, 
         json.dump(forecasts, f, indent=4)
 
 def main():
+    """
+    Author:
+        David Rogers
+    Email:
+        dave@djrogers.net.au
+    Summary:
+        Main execution function for the AI weather forecasting system.
+    Description:
+        Orchestrates the complete weather forecasting pipeline from data retrieval
+        to prediction generation and storage. Handles command-line arguments for
+        model retraining and data window configuration. Retrieves historical weather
+        data, engineers features, creates target labels, and either loads existing
+        models or trains new ones based on user preferences. Generates predictions
+        for the next 24 hours and saves results to the forecasts directory.
+        Provides user feedback throughout the process including data retrieval status,
+        model training progress, and prediction completion. Supports both training
+        and inference modes with appropriate error handling and fallback mechanisms.
+    Args:
+        --retrain (bool): Optional flag to retrain models with new data.
+        --days (int): Number of days of historical data to use (default: 60).
+    Returns:
+        None: Executes the complete forecasting pipeline.
+    Raises:
+        SystemExit: When insufficient data is available or critical errors occur.
+    """
     parser = argparse.ArgumentParser(description='Weather forecasting with optional model retraining')
     parser.add_argument('--retrain', action='store_true', help='Retrain the model with new data')
     parser.add_argument('--days', type=int, default=60, help='Number of days of data to use for training (default: 60)')

@@ -905,24 +905,31 @@ def api_bom_warnings():
         marine_warnings = []
         land_warnings = []
         
-        for warning in root.findall('.//warning'):
-            warning_type = warning.get('type', '').lower()
-            title = warning.find('title')
-            description = warning.find('description')
-            link = warning.find('link')
-            pubDate = warning.find('pubDate')
+        # Parse RSS feed structure with item elements
+        for item in root.findall('.//item'):
+            title_elem = item.find('title')
+            link_elem = item.find('link')
+            pubDate_elem = item.find('pubDate')
             
-            warning_data = {
-                'title': title.text if title is not None else 'No title',
-                'description': description.text if description is not None else 'No description',
-                'link': link.text if link is not None else None,
-                'pubDate': pubDate.text if pubDate is not None else 'Unknown date'
-            }
-            
-            if warning_type == 'marine':
-                marine_warnings.append(warning_data)
-            elif warning_type == 'land':
-                land_warnings.append(warning_data)
+            if title_elem is not None:
+                title = title_elem.text.strip() if title_elem.text else 'No title'
+                link = link_elem.text.strip() if link_elem is not None and link_elem.text else None
+                pubDate = pubDate_elem.text.strip() if pubDate_elem is not None and pubDate_elem.text else 'Unknown date'
+                
+                warning_data = {
+                    'title': title,
+                    'description': title,  # Use title as description since RSS doesn't have separate description
+                    'link': link,
+                    'pubDate': pubDate
+                }
+                
+                # Categorize warnings based on title content
+                title_lower = title.lower()
+                if any(keyword in title_lower for keyword in ['marine', 'wind warning', 'gale', 'storm force', 'hurricane force']):
+                    marine_warnings.append(warning_data)
+                else:
+                    # All other warnings are considered land warnings
+                    land_warnings.append(warning_data)
         
         result = {
             'marine_warnings': marine_warnings,

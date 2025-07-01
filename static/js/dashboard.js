@@ -2131,8 +2131,15 @@ function updateQFDAlertsCard(data) {
     const cardBody = document.getElementById('qfd-alerts-body');
     if (!cardBody) return;
 
+    console.log('QFD Alerts data:', data); // Debug log
+
     // Clear existing content
     cardBody.innerHTML = '';
+    
+    // Ensure card body has proper display for vertical stacking
+    cardBody.style.display = 'flex';
+    cardBody.style.flexDirection = 'column';
+    cardBody.style.width = '100%';
 
     if (data.error) {
         // Display error message
@@ -2161,66 +2168,100 @@ function updateQFDAlertsCard(data) {
             <small>All clear in the Ferny Grove area</small>
         `;
         cardBody.appendChild(noAlertsDiv);
-        return;
+    } else {
+        // Create alerts container
+        const alertsContainer = document.createElement('div');
+        alertsContainer.className = 'qfd-alerts-container';
+        alertsContainer.style.maxHeight = '150px'; // Even smaller to ensure bottom sections are visible
+        alertsContainer.style.overflowY = 'auto';
+        alertsContainer.style.marginBottom = '10px';
+        alertsContainer.style.width = '100%';
+        alertsContainer.style.display = 'block';
+        cardBody.appendChild(alertsContainer);
+
+        // Add each alert
+        data.alerts.forEach((alert, index) => {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert-item mb-3';
+            alertDiv.style.border = '1px solid #dee2e6';
+            alertDiv.style.borderRadius = '8px';
+            alertDiv.style.padding = '12px';
+            alertDiv.style.backgroundColor = getAlertBackgroundColor(alert.warning_level);
+
+            const warningLevelBadge = document.createElement('span');
+            warningLevelBadge.className = 'badge me-2';
+            warningLevelBadge.style.backgroundColor = getAlertBadgeColor(alert.warning_level);
+            warningLevelBadge.style.color = 'white';
+            warningLevelBadge.textContent = alert.warning_level;
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'fw-bold mb-1';
+            titleDiv.style.fontSize = '0.9rem';
+            titleDiv.textContent = alert.warning_title;
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'mb-2';
+            headerDiv.style.fontSize = '0.8rem';
+            headerDiv.style.color = '#666';
+            headerDiv.textContent = alert.header;
+
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'small text-muted';
+            detailsDiv.innerHTML = `
+                <div><strong>Location:</strong> ${alert.locality}</div>
+                <div><strong>Area:</strong> ${alert.warning_area}</div>
+                <div><strong>Status:</strong> ${alert.current_status}</div>
+                <div><strong>Published:</strong> ${alert.publish_date}</div>
+            `;
+
+            alertDiv.appendChild(warningLevelBadge);
+            alertDiv.appendChild(titleDiv);
+            alertDiv.appendChild(headerDiv);
+            alertDiv.appendChild(detailsDiv);
+
+            alertsContainer.appendChild(alertDiv);
+        });
     }
 
-    // Create alerts container
-    const alertsContainer = document.createElement('div');
-    alertsContainer.className = 'qfd-alerts-container';
-    alertsContainer.style.maxHeight = '300px';
-    alertsContainer.style.overflowY = 'auto';
-    cardBody.appendChild(alertsContainer);
+    // Add spacer to push bottom sections to the bottom of the card
+    const spacerDiv = document.createElement('div');
+    spacerDiv.style.flexGrow = '1';
+    spacerDiv.style.minHeight = '20px';
+    cardBody.appendChild(spacerDiv);
 
-    // Add each alert
-    data.alerts.forEach((alert, index) => {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert-item mb-3';
-        alertDiv.style.border = '1px solid #dee2e6';
-        alertDiv.style.borderRadius = '8px';
-        alertDiv.style.padding = '12px';
-        alertDiv.style.backgroundColor = getAlertBackgroundColor(alert.warning_level);
-
-        const warningLevelBadge = document.createElement('span');
-        warningLevelBadge.className = 'badge me-2';
-        warningLevelBadge.style.backgroundColor = getAlertBadgeColor(alert.warning_level);
-        warningLevelBadge.style.color = 'white';
-        warningLevelBadge.textContent = alert.warning_level;
-
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'fw-bold mb-1';
-        titleDiv.style.fontSize = '0.9rem';
-        titleDiv.textContent = alert.warning_title;
-
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'mb-2';
-        headerDiv.style.fontSize = '0.8rem';
-        headerDiv.style.color = '#666';
-        headerDiv.textContent = alert.header;
-
-        const detailsDiv = document.createElement('div');
-        detailsDiv.className = 'small text-muted';
-        detailsDiv.innerHTML = `
-            <div><strong>Location:</strong> ${alert.locality}</div>
-            <div><strong>Area:</strong> ${alert.warning_area}</div>
-            <div><strong>Status:</strong> ${alert.current_status}</div>
-            <div><strong>Published:</strong> ${alert.publish_date}</div>
-        `;
-
-        alertDiv.appendChild(warningLevelBadge);
-        alertDiv.appendChild(titleDiv);
-        alertDiv.appendChild(headerDiv);
-        alertDiv.appendChild(detailsDiv);
-
-        alertsContainer.appendChild(alertDiv);
-    });
-
-    // Add last updated timestamp
+    // Add last updated timestamp at the bottom
     if (data.last_updated) {
         const timestampDiv = document.createElement('div');
-        timestampDiv.className = 'text-muted small mt-2 text-center';
+        timestampDiv.className = 'text-muted small text-center mb-2';
+        timestampDiv.style.width = '100%';
+        timestampDiv.style.display = 'block';
+        timestampDiv.style.paddingTop = '10px';
         timestampDiv.textContent = `Last updated: ${data.last_updated}`;
         cardBody.appendChild(timestampDiv);
     }
+
+    // Add QFD attribution at the very bottom
+    const attributionDiv = document.createElement('div');
+    attributionDiv.className = 'text-center';
+    attributionDiv.style.width = '100%';
+    attributionDiv.style.display = 'block';
+    attributionDiv.style.borderTop = '1px solid #dee2e6';
+    attributionDiv.style.paddingTop = '10px';
+    attributionDiv.style.paddingBottom = '5px';
+    attributionDiv.style.backgroundColor = '#f8f9fa';
+    attributionDiv.innerHTML = `
+        <div class="small text-muted">
+            <div class="mb-1">
+                <a href="https://www.qfes.qld.gov.au" target="_blank" style="text-decoration: none; color: #6c757d;">
+                    <strong>Queensland Fire Department</strong>
+                </a>
+            </div>
+            <div style="font-size: 0.75rem;">
+                Active alerts provided by the Queensland Fire Department
+            </div>
+        </div>
+    `;
+    cardBody.appendChild(attributionDiv);
 }
 
 /**
@@ -2461,6 +2502,7 @@ function updateBOMWarningsCard(data) {
         timestampDiv.className = 'text-muted small text-center mb-2';
         timestampDiv.style.width = '100%';
         timestampDiv.style.display = 'block';
+        timestampDiv.style.paddingTop = '10px';
         timestampDiv.textContent = `Last updated: ${data.last_updated}`;
         cardBody.appendChild(timestampDiv);
     }
@@ -2472,6 +2514,8 @@ function updateBOMWarningsCard(data) {
     attributionDiv.style.display = 'block';
     attributionDiv.style.borderTop = '1px solid #dee2e6';
     attributionDiv.style.paddingTop = '10px';
+    attributionDiv.style.paddingBottom = '5px';
+    attributionDiv.style.backgroundColor = '#f8f9fa'; // Light background to make it more visible
     attributionDiv.innerHTML = `
         <div class="small text-muted">
             <div class="mb-1">

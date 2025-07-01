@@ -63,6 +63,10 @@ DAM_LEVELS_CACHE_TTL = 86400  # 24 hours in seconds (cache for entire day)
 CAPITAL_CITIES_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'capital_cities_cache.json')
 CAPITAL_CITIES_CACHE_TTL = 3600  # 1 hour in seconds
 
+# Weekly Statistics configuration
+WEEKLY_STATS_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'weekly_stats_cache.json')
+WEEKLY_STATS_CACHE_TTL = 604800  # 7 days in seconds (1 week)
+
 # Ferny Grove area suburbs for filtering alerts
 FERNY_GROVE_AREA_SUBURBS = [
     'ferny grove', 'ferny hills', 'samford', 'the gap', 'keperra', 
@@ -71,6 +75,312 @@ FERNY_GROVE_AREA_SUBURBS = [
     'wights mountain', 'mt nebo', 'mt glorious', 'yugar', 'clear mountain', 
     'everton hills'
 ]
+
+def generate_weekly_stats_cache():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Generate and cache weekly statistics data for improved performance.
+    Description:
+    	Calculates weekly statistics for current, previous, and trends data and stores them in a cache file.
+    	This function is designed to be called weekly (e.g., Sunday at 1 AM) to pre-generate the data
+    	and avoid expensive database queries during page loads. The cache includes all three weekly stats
+    	endpoints: current, previous, and trends.
+    Args:
+        None
+    Returns:
+        bool: True if cache was successfully generated, False otherwise.
+    Raises:
+        Exception: When database connection fails, query execution errors occur, or cache writing fails.
+    """
+    try:
+        engine = create_engine(DB_URI)
+        now = time.time()
+        
+        # Calculate the previous week (Sunday to Saturday)
+        current_time = datetime.now()
+        days_since_saturday = (current_time.weekday() - 5) % 7
+        last_saturday = current_time - timedelta(days=days_since_saturday)
+        
+        # Current week (previous week)
+        week_start = last_saturday - timedelta(days=6)
+        week_end = last_saturday
+        
+        # Previous week
+        previous_week_start = last_saturday - timedelta(days=13)
+        previous_week_end = last_saturday - timedelta(days=7)
+        
+        # Week 3 for trends
+        week3_start = last_saturday - timedelta(days=20)
+        week3_end = last_saturday - timedelta(days=14)
+        
+        # Convert to timestamps
+        start_time = int(week_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        end_time = int(week_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp())
+        
+        previous_start_time = int(previous_week_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        previous_end_time = int(previous_week_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp())
+        
+        week3_start_time = int(week3_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        week3_end_time = int(week3_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp())
+        
+        # Generate current week data
+        current_query = f"""
+            SELECT 
+                MIN(outTemp) as min_temp,
+                MAX(outTemp) as max_temp,
+                AVG(outTemp) as avg_temp,
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity,
+                MIN(barometer) as min_pressure,
+                MAX(barometer) as max_pressure,
+                AVG(barometer) as avg_pressure,
+                MAX(windGust) as max_wind_gust,
+                AVG(windSpeed) as avg_wind_speed,
+                SUM(rain) as total_rainfall,
+                MAX(UV) as max_uv,
+                AVG(UV) as avg_uv,
+                MAX(lightning_strike_count) as max_lightning_strikes,
+                SUM(lightning_strike_count) as total_lightning_strikes,
+                MAX(pm10_0) as max_pm10,
+                AVG(pm10_0) as avg_pm10
+            FROM archive
+            WHERE dateTime >= {start_time} AND dateTime <= {end_time}
+        """
+        
+        # Generate previous week data
+        previous_query = f"""
+            SELECT 
+                MIN(outTemp) as min_temp,
+                MAX(outTemp) as max_temp,
+                AVG(outTemp) as avg_temp,
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity,
+                MIN(barometer) as min_pressure,
+                MAX(barometer) as max_pressure,
+                AVG(barometer) as avg_pressure,
+                MAX(windGust) as max_wind_gust,
+                AVG(windSpeed) as avg_wind_speed,
+                SUM(rain) as total_rainfall,
+                MAX(UV) as max_uv,
+                AVG(UV) as avg_uv,
+                MAX(lightning_strike_count) as max_lightning_strikes,
+                SUM(lightning_strike_count) as total_lightning_strikes,
+                MAX(pm10_0) as max_pm10,
+                AVG(pm10_0) as avg_pm10
+            FROM archive
+            WHERE dateTime >= {previous_start_time} AND dateTime <= {previous_end_time}
+        """
+        
+        # Generate week 3 data for trends
+        week3_query = f"""
+            SELECT 
+                MIN(outTemp) as min_temp,
+                MAX(outTemp) as max_temp,
+                AVG(outTemp) as avg_temp,
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity,
+                MIN(barometer) as min_pressure,
+                MAX(barometer) as max_pressure,
+                AVG(barometer) as avg_pressure,
+                MAX(windGust) as max_wind_gust,
+                AVG(windSpeed) as avg_wind_speed,
+                SUM(rain) as total_rainfall,
+                MAX(UV) as max_uv,
+                AVG(UV) as avg_uv,
+                MAX(lightning_strike_count) as max_lightning_strikes,
+                SUM(lightning_strike_count) as total_lightning_strikes,
+                MAX(pm10_0) as max_pm10,
+                AVG(pm10_0) as avg_pm10
+            FROM archive
+            WHERE dateTime >= {week3_start_time} AND dateTime <= {week3_end_time}
+        """
+        
+        current_df = pd.read_sql(current_query, engine)
+        previous_df = pd.read_sql(previous_query, engine)
+        week3_df = pd.read_sql(week3_query, engine)
+        
+        # Process current week data
+        current_data = None
+        if not current_df.empty:
+            current_data = {
+                'week_start': week_start.strftime('%Y-%m-%d'),
+                'week_end': week_end.strftime('%Y-%m-%d'),
+                'min_temp': round((current_df['min_temp'].iloc[0] - 32) * 5/9, 1) if current_df['min_temp'].iloc[0] is not None else None,
+                'max_temp': round((current_df['max_temp'].iloc[0] - 32) * 5/9, 1) if current_df['max_temp'].iloc[0] is not None else None,
+                'avg_temp': round((current_df['avg_temp'].iloc[0] - 32) * 5/9, 1) if current_df['avg_temp'].iloc[0] is not None else None,
+                'min_humidity': int(current_df['min_humidity'].iloc[0]) if current_df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(current_df['max_humidity'].iloc[0]) if current_df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(current_df['avg_humidity'].iloc[0], 1) if current_df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': round(current_df['min_pressure'].iloc[0] * 33.8639, 1) if current_df['min_pressure'].iloc[0] is not None else None,
+                'max_pressure': round(current_df['max_pressure'].iloc[0] * 33.8639, 1) if current_df['max_pressure'].iloc[0] is not None else None,
+                'avg_pressure': round(current_df['avg_pressure'].iloc[0] * 33.8639, 1) if current_df['avg_pressure'].iloc[0] is not None else None,
+                'max_wind_gust': round(current_df['max_wind_gust'].iloc[0] * 1.60934, 1) if current_df['max_wind_gust'].iloc[0] is not None else None,
+                'max_wind_gust_direction': get_wind_gust_direction(engine, start_time, end_time),
+                'avg_wind_speed': round(current_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if current_df['avg_wind_speed'].iloc[0] is not None else None,
+                'total_rainfall': round(current_df['total_rainfall'].iloc[0] * 25.4, 1) if current_df['total_rainfall'].iloc[0] is not None else 0,
+                'max_uv': int(current_df['max_uv'].iloc[0]) if current_df['max_uv'].iloc[0] is not None else None,
+                'avg_uv': calculate_daylight_uv_average(engine, start_time, end_time, week_start, week_end, current_df['avg_uv'].iloc[0]),
+                'max_lightning_strikes': int(current_df['max_lightning_strikes'].iloc[0]) if current_df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(current_df['total_lightning_strikes'].iloc[0]) if current_df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(current_df['max_pm10'].iloc[0]) if current_df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(current_df['avg_pm10'].iloc[0], 1) if current_df['avg_pm10'].iloc[0] is not None else None
+            }
+        
+        # Process previous week data
+        previous_data = None
+        if not previous_df.empty:
+            previous_data = {
+                'week_start': previous_week_start.strftime('%Y-%m-%d'),
+                'week_end': previous_week_end.strftime('%Y-%m-%d'),
+                'min_temp': round((previous_df['min_temp'].iloc[0] - 32) * 5/9, 1) if previous_df['min_temp'].iloc[0] is not None else None,
+                'max_temp': round((previous_df['max_temp'].iloc[0] - 32) * 5/9, 1) if previous_df['max_temp'].iloc[0] is not None else None,
+                'avg_temp': round((previous_df['avg_temp'].iloc[0] - 32) * 5/9, 1) if previous_df['avg_temp'].iloc[0] is not None else None,
+                'min_humidity': int(previous_df['min_humidity'].iloc[0]) if previous_df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(previous_df['max_humidity'].iloc[0]) if previous_df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(previous_df['avg_humidity'].iloc[0], 1) if previous_df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': round(previous_df['min_pressure'].iloc[0] * 33.8639, 1) if previous_df['min_pressure'].iloc[0] is not None else None,
+                'max_pressure': round(previous_df['max_pressure'].iloc[0] * 33.8639, 1) if previous_df['max_pressure'].iloc[0] is not None else None,
+                'avg_pressure': round(previous_df['avg_pressure'].iloc[0] * 33.8639, 1) if previous_df['avg_pressure'].iloc[0] is not None else None,
+                'max_wind_gust': round(previous_df['max_wind_gust'].iloc[0] * 1.60934, 1) if previous_df['max_wind_gust'].iloc[0] is not None else None,
+                'max_wind_gust_direction': get_wind_gust_direction(engine, previous_start_time, previous_end_time),
+                'avg_wind_speed': round(previous_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if previous_df['avg_wind_speed'].iloc[0] is not None else None,
+                'total_rainfall': round(previous_df['total_rainfall'].iloc[0] * 25.4, 1) if previous_df['total_rainfall'].iloc[0] is not None else 0,
+                'max_uv': int(previous_df['max_uv'].iloc[0]) if previous_df['max_uv'].iloc[0] is not None else None,
+                'avg_uv': calculate_daylight_uv_average(engine, previous_start_time, previous_end_time, previous_week_start, previous_week_end, previous_df['avg_uv'].iloc[0]),
+                'max_lightning_strikes': int(previous_df['max_lightning_strikes'].iloc[0]) if previous_df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(previous_df['total_lightning_strikes'].iloc[0]) if previous_df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(previous_df['max_pm10'].iloc[0]) if previous_df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(previous_df['avg_pm10'].iloc[0], 1) if previous_df['avg_pm10'].iloc[0] is not None else None
+            }
+        
+        # Process trends data
+        trends_data = None
+        if not current_df.empty and not previous_df.empty and not week3_df.empty:
+            # Calculate daylight UV averages for all three weeks
+            current_avg_uv = calculate_daylight_uv_average(engine, start_time, end_time, week_start, week_end, current_df['avg_uv'].iloc[0])
+            previous_avg_uv = calculate_daylight_uv_average(engine, previous_start_time, previous_end_time, previous_week_start, previous_week_end, previous_df['avg_uv'].iloc[0])
+            week3_avg_uv = calculate_daylight_uv_average(engine, week3_start_time, week3_end_time, week3_start, week3_end, week3_df['avg_uv'].iloc[0])
+            
+            # Process week 1 data (current week)
+            week1_data = {
+                'min_temp': round((current_df['min_temp'].iloc[0] - 32) * 5/9, 1) if current_df['min_temp'].iloc[0] is not None else None,
+                'max_temp': round((current_df['max_temp'].iloc[0] - 32) * 5/9, 1) if current_df['max_temp'].iloc[0] is not None else None,
+                'avg_temp': round((current_df['avg_temp'].iloc[0] - 32) * 5/9, 1) if current_df['avg_temp'].iloc[0] is not None else None,
+                'min_humidity': int(current_df['min_humidity'].iloc[0]) if current_df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(current_df['max_humidity'].iloc[0]) if current_df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(current_df['avg_humidity'].iloc[0], 1) if current_df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': round(current_df['min_pressure'].iloc[0] * 33.8639, 1) if current_df['min_pressure'].iloc[0] is not None else None,
+                'max_pressure': round(current_df['max_pressure'].iloc[0] * 33.8639, 1) if current_df['max_pressure'].iloc[0] is not None else None,
+                'avg_pressure': round(current_df['avg_pressure'].iloc[0] * 33.8639, 1) if current_df['avg_pressure'].iloc[0] is not None else None,
+                'max_wind_gust': round(current_df['max_wind_gust'].iloc[0] * 1.60934, 1) if current_df['max_wind_gust'].iloc[0] is not None else None,
+                'max_wind_gust_direction': get_wind_gust_direction(engine, start_time, end_time),
+                'avg_wind_speed': round(current_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if current_df['avg_wind_speed'].iloc[0] is not None else None,
+                'total_rainfall': round(current_df['total_rainfall'].iloc[0] * 25.4, 1) if current_df['total_rainfall'].iloc[0] is not None else 0,
+                'max_uv': int(current_df['max_uv'].iloc[0]) if current_df['max_uv'].iloc[0] is not None else None,
+                'avg_uv': current_avg_uv,
+                'max_lightning_strikes': int(current_df['max_lightning_strikes'].iloc[0]) if current_df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(current_df['total_lightning_strikes'].iloc[0]) if current_df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(current_df['max_pm10'].iloc[0]) if current_df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(current_df['avg_pm10'].iloc[0], 1) if current_df['avg_pm10'].iloc[0] is not None else None
+            }
+            
+            # Process week 2 data (previous week)
+            week2_data = {
+                'min_temp': round((previous_df['min_temp'].iloc[0] - 32) * 5/9, 1) if previous_df['min_temp'].iloc[0] is not None else None,
+                'max_temp': round((previous_df['max_temp'].iloc[0] - 32) * 5/9, 1) if previous_df['max_temp'].iloc[0] is not None else None,
+                'avg_temp': round((previous_df['avg_temp'].iloc[0] - 32) * 5/9, 1) if previous_df['avg_temp'].iloc[0] is not None else None,
+                'min_humidity': int(previous_df['min_humidity'].iloc[0]) if previous_df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(previous_df['max_humidity'].iloc[0]) if previous_df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(previous_df['avg_humidity'].iloc[0], 1) if previous_df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': round(previous_df['min_pressure'].iloc[0] * 33.8639, 1) if previous_df['min_pressure'].iloc[0] is not None else None,
+                'max_pressure': round(previous_df['max_pressure'].iloc[0] * 33.8639, 1) if previous_df['max_pressure'].iloc[0] is not None else None,
+                'avg_pressure': round(previous_df['avg_pressure'].iloc[0] * 33.8639, 1) if previous_df['avg_pressure'].iloc[0] is not None else None,
+                'max_wind_gust': round(previous_df['max_wind_gust'].iloc[0] * 1.60934, 1) if previous_df['max_wind_gust'].iloc[0] is not None else None,
+                'max_wind_gust_direction': get_wind_gust_direction(engine, previous_start_time, previous_end_time),
+                'avg_wind_speed': round(previous_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if previous_df['avg_wind_speed'].iloc[0] is not None else None,
+                'total_rainfall': round(previous_df['total_rainfall'].iloc[0] * 25.4, 1) if previous_df['total_rainfall'].iloc[0] is not None else 0,
+                'max_uv': int(previous_df['max_uv'].iloc[0]) if previous_df['max_uv'].iloc[0] is not None else None,
+                'avg_uv': previous_avg_uv,
+                'max_lightning_strikes': int(previous_df['max_lightning_strikes'].iloc[0]) if previous_df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(previous_df['total_lightning_strikes'].iloc[0]) if previous_df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(previous_df['max_pm10'].iloc[0]) if previous_df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(previous_df['avg_pm10'].iloc[0], 1) if previous_df['avg_pm10'].iloc[0] is not None else None
+            }
+            
+            # Process week 3 data
+            week3_data = {
+                'min_temp': round((week3_df['min_temp'].iloc[0] - 32) * 5/9, 1) if week3_df['min_temp'].iloc[0] is not None else None,
+                'max_temp': round((week3_df['max_temp'].iloc[0] - 32) * 5/9, 1) if week3_df['max_temp'].iloc[0] is not None else None,
+                'avg_temp': round((week3_df['avg_temp'].iloc[0] - 32) * 5/9, 1) if week3_df['avg_temp'].iloc[0] is not None else None,
+                'min_humidity': int(week3_df['min_humidity'].iloc[0]) if week3_df['min_humidity'].iloc[0] is not None else None,
+                'max_humidity': int(week3_df['max_humidity'].iloc[0]) if week3_df['max_humidity'].iloc[0] is not None else None,
+                'avg_humidity': round(week3_df['avg_humidity'].iloc[0], 1) if week3_df['avg_humidity'].iloc[0] is not None else None,
+                'min_pressure': round(week3_df['min_pressure'].iloc[0] * 33.8639, 1) if week3_df['min_pressure'].iloc[0] is not None else None,
+                'max_pressure': round(week3_df['max_pressure'].iloc[0] * 33.8639, 1) if week3_df['max_pressure'].iloc[0] is not None else None,
+                'avg_pressure': round(week3_df['avg_pressure'].iloc[0] * 33.8639, 1) if week3_df['avg_pressure'].iloc[0] is not None else None,
+                'max_wind_gust': round(week3_df['max_wind_gust'].iloc[0] * 1.60934, 1) if week3_df['max_wind_gust'].iloc[0] is not None else None,
+                'max_wind_gust_direction': get_wind_gust_direction(engine, week3_start_time, week3_end_time),
+                'avg_wind_speed': round(week3_df['avg_wind_speed'].iloc[0] * 1.60934, 1) if week3_df['avg_wind_speed'].iloc[0] is not None else None,
+                'total_rainfall': round(week3_df['total_rainfall'].iloc[0] * 25.4, 1) if week3_df['total_rainfall'].iloc[0] is not None else 0,
+                'max_uv': int(week3_df['max_uv'].iloc[0]) if week3_df['max_uv'].iloc[0] is not None else None,
+                'avg_uv': week3_avg_uv,
+                'max_lightning_strikes': int(week3_df['max_lightning_strikes'].iloc[0]) if week3_df['max_lightning_strikes'].iloc[0] is not None else 0,
+                'total_lightning_strikes': int(week3_df['total_lightning_strikes'].iloc[0]) if week3_df['total_lightning_strikes'].iloc[0] is not None else 0,
+                'max_pm10': int(week3_df['max_pm10'].iloc[0]) if week3_df['max_pm10'].iloc[0] is not None else None,
+                'avg_pm10': round(week3_df['avg_pm10'].iloc[0], 1) if week3_df['avg_pm10'].iloc[0] is not None else None
+            }
+            
+            # Calculate trends
+            def calculate_trend(current, previous, threshold=0.1):
+                if current is None or previous is None or previous == 0:
+                    return 'stable'
+                change = abs(current - previous) / abs(previous)
+                if change < threshold:
+                    return 'stable'
+                return 'up' if current > previous else 'down'
+            
+            trends_data = {
+                'current_week': week1_data,
+                'previous_week': week2_data,
+                'week3': week3_data,
+                'trends': {
+                    'avg_temp': calculate_trend(week1_data['avg_temp'], week2_data['avg_temp']),
+                    'avg_humidity': calculate_trend(week1_data['avg_humidity'], week2_data['avg_humidity']),
+                    'avg_pressure': calculate_trend(week1_data['avg_pressure'], week2_data['avg_pressure']),
+                    'avg_wind_speed': calculate_trend(week1_data['avg_wind_speed'], week2_data['avg_wind_speed']),
+                    'total_rainfall': calculate_trend(week1_data['total_rainfall'], week2_data['total_rainfall']),
+                    'avg_uv': calculate_trend(week1_data['avg_uv'], week2_data['avg_uv']),
+                    'total_lightning_strikes': calculate_trend(week1_data['total_lightning_strikes'], week2_data['total_lightning_strikes']),
+                    'avg_pm10': calculate_trend(week1_data['avg_pm10'], week2_data['avg_pm10'])
+                }
+            }
+        
+        # Create cache data
+        cache_data = {
+            'timestamp': now,
+            'current': current_data,
+            'previous': previous_data,
+            'trends': trends_data,
+            'last_updated': datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        }
+        
+        # Write to cache file
+        with open(WEEKLY_STATS_CACHE_PATH, 'w') as f:
+            json.dump(cache_data, f)
+        
+        print(f"Weekly stats cache generated successfully at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        return True
+        
+    except Exception as e:
+        print(f"Error generating weekly stats cache: {e}")
+        return False
 
 def get_sunrise_sunset_times(date):
     """
@@ -838,7 +1148,7 @@ def api_qfd_alerts():
         result = {
             'alerts': relevant_alerts,
             'count': len(relevant_alerts),
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'last_updated': datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         }
         
         # Cache the result
@@ -864,7 +1174,7 @@ def api_qfd_alerts():
         return jsonify({
             'alerts': [],
             'count': 0,
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'last_updated': datetime.now().strftime('%d-%m-%Y %H:%M:%S'),
             'error': str(e)
         })
 
@@ -940,7 +1250,7 @@ def api_bom_warnings():
             'land_warnings': land_warnings,
             'marine_count': len(marine_warnings),
             'land_count': len(land_warnings),
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'last_updated': datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         }
         
         # Cache the result
@@ -1222,26 +1532,38 @@ def api_weekly_stats_current():
     Summary:
 	    Get weather statistics for the previous week (Sunday to Saturday).
     Description:
-    	Calculates comprehensive weather statistics for the most recent completed week (Sunday to Saturday).
-    	Includes minimum, maximum, and average values for temperature, humidity, pressure, wind speed,
-    	rainfall, UV index, lightning strikes, and air quality. All values are converted to metric units.
-    	UV calculations use daylight-only filtering for more accurate representation of exposure.
+    	Retrieves cached weekly statistics for the most recent completed week (Sunday to Saturday).
+    	If cache is not available or expired, falls back to real-time calculation. Includes minimum,
+    	maximum, and average values for temperature, humidity, pressure, wind speed, rainfall, UV index,
+    	lightning strikes, and air quality. All values are converted to metric units.
     Args:
         None
     Returns:
         json: JSON object containing weekly weather statistics with converted metric values and date ranges.
     Raises:
-        Exception: When database connection fails, query execution errors occur, or data conversion errors occur.
+        Exception: When cache reading fails or fallback calculation errors occur.
     """
+    now = time.time()
+    
+    # Try to load cache first
+    if os.path.exists(WEEKLY_STATS_CACHE_PATH):
+        with open(WEEKLY_STATS_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if now - cache.get('timestamp', 0) < WEEKLY_STATS_CACHE_TTL:
+                    if cache.get('current'):
+                        return jsonify(cache['current'])
+            except Exception:
+                pass
+    
+    # Fallback to original calculation if cache is not available or expired
     engine = create_engine(DB_URI)
     
     try:
         # Calculate the previous week (Sunday to Saturday)
-        now = datetime.now()
-        # Find the most recent Saturday
-        days_since_saturday = (now.weekday() - 5) % 7
-        last_saturday = now - timedelta(days=days_since_saturday)
-        # Previous week starts on Sunday (7 days before last Saturday)
+        current_time = datetime.now()
+        days_since_saturday = (current_time.weekday() - 5) % 7
+        last_saturday = current_time - timedelta(days=days_since_saturday)
         week_start = last_saturday - timedelta(days=6)
         week_end = last_saturday
         
@@ -1353,26 +1675,39 @@ def api_weekly_stats_previous():
     Summary:
 	    Get weather statistics for the week prior to the previous week (Sunday to Saturday).
     Description:
-    	Calculates comprehensive weather statistics for the week before the most recent completed week.
-    	This provides historical data for comparison with current week statistics. Includes the same
-    	metrics as the current week function: temperature, humidity, pressure, wind, rainfall, UV,
-    	lightning, and air quality, all converted to metric units with daylight UV filtering.
+    	Retrieves cached weekly statistics for the week before the most recent completed week.
+    	If cache is not available or expired, falls back to real-time calculation. This provides
+    	historical data for comparison with current week statistics. Includes the same metrics
+    	as the current week function: temperature, humidity, pressure, wind, rainfall, UV,
+    	lightning, and air quality, all converted to metric units.
     Args:
         None
     Returns:
         json: JSON object containing weekly weather statistics with converted metric values and date ranges.
     Raises:
-        Exception: When database connection fails, query execution errors occur, or data conversion errors occur.
+        Exception: When cache reading fails or fallback calculation errors occur.
     """
+    now = time.time()
+    
+    # Try to load cache first
+    if os.path.exists(WEEKLY_STATS_CACHE_PATH):
+        with open(WEEKLY_STATS_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if now - cache.get('timestamp', 0) < WEEKLY_STATS_CACHE_TTL:
+                    if cache.get('previous'):
+                        return jsonify(cache['previous'])
+            except Exception:
+                pass
+    
+    # Fallback to original calculation if cache is not available or expired
     engine = create_engine(DB_URI)
     
     try:
         # Calculate the week prior to the previous week (Sunday to Saturday)
-        now = datetime.now()
-        # Find the most recent Saturday
-        days_since_saturday = (now.weekday() - 5) % 7
-        last_saturday = now - timedelta(days=days_since_saturday)
-        # Previous week starts on Sunday (7 days before last Saturday)
+        current_time = datetime.now()
+        days_since_saturday = (current_time.weekday() - 5) % 7
+        last_saturday = current_time - timedelta(days=days_since_saturday)
         previous_week_start = last_saturday - timedelta(days=13)  # 13 days before last Saturday
         previous_week_end = last_saturday - timedelta(days=7)     # 7 days before last Saturday
         
@@ -1484,24 +1819,39 @@ def api_weekly_stats_trends():
     Summary:
 	    Get weekly weather statistics and trends comparing current and previous weeks.
     Description:
-    	Calculates weather statistics for the last three completed weeks and computes trends by comparing
-    	current week to previous week, and previous week to the week before. Trends are determined for
-    	average temperature, humidity, pressure, wind speed, rainfall, UV, lightning, and air quality.
-    	All values are converted to metric units and UV averages use daylight-only filtering.
+    	Retrieves cached weekly statistics and trends for the last three completed weeks.
+    	If cache is not available or expired, falls back to real-time calculation.
+    	Computes trends by comparing current week to previous week, and previous week to the week before.
+    	Trends are determined for average temperature, humidity, pressure, wind speed, rainfall, UV,
+    	lightning, and air quality. All values are converted to metric units.
     Args:
         None
     Returns:
         json: JSON object containing weekly statistics for current and previous weeks, and trend indicators for each metric.
     Raises:
-        Exception: When database connection fails, query execution errors occur, or data conversion errors occur.
+        Exception: When cache reading fails or fallback calculation errors occur.
     """
+    now = time.time()
+    
+    # Try to load cache first
+    if os.path.exists(WEEKLY_STATS_CACHE_PATH):
+        with open(WEEKLY_STATS_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if now - cache.get('timestamp', 0) < WEEKLY_STATS_CACHE_TTL:
+                    if cache.get('trends'):
+                        return jsonify(cache['trends'])
+            except Exception:
+                pass
+    
+    # Fallback to original calculation if cache is not available or expired
     engine = create_engine(DB_URI)
     
     try:
         # Calculate three consecutive weeks
-        now = datetime.now()
-        days_since_saturday = (now.weekday() - 5) % 7
-        last_saturday = now - timedelta(days=days_since_saturday)
+        current_time = datetime.now()
+        days_since_saturday = (current_time.weekday() - 5) % 7
+        last_saturday = current_time - timedelta(days=days_since_saturday)
         
         # Week 1 (current week - previous week)
         week1_start = last_saturday - timedelta(days=6)
@@ -1736,6 +2086,46 @@ def api_weekly_stats_trends():
         print(f"Error fetching weekly stats trends: {e}")
         return jsonify({
             'error': str(e)
+        })
+
+@app.route('/api/generate_weekly_cache')
+def api_generate_weekly_cache():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Manually trigger generation of weekly statistics cache.
+    Description:
+    	Endpoint to manually generate the weekly statistics cache. This can be called
+    	via cron job or manually when needed. Returns success/failure status.
+    Args:
+        None
+    Returns:
+        json: JSON object containing success status and timestamp.
+    Raises:
+        Exception: When cache generation fails.
+    """
+    try:
+        success = generate_weekly_stats_cache()
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Weekly stats cache generated successfully',
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to generate weekly stats cache',
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error generating cache: {str(e)}',
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
 
 @app.route('/api/rainfall_24h')
@@ -2118,7 +2508,7 @@ def api_dam_levels():
                 'date': today,
                 'data': {
                     'dams': dam_data,
-                    'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    'last_updated': datetime.now().strftime('%d-%m-%Y %H:%M:%S')
                 }
             }
             
@@ -2135,7 +2525,7 @@ def api_dam_levels():
         return jsonify({
             'error': 'Failed to fetch dam levels data',
             'dams': [],
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'last_updated': datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         })
 
 @app.route('/api/comfort_levels')
@@ -2443,7 +2833,7 @@ def api_capital_cities():
         
         result = {
             'cities': cities_data,
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'last_updated': datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         }
         
         # Cache the result

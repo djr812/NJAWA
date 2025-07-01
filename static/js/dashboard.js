@@ -3541,8 +3541,10 @@ function downloadCSV(period) {
  * Retrieves the latest dew point, heat index, wind chill, and calculated feels like temperature.
  */
 async function fetchAndUpdateComfortLevels() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
     try {
-        const response = await fetch('/api/comfort_levels');
+        const response = await fetch(`${basePath}/api/comfort_levels`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -3626,8 +3628,10 @@ function showComfortLevelsError() {
  * Retrieves current weather and forecast data for all Australian capital cities.
  */
 async function fetchAndUpdateCapitalCities() {
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
     try {
-        const response = await fetch('/api/capital_cities');
+        const response = await fetch(`${basePath}/api/capital_cities`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }

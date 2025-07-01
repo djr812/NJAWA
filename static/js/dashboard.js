@@ -150,6 +150,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Weekly Statistics
     fetchAndUpdateWeeklyStats();
     setInterval(fetchAndUpdateWeeklyStats, 60 * 60 * 1000); // Update every hour
+    
+    // Initialize Comfort Levels
+    fetchAndUpdateComfortLevels();
+    setInterval(fetchAndUpdateComfortLevels, 5 * 60 * 1000); // Update every 5 minutes
 });
 
 /**
@@ -3480,4 +3484,89 @@ function downloadCSV(period) {
         downloadButton.textContent = originalText;
         downloadButton.style.pointerEvents = 'auto';
     }, 2000);
+}
+
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches and updates the comfort levels data from the API.
+ * Retrieves the latest dew point, heat index, wind chill, and calculated feels like temperature.
+ */
+async function fetchAndUpdateComfortLevels() {
+    try {
+        const response = await fetch('/api/comfort_levels');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        updateComfortLevelsCard(data);
+    } catch (error) {
+        console.error('Error fetching comfort levels:', error);
+        showComfortLevelsError();
+    }
+}
+
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the comfort levels card with the latest data.
+ * Displays dew point, heat index, wind chill, feels like temperature, and comfort rating with image.
+ *
+ * @param {Object} data - Comfort levels data object containing temperature values and comfort information.
+ */
+function updateComfortLevelsCard(data) {
+    const loadingElement = document.getElementById('comfort-levels-loading');
+    const contentElement = document.getElementById('comfort-levels-content');
+    const errorElement = document.getElementById('comfort-levels-error');
+    
+    if (data.error) {
+        loadingElement.style.display = 'none';
+        contentElement.style.display = 'none';
+        errorElement.style.display = 'block';
+        return;
+    }
+    
+    // Update the values
+    document.getElementById('comfort-dew-point').textContent = 
+        data.dew_point !== null ? `${data.dew_point}°C` : '--°C';
+    document.getElementById('comfort-heat-index').textContent = 
+        data.heat_index !== null ? `${data.heat_index}°C` : '--°C';
+    document.getElementById('comfort-wind-chill').textContent = 
+        data.wind_chill !== null ? `${data.wind_chill}°C` : '--°C';
+    document.getElementById('comfort-feels-like').textContent = 
+        data.feels_like !== null ? `${data.feels_like}°C` : '--°C';
+    
+    // Update comfort rating and image
+    const ratingElement = document.getElementById('comfort-rating');
+    const imageElement = document.getElementById('comfort-image');
+    
+    if (data.comfort_rating && data.comfort_image) {
+        ratingElement.textContent = data.comfort_rating;
+        imageElement.src = `/static/images/${data.comfort_image}`;
+        imageElement.style.display = 'block';
+    } else {
+        ratingElement.textContent = '';
+        imageElement.style.display = 'none';
+    }
+    
+    // Show content and hide loading/error
+    loadingElement.style.display = 'none';
+    errorElement.style.display = 'none';
+    contentElement.style.display = 'block';
+}
+
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Shows the error state for the comfort levels card.
+ * Displays an error message when comfort levels data cannot be loaded.
+ */
+function showComfortLevelsError() {
+    const loadingElement = document.getElementById('comfort-levels-loading');
+    const contentElement = document.getElementById('comfort-levels-content');
+    const errorElement = document.getElementById('comfort-levels-error');
+    
+    loadingElement.style.display = 'none';
+    contentElement.style.display = 'none';
+    errorElement.style.display = 'block';
 }

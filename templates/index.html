@@ -10,6 +10,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link rel="icon" href="static/images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+      /* CSS Grid approach for proper centering */
+      #comfort-levels-content {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        height: 100% !important;
+        width: 100% !important;
+        gap: 0 !important;
+      }
+      
+      .comfort-column-alt {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 10px !important;
+        box-sizing: border-box !important;
+      }
+      
+      .comfort-content {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100% !important;
+      }
+    </style>
   </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
@@ -135,7 +162,66 @@
         </div>
       </div>
     </div>
-    <!-- Row 3: QFD Alerts | BOM Land and Marine Warnings -->
+    <!-- Row 3: Comfort Levels | Capital Cities -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Comfort Levels <span class="period-label text-end flex-grow-1">Latest</span></div>
+        <div class="card-body position-relative" id="comfort-levels-body">
+          <div id="comfort-levels-loading" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading comfort levels...</p>
+          </div>
+          <div id="comfort-levels-content" style="display: none;">
+            <!-- Left Column -->
+            <div class="comfort-column-alt">
+              <div class="comfort-content">
+                <div class="mb-4 text-center">
+                  <div class="h6 mb-1 text-muted">DEW POINT</div>
+                  <div class="fw-bold fs-4" id="comfort-dew-point">--°C</div>
+                </div>
+                <div class="mb-4 text-center">
+                  <div class="h6 mb-1 text-muted">HEAT INDEX</div>
+                  <div class="fw-bold fs-4" id="comfort-heat-index">--°C</div>
+                </div>
+                <div class="text-center">
+                  <div class="h6 mb-1 text-muted">WIND CHILL</div>
+                  <div class="fw-bold fs-4" id="comfort-wind-chill">--°C</div>
+                </div>
+              </div>
+            </div>
+          
+            <!-- Right Column -->
+            <div class="comfort-column-alt">
+              <div class="comfort-content">
+                <div class="text-center">
+                  <div class="h6 mb-2 text-muted">FEELS LIKE</div>
+                  <div class="fw-bold" style="font-size: 2.4rem; line-height: 1.1;" id="comfort-feels-like">--°C</div>
+                </div>
+                <div class="mt-4 text-center">
+                  <div id="comfort-rating" class="h5 mb-3 fw-semibold"></div>
+                  <img id="comfort-image" src="" alt="Comfort Level" class="img-fluid" style="max-height: 80px;">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="comfort-levels-error" class="text-center" style="display: none;">
+            <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+            <p class="mt-2">Unable to load comfort levels</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">Capital Cities <span class="period-label text-end flex-grow-1">Forecast</span></div>
+        <div class="card-body position-relative" id="capital-cities-body">
+          <!-- Content to be added -->
+        </div>
+      </div>
+    </div>
+    <!-- Row 4: QFD Alerts | BOM Land and Marine Warnings -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Qld Fire Department Alerts <span class="period-label text-end flex-grow-1">Latest</span></div>
@@ -152,7 +238,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 4: Tides | Dam Levels -->
+    <!-- Row 5: Tides | Dam Levels -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Tides <span class="period-label text-end flex-grow-1">Latest</span></div>
@@ -220,7 +306,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 5: CO2, Pollution and UV Metrics (4 Cards) -->
+    <!-- Row 6: CO2, Pollution and UV Metrics (4 Cards) -->
     <div class="row g-4 mt-2 mb-2">
       <div class="col-md-3 d-flex">
         <div class="card h-100 w-100">
@@ -257,7 +343,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 6: Local Weather Cards -->
+    <!-- Row 7: Local Weather Cards -->
     <div class="row g-4 mt-4">
         <div class="col-md-3">
             <div class="card">
@@ -300,7 +386,7 @@
             </div>
         </div>
     </div>
-    <!-- Row 7: Local Weather Statistics Cards -->
+    <!-- Row 8: Local Weather Statistics Cards -->
     <div class="row g-4 mt-4">
         <div class="col-md-6">
             <div class="card">
@@ -343,7 +429,7 @@
             </div>
         </div>
     </div>
-    <!-- Row 8: Outside Temperature | Bar Comfort Level -->
+    <!-- Row 9: Outside Temperature | Bar Comfort Level -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Outside Temperature <span id="outside-temp-period" class="period-label text-end flex-grow-1"></span></div>
@@ -374,7 +460,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 9: Rainfall | Lightning -->
+    <!-- Row 10: Rainfall | Lightning -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Rainfall <span id="rainfall-period" class="period-label text-end flex-grow-1"></span></div>
@@ -393,7 +479,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 10: Barometric Pressure | Humidity -->
+    <!-- Row 11: Barometric Pressure | Humidity -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Barometric Pressure <span id="pressure-period" class="period-label text-end flex-grow-1"></span></div>
@@ -412,7 +498,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 11: Solar Levels | Inside Temperature -->
+    <!-- Row 12: Solar Levels | Inside Temperature -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Solar Levels <span id="solar-period" class="period-label text-end flex-grow-1"></span></div>
@@ -431,7 +517,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 12: Heat Index | Wind Chill -->
+    <!-- Row 13: Heat Index | Wind Chill -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Heat Index <span id="heat-index-period" class="period-label text-end flex-grow-1"></span></div>
@@ -450,7 +536,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 13: Wind Speed & Direction, full width -->
+    <!-- Row 14: Wind Speed & Direction, full width -->
     <div class="col-12">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">Wind Speed & Direction <span id="wind-period" class="period-label text-end flex-grow-1"></span></div>
@@ -460,7 +546,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 14: My Weather Setup, full width -->
+    <!-- Row 15: My Weather Setup, full width -->
     <div class="col-12">
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">My Weather Setup <span class="period-label text-end flex-grow-1">Current Configuration</span></div>
@@ -542,7 +628,7 @@
         </div>
       </div>
     </div>
-    <!-- Row 15: Battery Status Cards -->
+    <!-- Row 16: Battery Status Cards -->
     <div class="row g-4 mt-4">
       <div class="col-md-3">
         <div class="card">

@@ -2134,6 +2134,122 @@ def api_dam_levels():
             'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
 
+@app.route('/api/comfort_levels')
+def api_comfort_levels():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get the latest comfort level data including dew point, heat index, wind chill, and calculated feels like temperature.
+    Description:
+    	Queries the weather database for the most recent dew point, heat index, and wind chill values.
+    	Calculates the "feels like" temperature based on these values and determines the comfort rating.
+    	Returns the data with comfort level classification and corresponding image filename.
+    Args:
+        None
+    Returns:
+        json: JSON object containing comfort level data with calculated feels like temperature and rating.
+    Raises:
+        Exception: When database connection fails or query execution errors occur.
+    """
+    try:
+        engine = create_engine(DB_URI)
+        
+        # Get the latest comfort level data
+        query = """
+            SELECT dewpoint, heatindex, windchill, outTemp, outHumidity, windSpeed
+            FROM archive
+            WHERE dewpoint IS NOT NULL AND heatindex IS NOT NULL AND windchill IS NOT NULL
+            ORDER BY dateTime DESC
+            LIMIT 1
+        """
+        
+        df = pd.read_sql(query, engine)
+        
+        if df.empty:
+            return jsonify({
+                'error': 'No comfort level data available',
+                'dew_point': None,
+                'heat_index': None,
+                'wind_chill': None,
+                'feels_like': None,
+                'comfort_rating': None,
+                'comfort_image': None
+            })
+        
+        # Convert temperature values from Fahrenheit to Celsius
+        dew_point = round((df['dewpoint'].iloc[0] - 32) * 5/9, 1) if df['dewpoint'].iloc[0] is not None else None
+        heat_index = round((df['heatindex'].iloc[0] - 32) * 5/9, 1) if df['heatindex'].iloc[0] is not None else None
+        wind_chill = round((df['windchill'].iloc[0] - 32) * 5/9, 1) if df['windchill'].iloc[0] is not None else None
+        current_temp = round((df['outTemp'].iloc[0] - 32) * 5/9, 1) if df['outTemp'].iloc[0] is not None else None
+        humidity = df['outHumidity'].iloc[0] if df['outHumidity'].iloc[0] is not None else None
+        wind_speed = round(df['windSpeed'].iloc[0] * 1.60934, 1) if df['windSpeed'].iloc[0] is not None else None  # Convert mph to km/h
+        
+        # Calculate "feels like" temperature
+        # Use heat index if it's higher than current temp (hot conditions)
+        # Use wind chill if it's lower than current temp (cold conditions)
+        # Otherwise use current temperature
+        feels_like = current_temp
+        if heat_index is not None and heat_index > current_temp:
+            feels_like = heat_index
+        elif wind_chill is not None and wind_chill < current_temp:
+            feels_like = wind_chill
+        
+        # Determine comfort rating based on feels like temperature
+        comfort_rating = None
+        comfort_image = None
+        
+        if feels_like is not None:
+            if feels_like < 10:
+                comfort_rating = 'Freezing'
+                comfort_image = 'Freezing.png'
+            elif feels_like < 15:
+                comfort_rating = 'Cold'
+                comfort_image = 'Cold.png'
+            elif feels_like < 20:
+                comfort_rating = 'Chilly'
+                comfort_image = 'Chilly.png'
+            elif feels_like < 26:
+                comfort_rating = 'Perfect'
+                comfort_image = 'Perfect.png'
+            elif feels_like < 31:
+                comfort_rating = 'Warm'
+                comfort_image = 'Warm.png'
+            elif feels_like < 36:
+                comfort_rating = 'Hot'
+                comfort_image = 'Hot.png'
+            else:
+                comfort_rating = 'Boiling'
+                comfort_image = 'Boiling.png'
+        
+        result = {
+            'dew_point': dew_point,
+            'heat_index': heat_index,
+            'wind_chill': wind_chill,
+            'feels_like': feels_like,
+            'comfort_rating': comfort_rating,
+            'comfort_image': comfort_image,
+            'current_temp': current_temp,
+            'humidity': humidity,
+            'wind_speed': wind_speed
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error fetching comfort levels data: {e}")
+        return jsonify({
+            'error': str(e),
+            'dew_point': None,
+            'heat_index': None,
+            'wind_chill': None,
+            'feels_like': None,
+            'comfort_rating': None,
+            'comfort_image': None
+        })
+
 @app.route('/api/download_csv')
 def api_download_csv():
     """

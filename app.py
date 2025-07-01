@@ -59,6 +59,10 @@ TIDES_CACHE_TTL = 86400  # 24 hours in seconds (cache for entire day)
 DAM_LEVELS_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'dam_levels_cache.json')
 DAM_LEVELS_CACHE_TTL = 86400  # 24 hours in seconds (cache for entire day)
 
+# Capital Cities configuration
+CAPITAL_CITIES_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'capital_cities_cache.json')
+CAPITAL_CITIES_CACHE_TTL = 3600  # 1 hour in seconds
+
 # Ferny Grove area suburbs for filtering alerts
 FERNY_GROVE_AREA_SUBURBS = [
     'ferny grove', 'ferny hills', 'samford', 'the gap', 'keperra', 
@@ -2325,6 +2329,148 @@ def api_download_csv():
     except Exception as e:
         print(f"Error generating CSV download: {e}")
         return jsonify({'error': 'Failed to generate CSV download'}), 500
+
+@app.route('/api/capital_cities')
+def api_capital_cities():
+    """
+    Author:
+	    David Rogers
+    Email:		
+	    dave@djrogers.net.au
+    Summary:
+	    Get weather forecast data for all Australian capital cities using WeatherAPI.
+    Description:
+    	Fetches current weather and forecast data for all Australian capital cities including
+    	Brisbane, Sydney, Canberra, Melbourne, Adelaide, Perth, Darwin, and Hobart.
+    	Returns current conditions, hourly forecast, and daily min/max temperatures.
+    	Results are cached for 1 hour to reduce API load and improve performance.
+    Args:
+        None
+    Returns:
+        json: JSON object containing weather data for all capital cities.
+    Raises:
+        Exception: When API requests fail or data parsing errors occur.
+    """
+    now = time.time()
+    
+    # Try to load cache first
+    if os.path.exists(CAPITAL_CITIES_CACHE_PATH):
+        with open(CAPITAL_CITIES_CACHE_PATH, 'r') as f:
+            try:
+                cache = json.load(f)
+                if now - cache.get('timestamp', 0) < CAPITAL_CITIES_CACHE_TTL:
+                    return jsonify(cache['data'])
+            except Exception:
+                pass
+    
+    try:
+        if not WAPI_KEY:
+            return jsonify({
+                'error': 'WeatherAPI key not configured',
+                'cities': []
+            })
+        
+        # Australian capital cities
+        cities = [
+            'Brisbane', 'Sydney', 'Canberra', 'Melbourne', 
+            'Adelaide', 'Perth', 'Darwin', 'Hobart'
+        ]
+        
+        cities_data = []
+        
+        for city in cities:
+            try:
+                # Make API request to WeatherAPI
+                url = f"http://api.weatherapi.com/v1/forecast.json?key={WAPI_KEY}&q={city}&days=1&aqi=no&alerts=no"
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+                
+                # Extract current hour data (get the current hour from the hourly forecast)
+                current_time = datetime.now()
+                current_hour = current_time.hour
+                
+                # Find the current hour in the hourly forecast
+                current_hour_data = None
+                if 'forecast' in data and 'forecastday' in data['forecast'] and len(data['forecast']['forecastday']) > 0:
+                    hourly_data = data['forecast']['forecastday'][0].get('hour', [])
+                    for hour_data in hourly_data:
+                        hour_time = datetime.strptime(hour_data['time'], '%Y-%m-%d %H:%M')
+                        if hour_time.hour == current_hour:
+                            current_hour_data = hour_data
+                            break
+                
+                # If current hour not found, use the first available hour
+                if not current_hour_data and hourly_data:
+                    current_hour_data = hourly_data[0]
+                
+                # Extract daily forecast data
+                daily_data = None
+                if 'forecast' in data and 'forecastday' in data['forecast'] and len(data['forecast']['forecastday']) > 0:
+                    daily_data = data['forecast']['forecastday'][0]['day']
+                
+                city_data = {
+                    'name': city,
+                    'current_hour': {
+                        'time': current_hour_data['time'] if current_hour_data else None,
+                        'temp_c': current_hour_data['temp_c'] if current_hour_data else None,
+                        'condition': {
+                            'text': current_hour_data['condition']['text'] if current_hour_data else None,
+                            'icon': current_hour_data['condition']['icon'] if current_hour_data else None
+                        }
+                    } if current_hour_data else None,
+                    'daily_forecast': {
+                        'maxtemp_c': daily_data['maxtemp_c'] if daily_data else None,
+                        'mintemp_c': daily_data['mintemp_c'] if daily_data else None,
+                        'condition': {
+                            'text': daily_data['condition']['text'] if daily_data else None,
+                            'icon': daily_data['condition']['icon'] if daily_data else None
+                        }
+                    } if daily_data else None
+                }
+                
+                cities_data.append(city_data)
+                
+            except Exception as e:
+                print(f"Error fetching data for {city}: {e}")
+                # Add error data for this city
+                cities_data.append({
+                    'name': city,
+                    'error': str(e),
+                    'current_hour': None,
+                    'daily_forecast': None
+                })
+        
+        result = {
+            'cities': cities_data,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        # Cache the result
+        cache_data = {
+            'timestamp': now,
+            'data': result
+        }
+        with open(CAPITAL_CITIES_CACHE_PATH, 'w') as f:
+            json.dump(cache_data, f)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        # Return cached data if available, otherwise empty result
+        if os.path.exists(CAPITAL_CITIES_CACHE_PATH):
+            with open(CAPITAL_CITIES_CACHE_PATH, 'r') as f:
+                try:
+                    cache = json.load(f)
+                    return jsonify(cache['data'])
+                except Exception:
+                    pass
+        
+        print(f"Error fetching capital cities data: {e}")
+        return jsonify({
+            'error': str(e),
+            'cities': []
+        })
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=5000) 

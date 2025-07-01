@@ -154,6 +154,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Comfort Levels
     fetchAndUpdateComfortLevels();
     setInterval(fetchAndUpdateComfortLevels, 5 * 60 * 1000); // Update every 5 minutes
+    
+    // Initialize Capital Cities
+    fetchAndUpdateCapitalCities();
+    setInterval(fetchAndUpdateCapitalCities, 60 * 60 * 1000); // Update every hour (matches cache TTL)
 });
 
 /**
@@ -3565,6 +3569,146 @@ function showComfortLevelsError() {
     const loadingElement = document.getElementById('comfort-levels-loading');
     const contentElement = document.getElementById('comfort-levels-content');
     const errorElement = document.getElementById('comfort-levels-error');
+    
+    loadingElement.style.display = 'none';
+    contentElement.style.display = 'none';
+    errorElement.style.display = 'block';
+}
+
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Fetches and updates the capital cities weather data from the API.
+ * Retrieves current weather and forecast data for all Australian capital cities.
+ */
+async function fetchAndUpdateCapitalCities() {
+    try {
+        const response = await fetch('/api/capital_cities');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        updateCapitalCitiesCard(data);
+    } catch (error) {
+        console.error('Error fetching capital cities data:', error);
+        showCapitalCitiesError();
+    }
+}
+
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Updates the capital cities card with weather data for all Australian capital cities.
+ * Displays current conditions, hourly forecast, and daily min/max temperatures for each city.
+ *
+ * @param {Object} data - Capital cities data object containing weather information for each city.
+ */
+function updateCapitalCitiesCard(data) {
+    const loadingElement = document.getElementById('capital-cities-loading');
+    const contentElement = document.getElementById('capital-cities-content');
+    const errorElement = document.getElementById('capital-cities-error');
+    
+    if (data.error) {
+        loadingElement.style.display = 'none';
+        contentElement.style.display = 'none';
+        errorElement.style.display = 'block';
+        return;
+    }
+    
+    const citiesListElement = document.getElementById('capital-cities-list');
+    
+    // Generate HTML for each city
+    let html = '';
+    
+    data.cities.forEach(city => {
+        if (city.error) {
+            // Show error for this city
+            html += `
+                <div class="row mb-2">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <div class="fw-bold">${city.name}</div>
+                            <div class="text-danger small">Error loading data</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Show weather data for this city
+            const currentHour = city.current_hour;
+            const dailyForecast = city.daily_forecast;
+            
+            if (currentHour && dailyForecast) {
+                const currentTemp = currentHour.temp_c !== null ? `${currentHour.temp_c}°C` : '--';
+                const maxTemp = dailyForecast.maxtemp_c !== null ? `${dailyForecast.maxtemp_c}°C` : '--';
+                const minTemp = dailyForecast.mintemp_c !== null ? `${dailyForecast.mintemp_c}°C` : '--';
+                const conditionText = currentHour.condition?.text || '--';
+                const conditionIcon = currentHour.condition?.icon || '';
+                
+                html += `
+                    <div class="row mb-2">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                <div class="fw-bold me-3" style="min-width: 80px;">${city.name}</div>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        <img src="${conditionIcon}" alt="${conditionText}" style="width: 20px; height: 20px;">
+                                    </div>
+                                    <div class="me-3">
+                                        <small>${conditionText}</small>
+                                    </div>
+                                    <div class="me-3">
+                                        <span class="fw-bold">${currentTemp}</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        <small class="text-muted">Max:</small>
+                                        <span class="fw-bold text-danger">${maxTemp}</span>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">Min:</small>
+                                        <span class="fw-bold text-primary">${minTemp}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Show incomplete data for this city
+                html += `
+                    <div class="row mb-2">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                <div class="fw-bold">${city.name}</div>
+                                <div class="text-warning small">Incomplete data</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    });
+    
+    citiesListElement.innerHTML = html;
+    
+    // Show content and hide loading/error
+    loadingElement.style.display = 'none';
+    errorElement.style.display = 'none';
+    contentElement.style.display = 'block';
+}
+
+/**
+ * Author: David Rogers
+ * Email: dave@djrogers.net.au
+ * Description: Shows the error state for the capital cities card.
+ * Displays an error message when capital cities data cannot be loaded.
+ */
+function showCapitalCitiesError() {
+    const loadingElement = document.getElementById('capital-cities-loading');
+    const contentElement = document.getElementById('capital-cities-content');
+    const errorElement = document.getElementById('capital-cities-error');
     
     loadingElement.style.display = 'none';
     contentElement.style.display = 'none';

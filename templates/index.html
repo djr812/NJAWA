@@ -215,9 +215,23 @@
     </div>
     <div class="col-md-6">
       <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">Capital Cities <span class="period-label text-end flex-grow-1">Forecast</span></div>
+        <div class="card-header d-flex justify-content-between align-items-center">Capital Cities <span class="period-label text-end flex-grow-1">Current and Forecast</span></div>
         <div class="card-body position-relative" id="capital-cities-body">
-          <!-- Content to be added -->
+          <div id="capital-cities-loading" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading capital cities data...</p>
+          </div>
+          <div id="capital-cities-content" style="display: none;">
+            <div id="capital-cities-list">
+              <!-- Capital cities entries will be populated here -->
+            </div>
+          </div>
+          <div id="capital-cities-error" class="text-center" style="display: none;">
+            <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+            <p class="mt-2">Unable to load capital cities data</p>
+          </div>
         </div>
       </div>
     </div>

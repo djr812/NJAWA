@@ -164,16 +164,16 @@
     </div>
     <!-- Row 3: Comfort Levels | Capital Cities -->
     <div class="col-md-6">
-      <div class="card">
+      <div class="card h-100">
         <div class="card-header d-flex justify-content-between align-items-center">Comfort Levels <span class="period-label text-end flex-grow-1">Latest</span></div>
-        <div class="card-body position-relative" id="comfort-levels-body">
+        <div class="card-body position-relative d-flex flex-column" id="comfort-levels-body">
           <div id="comfort-levels-loading" class="text-center">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
             <p class="mt-2">Loading comfort levels...</p>
           </div>
-          <div id="comfort-levels-content" style="display: none;">
+          <div id="comfort-levels-content" style="display: none; flex-grow: 1;">
             <!-- Left Column -->
             <div class="comfort-column-alt">
               <div class="comfort-content">
@@ -214,16 +214,16 @@
       </div>
     </div>
     <div class="col-md-6">
-      <div class="card">
+      <div class="card h-100">
         <div class="card-header d-flex justify-content-between align-items-center">Capital Cities <span class="period-label text-end flex-grow-1">Current and Forecast</span></div>
-        <div class="card-body position-relative" id="capital-cities-body">
+        <div class="card-body position-relative d-flex flex-column" id="capital-cities-body">
           <div id="capital-cities-loading" class="text-center">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
             <p class="mt-2">Loading capital cities data...</p>
           </div>
-          <div id="capital-cities-content" style="display: none;">
+          <div id="capital-cities-content" style="display: none; flex-grow: 1;">
             <div id="capital-cities-list">
               <!-- Capital cities entries will be populated here -->
             </div>
@@ -703,12 +703,12 @@
 
 <!-- Attributions -->
 <div class="attribution-section mt-5 mb-3" style="text-align:center;">
-  <div style="font-style:italic;">Local Weather Widgets Powered by <a href="https://www.weatherapi.com/" title="Weather API">WeatherAPI.com</a></div>
+  <div style="font-style:italic;">Local Weather Widgets Powered by <a href="https://www.weatherapi.com/" title="Weather API" target="_blank" rel="noopener">WeatherAPI.com</a></div>
   <div style="font-style:italic;">This page acknowledges the use of <a href="https://sunrise-sunset.org" target="_blank" rel="noopener">https://sunrise-sunset.org</a> API.</div>
   <div style="font-style:italic;">This station is controlled by WeeWX (<a href="https://weewx.com" target="_blank" rel="noopener">https://weewx.com</a>).</div>
   <div style="font-style:italic;">This page makes use of maps provided by <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">https://www.openstreetmap.org</a></div>
-  <div style="font-style:italic;">And includes a <a href='https://pngtree.com/freepng/weather-icons-set_3606115.html'>png image from pngtree.com/</a></div>
-  <div style="font-style:italic;"><a href="https://www.flaticon.com/free-icons/rain" title="rain icons">Rain icons created by iconixar - Flaticon</a></div>
+  <div style="font-style:italic;">And includes a set of png images from <a href="https://pngtree.com/freepng/weather-icons-set_3606115.html" target="_blank" rel="noopener">PNGTree</a></div>
+  <div style="font-style:italic;">As well as Icons from <a href="https://www.flaticon.com" target="_blank" rel="noopener" title="rain icons">Flaticon</a></div>
 </div>
 
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>

@@ -297,18 +297,26 @@ async function updatePredictedWeatherConditionsCard(forecast) {
     cardBody.innerHTML = '';
 
     if (forecast && forecast.ai_forecast) {
-        // Create main container with responsive layout
-        const mainContainer = document.createElement('div');
-        mainContainer.className = 'row';
-        cardBody.appendChild(mainContainer);
+        // Create main content container
+        const mainContentContainer = document.createElement('div');
+        mainContentContainer.style.display = 'flex';
+        mainContentContainer.style.flexDirection = 'row';
+        mainContentContainer.style.alignItems = 'center';
+        mainContentContainer.style.justifyContent = 'space-between';
+        mainContentContainer.style.minHeight = '200px';
+        mainContentContainer.style.marginBottom = '20px';
+        mainContentContainer.style.width = '100%';
+        cardBody.appendChild(mainContentContainer);
 
-        // Top Section: Image and Condition (full width on mobile, left column on desktop)
-        const topSection = document.createElement('div');
-        topSection.className = 'col-12 col-md-6 mb-3 mb-md-0';
-        topSection.style.display = 'flex';
-        topSection.style.flexDirection = 'column';
-        topSection.style.alignItems = 'center';
-        mainContainer.appendChild(topSection);
+        // Left Section: Image and Condition
+        const leftSection = document.createElement('div');
+        leftSection.style.display = 'flex';
+        leftSection.style.flexDirection = 'column';
+        leftSection.style.alignItems = 'center';
+        leftSection.style.justifyContent = 'center';
+        leftSection.style.width = '50%';
+        leftSection.style.padding = '0 10px';
+        mainContentContainer.appendChild(leftSection);
 
         // Create image element
         const img = document.createElement('img');
@@ -317,7 +325,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         img.className = 'img-fluid weather-cam-img';
         img.style.maxHeight = '180px';
         img.style.marginBottom = '10px';
-        topSection.appendChild(img);
+        leftSection.appendChild(img);
 
         // Create text element for forecast
         const textDiv = document.createElement('div');
@@ -326,6 +334,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         textDiv.style.fontWeight = 'bold';
         textDiv.style.textAlign = 'center';
         textDiv.style.marginBottom = '10px';
+        textDiv.style.whiteSpace = 'nowrap';
 
         // Add wind forecast text based on ai_wind_forecast value
         let windText = '';
@@ -350,15 +359,16 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         }
         
         textDiv.textContent = forecast.ai_forecast + windText;
-        topSection.appendChild(textDiv);
+        leftSection.appendChild(textDiv);
 
-        // Bottom Section: Temperature Range and Probabilities (full width on mobile, right column on desktop)
-        const bottomSection = document.createElement('div');
-        bottomSection.className = 'col-12 col-md-6';
-        bottomSection.style.display = 'flex';
-        bottomSection.style.flexDirection = 'column';
-        bottomSection.style.justifyContent = 'center';
-        mainContainer.appendChild(bottomSection);
+        // Right Section: Temperature Range and Probabilities
+        const rightSection = document.createElement('div');
+        rightSection.style.display = 'flex';
+        rightSection.style.flexDirection = 'column';
+        rightSection.style.justifyContent = 'center';
+        rightSection.style.width = '50%';
+        rightSection.style.padding = '0 10px';
+        mainContentContainer.appendChild(rightSection);
 
         // Add predicted minimum temperature with confidence and range
         if (forecast.predicted_min_temp !== undefined) {
@@ -370,7 +380,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
                 Predicted Min Temp: ${forecast.predicted_min_temp.toFixed(1)}°C (Confidence ${forecast.predicted_min_temp_confidence.toFixed(1)}%)<br>
                 Range: ${forecast.predicted_min_temp_range}
             `;
-            bottomSection.appendChild(minTempDiv);
+            rightSection.appendChild(minTempDiv);
         }
 
         // Add predicted maximum temperature with confidence and range
@@ -383,7 +393,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
                 Predicted Max Temp: ${forecast.predicted_max_temp.toFixed(1)}°C (Confidence ${forecast.predicted_max_temp_confidence.toFixed(1)}%)<br>
                 Range: ${forecast.predicted_max_temp_range}
             `;
-            bottomSection.appendChild(maxTempDiv);
+            rightSection.appendChild(maxTempDiv);
         }
 
         // Add chance of rain with confidence
@@ -393,7 +403,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             rainDiv.style.color = '#666';
             rainDiv.style.marginBottom = '15px';
             rainDiv.innerHTML = `Chance of Rain: ${forecast.chance_of_rain.toFixed(1)}% (Confidence ${forecast.chance_of_rain_confidence.toFixed(1)}%)`;
-            bottomSection.appendChild(rainDiv);
+            rightSection.appendChild(rainDiv);
         }
 
         // Add chance of lightning with confidence
@@ -403,7 +413,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             lightningDiv.style.color = '#666';
             lightningDiv.style.marginBottom = '15px';
             lightningDiv.innerHTML = `Chance of Lightning: ${forecast.chance_of_lightning.toFixed(1)}% (Confidence ${forecast.chance_of_lightning_confidence.toFixed(1)}%)`;
-            bottomSection.appendChild(lightningDiv);
+            rightSection.appendChild(lightningDiv);
         }
 
         // Fetch and display training days
@@ -411,14 +421,16 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             const response = await fetch(`${basePath}/api/training_days`);
             const data = await response.json();
             
-            // Create container for bottom text
+            // Create container for bottom text with consistent styling
             const bottomTextContainer = document.createElement('div');
-            bottomTextContainer.className = 'col-12';
-            bottomTextContainer.style.marginTop = '20px';
+            bottomTextContainer.style.marginTop = '0';
+            bottomTextContainer.style.borderTop = '1px solid #dee2e6';
             bottomTextContainer.style.paddingTop = '10px';
-            bottomTextContainer.style.borderTop = '1px solid #ddd';
+            bottomTextContainer.style.paddingBottom = '5px';
+            bottomTextContainer.style.backgroundColor = '#f8f9fa';
             bottomTextContainer.style.width = '100%';
-            mainContainer.appendChild(bottomTextContainer);
+            bottomTextContainer.style.boxSizing = 'border-box';
+            cardBody.appendChild(bottomTextContainer);
 
             // Training days text
             const trainingDaysDiv = document.createElement('div');

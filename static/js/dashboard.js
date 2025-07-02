@@ -297,26 +297,26 @@ async function updatePredictedWeatherConditionsCard(forecast) {
     cardBody.innerHTML = '';
 
     if (forecast && forecast.ai_forecast) {
-        // Create main content container
+        // Create main content container with responsive layout
         const mainContentContainer = document.createElement('div');
         mainContentContainer.style.display = 'flex';
-        mainContentContainer.style.flexDirection = 'row';
+        mainContentContainer.style.flexDirection = 'column';
         mainContentContainer.style.alignItems = 'center';
-        mainContentContainer.style.justifyContent = 'space-between';
-        mainContentContainer.style.minHeight = '200px';
+        mainContentContainer.style.justifyContent = 'center';
         mainContentContainer.style.marginBottom = '20px';
         mainContentContainer.style.width = '100%';
         cardBody.appendChild(mainContentContainer);
 
-        // Left Section: Image and Condition
-        const leftSection = document.createElement('div');
-        leftSection.style.display = 'flex';
-        leftSection.style.flexDirection = 'column';
-        leftSection.style.alignItems = 'center';
-        leftSection.style.justifyContent = 'center';
-        leftSection.style.width = '50%';
-        leftSection.style.padding = '0 10px';
-        mainContentContainer.appendChild(leftSection);
+        // Top Section: Image and Condition (full width on mobile, left column on desktop)
+        const topSection = document.createElement('div');
+        topSection.style.display = 'flex';
+        topSection.style.flexDirection = 'column';
+        topSection.style.alignItems = 'center';
+        topSection.style.justifyContent = 'center';
+        topSection.style.width = '100%';
+        topSection.style.padding = '0 10px';
+        topSection.style.marginBottom = '20px';
+        mainContentContainer.appendChild(topSection);
 
         // Create image element
         const img = document.createElement('img');
@@ -325,7 +325,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         img.className = 'img-fluid weather-cam-img';
         img.style.maxHeight = '180px';
         img.style.marginBottom = '10px';
-        leftSection.appendChild(img);
+        topSection.appendChild(img);
 
         // Create text element for forecast
         const textDiv = document.createElement('div');
@@ -359,16 +359,17 @@ async function updatePredictedWeatherConditionsCard(forecast) {
         }
         
         textDiv.textContent = forecast.ai_forecast + windText;
-        leftSection.appendChild(textDiv);
+        topSection.appendChild(textDiv);
 
-        // Right Section: Temperature Range and Probabilities
-        const rightSection = document.createElement('div');
-        rightSection.style.display = 'flex';
-        rightSection.style.flexDirection = 'column';
-        rightSection.style.justifyContent = 'center';
-        rightSection.style.width = '50%';
-        rightSection.style.padding = '0 10px';
-        mainContentContainer.appendChild(rightSection);
+        // Bottom Section: Temperature Range and Probabilities (full width)
+        const bottomSection = document.createElement('div');
+        bottomSection.style.display = 'flex';
+        bottomSection.style.flexDirection = 'column';
+        bottomSection.style.justifyContent = 'center';
+        bottomSection.style.alignItems = 'center';
+        bottomSection.style.width = '100%';
+        bottomSection.style.padding = '0 10px';
+        mainContentContainer.appendChild(bottomSection);
 
         // Add predicted minimum temperature with confidence and range
         if (forecast.predicted_min_temp !== undefined) {
@@ -380,7 +381,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
                 Predicted Min Temp: ${forecast.predicted_min_temp.toFixed(1)}°C (Confidence ${forecast.predicted_min_temp_confidence.toFixed(1)}%)<br>
                 Range: ${forecast.predicted_min_temp_range}
             `;
-            rightSection.appendChild(minTempDiv);
+            bottomSection.appendChild(minTempDiv);
         }
 
         // Add predicted maximum temperature with confidence and range
@@ -393,7 +394,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
                 Predicted Max Temp: ${forecast.predicted_max_temp.toFixed(1)}°C (Confidence ${forecast.predicted_max_temp_confidence.toFixed(1)}%)<br>
                 Range: ${forecast.predicted_max_temp_range}
             `;
-            rightSection.appendChild(maxTempDiv);
+            bottomSection.appendChild(maxTempDiv);
         }
 
         // Add chance of rain with confidence
@@ -403,7 +404,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             rainDiv.style.color = '#666';
             rainDiv.style.marginBottom = '15px';
             rainDiv.innerHTML = `Chance of Rain: ${forecast.chance_of_rain.toFixed(1)}% (Confidence ${forecast.chance_of_rain_confidence.toFixed(1)}%)`;
-            rightSection.appendChild(rainDiv);
+            bottomSection.appendChild(rainDiv);
         }
 
         // Add chance of lightning with confidence
@@ -413,7 +414,7 @@ async function updatePredictedWeatherConditionsCard(forecast) {
             lightningDiv.style.color = '#666';
             lightningDiv.style.marginBottom = '15px';
             lightningDiv.innerHTML = `Chance of Lightning: ${forecast.chance_of_lightning.toFixed(1)}% (Confidence ${forecast.chance_of_lightning_confidence.toFixed(1)}%)`;
-            rightSection.appendChild(lightningDiv);
+            bottomSection.appendChild(lightningDiv);
         }
 
         // Fetch and display training days
@@ -1761,7 +1762,7 @@ async function updateActualWeatherConditions(data) {
     
     // Update the condition text with appropriate styling
     conditionDisplay.innerHTML = `
-        <div style="width: 100%; max-width: 100%; margin: 0; padding: 0; box-sizing: border-box;">
+        <div style="width: 100%; max-width: 100%; margin: 0; padding: 0; box-sizing: border-box; display: flex; align-items: center;">
             <div style="display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box; gap: 1rem;">
                 <!-- Column 1: Image and Condition -->
                 <div style="flex: 1; min-width: 300px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
@@ -3711,27 +3712,29 @@ function updateCapitalCitiesCard(data) {
                 html += `
                     <div class="row mb-2">
                         <div class="col-12">
-                            <div class="d-flex justify-content-between align-items-center p-2 border rounded">
-                                <div class="fw-bold me-3" style="min-width: 80px;">${city.name}</div>
-                                <div class="d-flex align-items-center">
-                                    <div class="me-2">
-                                        <img src="${conditionIcon}" alt="${conditionText}" style="width: 20px; height: 20px;">
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center p-2 border rounded">
+                                <div class="fw-bold mb-1 mb-sm-0" style="min-width: 80px; word-wrap: break-word; overflow-wrap: break-word;">${city.name}</div>
+                                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1 mb-sm-0 me-sm-3">
+                                        <div class="me-2">
+                                            <img src="${conditionIcon}" alt="${conditionText}" style="width: 20px; height: 20px;">
+                                        </div>
+                                        <div class="me-3" style="word-wrap: break-word; overflow-wrap: break-word;">
+                                            <small>${conditionText}</small>
+                                        </div>
+                                        <div class="me-3">
+                                            <span class="fw-bold">${currentTemp}</span>
+                                        </div>
                                     </div>
-                                    <div class="me-3">
-                                        <small>${conditionText}</small>
-                                    </div>
-                                    <div class="me-3">
-                                        <span class="fw-bold">${currentTemp}</span>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center">
-                                    <div class="me-2">
-                                        <small class="text-muted">Max:</small>
-                                        <span class="fw-bold text-danger">${maxTemp}</span>
-                                    </div>
-                                    <div>
-                                        <small class="text-muted">Min:</small>
-                                        <span class="fw-bold text-primary">${minTemp}</span>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-2">
+                                            <small class="text-muted">Max:</small>
+                                            <span class="fw-bold text-danger">${maxTemp}</span>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">Min:</small>
+                                            <span class="fw-bold text-primary">${minTemp}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

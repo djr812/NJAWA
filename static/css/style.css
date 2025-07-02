@@ -167,6 +167,30 @@ body {
     justify-content: center;
     gap: 1em;
 }
+
+/* Ensure both weather condition cards have the same height */
+#actual-weather-conditions-body,
+#predicted-weather-conditions-body {
+    height: 650px !important;
+    min-height: 650px !important;
+}
+
+/* Responsive height adjustments for mobile devices */
+@media (max-width: 768px) {
+    #actual-weather-conditions-body,
+    #predicted-weather-conditions-body {
+        height: 800px !important;
+        min-height: 800px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    #actual-weather-conditions-body,
+    #predicted-weather-conditions-body {
+        height: 900px !important;
+        min-height: 900px !important;
+    }
+}
 #predicted-weather-conditions-body img {
     display: block;
     max-width: 240px;

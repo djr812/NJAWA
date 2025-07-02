@@ -3549,6 +3549,7 @@ async function fetchAndUpdateComfortLevels() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        console.log(data);
         updateComfortLevelsCard(data);
     } catch (error) {
         console.error('Error fetching comfort levels:', error);
@@ -3589,10 +3590,12 @@ function updateComfortLevelsCard(data) {
     // Update comfort rating and image
     const ratingElement = document.getElementById('comfort-rating');
     const imageElement = document.getElementById('comfort-image');
+    const isProd = window.location.hostname !== 'localhost';
+    const basePath = isProd ? '/njawa' : '';
     
     if (data.comfort_rating && data.comfort_image) {
         ratingElement.textContent = data.comfort_rating;
-        imageElement.src = `/static/images/${data.comfort_image}`;
+        imageElement.src = `${basePath}/static/images/${data.comfort_image}`;
         imageElement.style.display = 'block';
     } else {
         ratingElement.textContent = '';

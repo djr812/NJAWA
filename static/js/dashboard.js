@@ -1712,11 +1712,8 @@ async function updateActualWeatherConditions(data) {
         return;
     }
     
-    const conditionDisplay = cardBody.querySelector('.weather-condition');
-    if (!conditionDisplay) {
-        console.error('Could not find weather condition display');
-        return;
-    }
+    // Clear existing content
+    cardBody.innerHTML = '';
 
     // Helper function to convert degrees to compass bearing
     const degreesToCompass = (degrees) => {
@@ -1760,58 +1757,184 @@ async function updateActualWeatherConditions(data) {
         return Number(value).toFixed(decimals);
     };
     
-    // Update the condition text with appropriate styling
-    conditionDisplay.innerHTML = `
-        <div style="width: 100%; max-width: 100%; margin: 0; padding: 0; box-sizing: border-box; display: flex; align-items: center;">
-            <div style="display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box; gap: 1rem;">
-                <!-- Column 1: Image and Condition -->
-                <div style="flex: 1; min-width: 300px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <img src="${imageSrc}" alt="${condition.text}" style="height: 180px; width: auto; margin-bottom: 1rem; object-fit: contain;">
-                    <div class="h2" style="font-weight: 700;">${condition.text}</div>
-                </div>
-                
-                <!-- Column 2: Temperature, Pressure, Rain, UV -->
-                <div style="flex: 1; min-width: 250px; box-sizing: border-box;">
-                    <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">TEMPERATURE</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outTemp)}°C</div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">REL. AIR PRESSURE</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.barometer)} hPa</div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">RAIN (24H)</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(rainfall24h)} mm</div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">UV RATING</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.UV === 0 ? '0' : (latest.UV || '--')}</div>
-                    </div>
-                </div>
-                
-                <!-- Column 3: Humidity, Wind, Lightning -->
-                <div style="flex: 1; min-width: 250px; box-sizing: border-box;">
-                    <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outHumidity)}%</div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">WIND GUST</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.windGust)} km/h</div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">WIND DIRECTION</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${degreesToCompass(latest.windDir)}</div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="h6 mb-1" style="color: #666;">LIGHTNING STRIKES</div>
-                        <div style="font-size: 1.5rem; font-weight: 700;">${latest.lightning_strike_count === 0 ? '0' : (latest.lightning_strike_count || '--')}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    // Create the main content container with flexbox column layout
+    const mainContentContainer = document.createElement('div');
+    mainContentContainer.className = 'weather-condition';
+    mainContentContainer.style.display = 'flex';
+    mainContentContainer.style.flexDirection = 'column';
+    mainContentContainer.style.width = '100%';
+    mainContentContainer.style.height = '100%';
+    cardBody.appendChild(mainContentContainer);
+
+    // Add white space at the top
+    const topSpacerDiv = document.createElement('div');
+    topSpacerDiv.style.height = '15px';
+    mainContentContainer.appendChild(topSpacerDiv);
+
+    // Create the three-column layout using CSS Grid
+    const threeColumnGrid = document.createElement('div');
+    threeColumnGrid.style.display = 'grid';
+    threeColumnGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+    threeColumnGrid.style.gap = '1rem';
+    threeColumnGrid.style.width = '100%';
+    threeColumnGrid.style.flexGrow = '1';
+    mainContentContainer.appendChild(threeColumnGrid);
+
+    // Column 1: Image and Condition
+    const column1 = document.createElement('div');
+    column1.style.display = 'flex';
+    column1.style.flexDirection = 'column';
+    column1.style.justifyContent = 'center';
+    column1.style.alignItems = 'center';
+    column1.style.textAlign = 'center';
+    
+    const img = document.createElement('img');
+    img.src = imageSrc;
+    img.alt = condition.text;
+    img.style.height = '180px';
+    img.style.width = 'auto';
+    img.style.marginBottom = '1rem';
+    img.style.objectFit = 'contain';
+    column1.appendChild(img);
+    
+    const conditionText = document.createElement('div');
+    conditionText.className = 'h2';
+    conditionText.style.fontWeight = '700';
+    conditionText.textContent = condition.text;
+    column1.appendChild(conditionText);
+    
+    threeColumnGrid.appendChild(column1);
+
+    // Column 2: Temperature, Pressure, Rain, UV
+    const column2 = document.createElement('div');
+    column2.style.display = 'flex';
+    column2.style.flexDirection = 'column';
+    column2.style.justifyContent = 'space-around';
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.className = 'mb-4';
+    tempDiv.innerHTML = `
+        <div class="h6 mb-1" style="color: #666;">TEMPERATURE</div>
+        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outTemp)}°C</div>
     `;
+    column2.appendChild(tempDiv);
+    
+    const pressureDiv = document.createElement('div');
+    pressureDiv.className = 'mb-4';
+    pressureDiv.innerHTML = `
+        <div class="h6 mb-1" style="color: #666;">REL. AIR PRESSURE</div>
+        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.barometer)} hPa</div>
+    `;
+    column2.appendChild(pressureDiv);
+    
+    const rainDiv = document.createElement('div');
+    rainDiv.className = 'mb-4';
+    rainDiv.innerHTML = `
+        <div class="h6 mb-1" style="color: #666;">RAIN (24H)</div>
+        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(rainfall24h)} mm</div>
+    `;
+    column2.appendChild(rainDiv);
+    
+    const uvDiv = document.createElement('div');
+    uvDiv.className = 'mb-4';
+    uvDiv.innerHTML = `
+        <div class="h6 mb-1" style="color: #666;">UV RATING</div>
+        <div style="font-size: 1.5rem; font-weight: 700;">${latest.UV === 0 ? '0' : (latest.UV || '--')}</div>
+    `;
+    column2.appendChild(uvDiv);
+    
+    threeColumnGrid.appendChild(column2);
+
+    // Column 3: Humidity, Wind, Lightning
+    const column3 = document.createElement('div');
+    column3.style.display = 'flex';
+    column3.style.flexDirection = 'column';
+    column3.style.justifyContent = 'space-around';
+    
+    const humidityDiv = document.createElement('div');
+    humidityDiv.className = 'mb-4';
+    humidityDiv.innerHTML = `
+        <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
+        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outHumidity)}%</div>
+    `;
+    column3.appendChild(humidityDiv);
+    
+    const windGustDiv = document.createElement('div');
+    windGustDiv.className = 'mb-4';
+    windGustDiv.innerHTML = `
+        <div class="h6 mb-1" style="color: #666;">WIND GUST</div>
+        <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.windGust)} km/h</div>
+    `;
+    column3.appendChild(windGustDiv);
+    
+    const windDirDiv = document.createElement('div');
+    windDirDiv.className = 'mb-4';
+    windDirDiv.innerHTML = `
+        <div class="h6 mb-1" style="color: #666;">WIND DIRECTION</div>
+        <div style="font-size: 1.5rem; font-weight: 700;">${degreesToCompass(latest.windDir)}</div>
+    `;
+    column3.appendChild(windDirDiv);
+    
+    const lightningDiv = document.createElement('div');
+    lightningDiv.className = 'mb-4';
+    lightningDiv.innerHTML = `
+        <div class="h6 mb-1" style="color: #666;">LIGHTNING STRIKES</div>
+        <div style="font-size: 1.5rem; font-weight: 700;">${latest.lightning_strike_count === 0 ? '0' : (latest.lightning_strike_count || '--')}</div>
+    `;
+    column3.appendChild(lightningDiv);
+    
+    threeColumnGrid.appendChild(column3);
+    
+    // Add white space between main content and bottom section (reduced to compensate for top spacer)
+    const spacerDiv = document.createElement('div');
+    spacerDiv.style.flexGrow = '1';
+    spacerDiv.style.minHeight = '5px';
+    mainContentContainer.appendChild(spacerDiv);
+    
+    // Last updated timestamp (above the horizontal line)
+    const lastUpdatedDiv = document.createElement('div');
+    lastUpdatedDiv.className = 'last-updated-text';
+    lastUpdatedDiv.style.fontSize = '0.9rem';
+    lastUpdatedDiv.style.color = '#666';
+    lastUpdatedDiv.style.textAlign = 'center';
+    lastUpdatedDiv.style.marginBottom = '10px';
+    lastUpdatedDiv.textContent = `Last Updated: ${new Date().toLocaleString('en-AU', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    })}`;
+    mainContentContainer.appendChild(lastUpdatedDiv);
+
+    // Add bottom text container with horizontal line and attribution
+    const bottomTextContainer = document.createElement('div');
+    bottomTextContainer.style.borderTop = '1px solid #dee2e6';
+    bottomTextContainer.style.paddingTop = '10px';
+    bottomTextContainer.style.paddingBottom = '5px';
+    bottomTextContainer.style.backgroundColor = '#f8f9fa';
+    bottomTextContainer.style.width = '100%';
+    bottomTextContainer.style.boxSizing = 'border-box';
+    mainContentContainer.appendChild(bottomTextContainer);
+
+    // Attribution text
+    const attributionDiv = document.createElement('div');
+    attributionDiv.className = 'attribution-text';
+    attributionDiv.style.fontSize = '0.9rem';
+    attributionDiv.style.color = '#666';
+    attributionDiv.style.textAlign = 'center';
+    attributionDiv.style.marginBottom = '5px';
+    attributionDiv.textContent = 'Weather Telemetry Provided by an Ecowitt WS69 Personal Weather Station';
+    bottomTextContainer.appendChild(attributionDiv);
+
+    // Additional attribution text
+    const additionalAttributionDiv = document.createElement('div');
+    additionalAttributionDiv.className = 'additional-attribution-text';
+    additionalAttributionDiv.style.fontSize = '0.9rem';
+    additionalAttributionDiv.style.color = '#666';
+    additionalAttributionDiv.style.textAlign = 'center';
+    additionalAttributionDiv.textContent = 'Condition and Icon provided by WeatherAPI.com';
+    bottomTextContainer.appendChild(additionalAttributionDiv);
     
     console.log('Updated card with condition:', condition);
 }

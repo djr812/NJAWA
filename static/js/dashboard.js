@@ -2372,7 +2372,13 @@ function updateQFDAlertsCard(data) {
         timestampDiv.style.width = '100%';
         timestampDiv.style.display = 'block';
         timestampDiv.style.paddingTop = '10px';
-        timestampDiv.textContent = `Last updated: ${data.last_updated}`;
+        timestampDiv.textContent = `Last Updated: ${new Date().toLocaleString('en-AU', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        })}`;
         cardBody.appendChild(timestampDiv);
     }
 
@@ -2639,7 +2645,13 @@ function updateBOMWarningsCard(data) {
         timestampDiv.style.width = '100%';
         timestampDiv.style.display = 'block';
         timestampDiv.style.paddingTop = '10px';
-        timestampDiv.textContent = `Last updated: ${data.last_updated}`;
+        timestampDiv.textContent = `Last Updated: ${new Date().toLocaleString('en-AU', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        })}`;
         cardBody.appendChild(timestampDiv);
     }
 
@@ -3742,6 +3754,44 @@ function updateComfortLevelsCard(data) {
     loadingElement.style.display = 'none';
     errorElement.style.display = 'none';
     contentElement.style.display = 'block';
+    
+    // Get the card body to append the bottom section
+    const cardBody = contentElement.closest('.card-body') || contentElement.parentElement;
+    
+    // Add Last Updated timestamp above horizontal line
+    const lastUpdatedDiv = document.createElement('div');
+    lastUpdatedDiv.className = 'last-updated-text';
+    lastUpdatedDiv.style.fontSize = '0.9rem';
+    lastUpdatedDiv.style.color = '#666';
+    lastUpdatedDiv.style.textAlign = 'center';
+    lastUpdatedDiv.style.marginBottom = '10px';
+    lastUpdatedDiv.textContent = `Last Updated: ${new Date().toLocaleString('en-AU', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    })}`;
+    cardBody.appendChild(lastUpdatedDiv);
+    
+    // Add horizontal line and attribution
+    const bottomTextContainer = document.createElement('div');
+    bottomTextContainer.style.borderTop = '1px solid #dee2e6';
+    bottomTextContainer.style.paddingTop = '10px';
+    bottomTextContainer.style.paddingBottom = '5px';
+    bottomTextContainer.style.backgroundColor = '#f8f9fa';
+    bottomTextContainer.style.width = '100%';
+    bottomTextContainer.style.boxSizing = 'border-box';
+    cardBody.appendChild(bottomTextContainer);
+    
+    // Attribution text
+    const attributionDiv = document.createElement('div');
+    attributionDiv.className = 'attribution-text';
+    attributionDiv.style.fontSize = '0.9rem';
+    attributionDiv.style.color = '#666';
+    attributionDiv.style.textAlign = 'center';
+    attributionDiv.textContent = 'Comfort calculations based on data from the Ecowitt WS69 Personal Weather Station';
+    bottomTextContainer.appendChild(attributionDiv);
 }
 
 /**
@@ -3886,6 +3936,44 @@ function updateCapitalCitiesCard(data) {
     loadingElement.style.display = 'none';
     errorElement.style.display = 'none';
     contentElement.style.display = 'block';
+    
+    // Get the card body to append the bottom section
+    const cardBody = contentElement.closest('.card-body') || contentElement.parentElement;
+    
+    // Add Last Updated timestamp above horizontal line
+    const lastUpdatedDiv = document.createElement('div');
+    lastUpdatedDiv.className = 'last-updated-text';
+    lastUpdatedDiv.style.fontSize = '0.9rem';
+    lastUpdatedDiv.style.color = '#666';
+    lastUpdatedDiv.style.textAlign = 'center';
+    lastUpdatedDiv.style.marginBottom = '10px';
+    lastUpdatedDiv.textContent = `Last Updated: ${new Date().toLocaleString('en-AU', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    })}`;
+    cardBody.appendChild(lastUpdatedDiv);
+    
+    // Add horizontal line and attribution
+    const bottomTextContainer = document.createElement('div');
+    bottomTextContainer.style.borderTop = '1px solid #dee2e6';
+    bottomTextContainer.style.paddingTop = '10px';
+    bottomTextContainer.style.paddingBottom = '5px';
+    bottomTextContainer.style.backgroundColor = '#f8f9fa';
+    bottomTextContainer.style.width = '100%';
+    bottomTextContainer.style.boxSizing = 'border-box';
+    cardBody.appendChild(bottomTextContainer);
+    
+    // Attribution text
+    const attributionDiv = document.createElement('div');
+    attributionDiv.className = 'attribution-text';
+    attributionDiv.style.fontSize = '0.9rem';
+    attributionDiv.style.color = '#666';
+    attributionDiv.style.textAlign = 'center';
+    attributionDiv.textContent = 'Capital City Weather data provided by WeatherAPI.com';
+    bottomTextContainer.appendChild(attributionDiv);
 }
 
 /**

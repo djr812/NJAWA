@@ -2372,13 +2372,44 @@ function updateQFDAlertsCard(data) {
         timestampDiv.style.width = '100%';
         timestampDiv.style.display = 'block';
         timestampDiv.style.paddingTop = '10px';
-        timestampDiv.textContent = `Last Updated: ${new Date().toLocaleString('en-AU', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        })}`;
+        // Use the actual last updated time from the data if available, otherwise use current time
+        let formatted;
+        if (data.last_updated) {
+            // Parse the date string "03-07-2025 13:43:40" format from cache file
+            const dateParts = data.last_updated.split(' ')[0].split('-'); // ["03", "07", "2025"]
+            const timeParts = data.last_updated.split(' ')[1].split(':'); // ["13", "43", "40"]
+            
+            // Detect if the date is mm-dd-yyyy and swap if needed
+            let day = dateParts[0], month = dateParts[1], year = dateParts[2];
+            if (parseInt(dateParts[0]) <= 12 && parseInt(dateParts[1]) > 12) {
+                // Looks like mm-dd-yyyy, swap
+                [day, month] = [month, day];
+            }
+            const hour = parseInt(timeParts[0]);
+            const minute = timeParts[1];
+            
+            // Convert to 12-hour format with AM/PM
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12; // 0 becomes 12 for 12 AM
+            
+            formatted = `Last Updated: ${day}/${month}/${year} ${displayHour.toString().padStart(2, '0')}:${minute} ${ampm}`;
+        } else {
+            // Fallback to current time if no last_updated
+            const now = new Date();
+            const options = {
+                timeZone: 'Australia/Brisbane',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            };
+            const localeString = now.toLocaleString('en-AU', options);
+            const [datePart, timePart] = localeString.split(', ');
+            formatted = `Last Updated: ${datePart} ${timePart.toUpperCase()}`;
+        }
+        timestampDiv.textContent = formatted;
         cardBody.appendChild(timestampDiv);
     }
 
@@ -2645,13 +2676,44 @@ function updateBOMWarningsCard(data) {
         timestampDiv.style.width = '100%';
         timestampDiv.style.display = 'block';
         timestampDiv.style.paddingTop = '10px';
-        timestampDiv.textContent = `Last Updated: ${new Date().toLocaleString('en-AU', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        })}`;
+        // Use the actual last updated time from the data if available, otherwise use current time
+        let formatted;
+        if (data.last_updated) {
+            // Parse the date string "03-07-2025 10:18:56" format from cache file
+            const dateParts = data.last_updated.split(' ')[0].split('-'); // ["03", "07", "2025"]
+            const timeParts = data.last_updated.split(' ')[1].split(':'); // ["10", "18", "56"]
+            
+            // Detect if the date is mm-dd-yyyy and swap if needed
+            let day = dateParts[0], month = dateParts[1], year = dateParts[2];
+            if (parseInt(dateParts[0]) <= 12 && parseInt(dateParts[1]) > 12) {
+                // Looks like mm-dd-yyyy, swap
+                [day, month] = [month, day];
+            }
+            const hour = parseInt(timeParts[0]);
+            const minute = timeParts[1];
+            
+            // Convert to 12-hour format with AM/PM
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12; // 0 becomes 12 for 12 AM
+            
+            formatted = `Last Updated: ${day}/${month}/${year} ${displayHour.toString().padStart(2, '0')}:${minute} ${ampm}`;
+        } else {
+            // Fallback to current time if no last_updated
+            const now = new Date();
+            const options = {
+                timeZone: 'Australia/Brisbane',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            };
+            const localeString = now.toLocaleString('en-AU', options);
+            const [datePart, timePart] = localeString.split(', ');
+            formatted = `Last Updated: ${datePart} ${timePart.toUpperCase()}`;
+        }
+        timestampDiv.textContent = formatted;
         cardBody.appendChild(timestampDiv);
     }
 
@@ -4129,13 +4191,44 @@ function updateCapitalCitiesCard(data) {
     lastUpdatedDiv.style.color = '#666';
     lastUpdatedDiv.style.textAlign = 'center';
     lastUpdatedDiv.style.marginBottom = '10px';
-    lastUpdatedDiv.textContent = `Last Updated: ${new Date().toLocaleString('en-AU', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    })}`;
+    // Use the actual last updated time from the data if available, otherwise use current time
+    let formatted;
+    if (data.last_updated) {
+        // Parse the date string "03-07-2025 13:40:47" format from cache file
+        const dateParts = data.last_updated.split(' ')[0].split('-'); // ["03", "07", "2025"]
+        const timeParts = data.last_updated.split(' ')[1].split(':'); // ["13", "40", "47"]
+        
+        // Detect if the date is mm-dd-yyyy and swap if needed
+        let day = dateParts[0], month = dateParts[1], year = dateParts[2];
+        if (parseInt(dateParts[0]) <= 12 && parseInt(dateParts[1]) > 12) {
+            // Looks like mm-dd-yyyy, swap
+            [day, month] = [month, day];
+        }
+        const hour = parseInt(timeParts[0]);
+        const minute = timeParts[1];
+        
+        // Convert to 12-hour format with AM/PM
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12; // 0 becomes 12 for 12 AM
+        
+        formatted = `Last Updated: ${day}/${month}/${year} ${displayHour.toString().padStart(2, '0')}:${minute} ${ampm}`;
+    } else {
+        // Fallback to current time if no last_updated
+        const now = new Date();
+        const options = {
+            timeZone: 'Australia/Brisbane',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        };
+        const localeString = now.toLocaleString('en-AU', options);
+        const [datePart, timePart] = localeString.split(', ');
+        formatted = `Last Updated: ${datePart} ${timePart.toUpperCase()}`;
+    }
+    lastUpdatedDiv.textContent = formatted;
     cardBody.appendChild(lastUpdatedDiv);
     
     // Add horizontal line and attribution

@@ -2301,7 +2301,10 @@ def api_tides():
             try:
                 cache = json.load(f)
                 if cache.get('date') == today and now - cache.get('timestamp', 0) < TIDES_CACHE_TTL:
-                    return jsonify(cache['data'])
+                    # Add last_updated timestamp to the response
+                    tides_data = cache['data'].copy()
+                    tides_data['last_updated'] = datetime.fromtimestamp(cache['timestamp']).strftime('%d-%m-%Y %H:%M:%S')
+                    return jsonify(tides_data)
             except Exception:
                 pass
     
@@ -2328,7 +2331,8 @@ def api_tides():
             'station_name': data['meta']['station']['name'],
             'station_source': data['meta']['station']['source'],
             'station_distance': data['meta']['station']['distance'],
-            'tides': []
+            'tides': [],
+            'last_updated': datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         }
         
         for tide in data['data']:

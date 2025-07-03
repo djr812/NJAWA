@@ -3277,6 +3277,17 @@ function updateTidesCard(data) {
     // Find the tides-content element and append the bottom section after it
     const tidesContentElement = document.getElementById('tides-content');
     if (tidesContentElement) {
+        // Remove any existing last-updated-text and attribution elements
+        const existingLastUpdated = tidesContentElement.querySelector('.last-updated-text');
+        if (existingLastUpdated) {
+            existingLastUpdated.remove();
+        }
+        
+        const existingAttribution = tidesContentElement.querySelector('.attribution-text');
+        if (existingAttribution) {
+            existingAttribution.parentElement.remove();
+        }
+        
         // Create a completely separate grid row for the bottom section
         const bottomGridRow = document.createElement('div');
         bottomGridRow.className = 'row';
@@ -3496,6 +3507,17 @@ function updateDamLevelsCard(data) {
     // Find the dam-levels-content element and append the bottom section after it
     const damLevelsContentElement = document.getElementById('dam-levels-content');
     if (damLevelsContentElement) {
+        // Remove any existing last-updated-text and attribution elements
+        const existingLastUpdated = damLevelsContentElement.querySelector('.last-updated-text');
+        if (existingLastUpdated) {
+            existingLastUpdated.remove();
+        }
+        
+        const existingAttribution = damLevelsContentElement.querySelector('.attribution-text');
+        if (existingAttribution) {
+            existingAttribution.parentElement.remove();
+        }
+        
         // Create a completely separate grid row for the bottom section
         const bottomGridRow = document.createElement('div');
         bottomGridRow.className = 'row';
@@ -4194,6 +4216,17 @@ function updateCapitalCitiesCard(data) {
     
     // Get the card body to append the bottom section
     const cardBody = contentElement.closest('.card-body') || contentElement.parentElement;
+    
+    // Remove any existing last-updated-text and attribution elements
+    const existingLastUpdated = cardBody.querySelector('.last-updated-text');
+    if (existingLastUpdated) {
+        existingLastUpdated.remove();
+    }
+    
+    const existingAttribution = cardBody.querySelector('.attribution-text');
+    if (existingAttribution) {
+        existingAttribution.parentElement.remove();
+    }
     
     // Add Last Updated timestamp above horizontal line
     const lastUpdatedDiv = document.createElement('div');

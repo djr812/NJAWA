@@ -3211,6 +3211,94 @@ function updateTidesCard(data) {
             tidesListElement.innerHTML = '<p class="text-muted">No tide data available for today</p>';
         }
     }
+    
+    // Find the tides-content element and append the bottom section after it
+    const tidesContentElement = document.getElementById('tides-content');
+    if (tidesContentElement) {
+        // Create a completely separate grid row for the bottom section
+        const bottomGridRow = document.createElement('div');
+        bottomGridRow.className = 'row';
+        bottomGridRow.style.marginTop = '20px';
+        bottomGridRow.style.marginLeft = '0';
+        bottomGridRow.style.marginRight = '0';
+        tidesContentElement.appendChild(bottomGridRow);
+        
+        // Create a full-width column for the bottom section
+        const bottomGridCol = document.createElement('div');
+        bottomGridCol.className = 'col-12';
+        bottomGridCol.style.paddingLeft = '0';
+        bottomGridCol.style.paddingRight = '0';
+        bottomGridRow.appendChild(bottomGridCol);
+        
+        // Add Last Updated timestamp above horizontal line
+        const lastUpdatedDiv = document.createElement('div');
+        lastUpdatedDiv.className = 'last-updated-text';
+        lastUpdatedDiv.style.fontSize = '0.9rem';
+        lastUpdatedDiv.style.color = '#666';
+        lastUpdatedDiv.style.textAlign = 'center';
+        lastUpdatedDiv.style.marginBottom = '10px';
+        // Use the actual last updated time from the data if available, otherwise use current time
+        let formatted;
+        if (data.last_updated) {
+            // Parse the date string "03-07-2025 00:30:21" format from cache file
+            const dateParts = data.last_updated.split(' ')[0].split('-'); // ["03", "07", "2025"]
+            const timeParts = data.last_updated.split(' ')[1].split(':'); // ["00", "30", "21"]
+            console.log('Dam Levels last_updated split:', dateParts, timeParts);
+
+            // Detect if the date is mm-dd-yyyy and swap if needed
+            let day = dateParts[0], month = dateParts[1], year = dateParts[2];
+            if (parseInt(dateParts[0]) <= 12 && parseInt(dateParts[1]) > 12) {
+                // Looks like mm-dd-yyyy, swap
+                [day, month] = [month, day];
+            }
+            const hour = parseInt(timeParts[0]);
+            const minute = timeParts[1];
+            
+            // Convert to 12-hour format with AM/PM
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12; // 0 becomes 12 for 12 AM
+            
+            formatted = `Last Updated: ${day}/${month}/${year} ${displayHour.toString().padStart(2, '0')}:${minute} ${ampm}`;
+        } else {
+            // Fallback to current time if no last_updated
+            const now = new Date();
+            const options = {
+                timeZone: 'Australia/Brisbane',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            };
+            const localeString = now.toLocaleString('en-AU', options);
+            const [datePart, timePart] = localeString.split(', ');
+            formatted = `Last Updated: ${datePart} ${timePart.toUpperCase()}`;
+        }
+        lastUpdatedDiv.textContent = formatted;
+        bottomGridCol.appendChild(lastUpdatedDiv);
+        
+        // Add horizontal line and attribution
+        const bottomTextContainer = document.createElement('div');
+        bottomTextContainer.style.borderTop = '1px solid #dee2e6';
+        bottomTextContainer.style.paddingTop = '10px';
+        bottomTextContainer.style.paddingBottom = '5px';
+        bottomTextContainer.style.backgroundColor = '#f8f9fa';
+        bottomTextContainer.style.width = '100%';
+        bottomTextContainer.style.boxSizing = 'border-box';
+        bottomTextContainer.style.marginLeft = '0';
+        bottomTextContainer.style.marginRight = '0';
+        bottomGridCol.appendChild(bottomTextContainer);
+        
+        // Attribution text
+        const attributionDiv = document.createElement('div');
+        attributionDiv.className = 'attribution-text';
+        attributionDiv.style.fontSize = '0.9rem';
+        attributionDiv.style.color = '#666';
+        attributionDiv.style.textAlign = 'center';
+        attributionDiv.textContent = 'Tide data provided by the Stormglass.io API';
+        bottomTextContainer.appendChild(attributionDiv);
+    }
 }
 
 /**
@@ -3311,6 +3399,8 @@ async function fetchAndUpdateDamLevels() {
 }
 
 function updateDamLevelsCard(data) {
+    console.log('updateDamLevelsCard called with data:', data);
+    
     const loadingElement = document.getElementById('dam-levels-loading');
     const contentElement = document.getElementById('dam-levels-content');
     const errorElement = document.getElementById('dam-levels-error');
@@ -3320,9 +3410,11 @@ function updateDamLevelsCard(data) {
     if (errorElement) errorElement.style.display = 'none';
     if (contentElement) contentElement.style.display = 'block';
     
-    // Update last updated timestamp
+    // Remove the old last updated timestamp element
     const updatedElement = document.getElementById('dam-levels-updated');
-    if (updatedElement) updatedElement.textContent = data.last_updated || 'Unknown';
+    if (updatedElement) {
+        updatedElement.remove();
+    }
     
     // Update dams list
     const damsListElement = document.getElementById('dam-levels-list');
@@ -3337,6 +3429,96 @@ function updateDamLevelsCard(data) {
         } else {
             damsListElement.innerHTML = '<p class="text-muted">No dam data available</p>';
         }
+    }
+    
+    // Find the dam-levels-content element and append the bottom section after it
+    const damLevelsContentElement = document.getElementById('dam-levels-content');
+    if (damLevelsContentElement) {
+        // Create a completely separate grid row for the bottom section
+        const bottomGridRow = document.createElement('div');
+        bottomGridRow.className = 'row';
+        bottomGridRow.style.marginTop = '20px';
+        bottomGridRow.style.marginLeft = '0';
+        bottomGridRow.style.marginRight = '0';
+        damLevelsContentElement.appendChild(bottomGridRow);
+        
+        // Create a full-width column for the bottom section
+        const bottomGridCol = document.createElement('div');
+        bottomGridCol.className = 'col-12';
+        bottomGridCol.style.paddingLeft = '0';
+        bottomGridCol.style.paddingRight = '0';
+        bottomGridRow.appendChild(bottomGridCol);
+        
+        // Add Last Updated timestamp above horizontal line
+        const lastUpdatedDiv = document.createElement('div');
+        lastUpdatedDiv.className = 'last-updated-text';
+        lastUpdatedDiv.style.fontSize = '0.9rem';
+        lastUpdatedDiv.style.color = '#666';
+        lastUpdatedDiv.style.textAlign = 'center';
+        lastUpdatedDiv.style.marginBottom = '10px';
+        // Use the actual last updated time from the data if available, otherwise use current time
+        let formatted;
+        console.log('Dam Levels data.last_updated:', data.last_updated);
+        if (data.last_updated) {
+            // Parse the date string "03-07-2025 00:30:21" format from cache file
+            const dateParts = data.last_updated.split(' ')[0].split('-'); // ["03", "07", "2025"]
+            const timeParts = data.last_updated.split(' ')[1].split(':'); // ["00", "30", "21"]
+            console.log('Dam Levels last_updated split:', dateParts, timeParts);
+
+            // Detect if the date is mm-dd-yyyy and swap if needed
+            let day = dateParts[0], month = dateParts[1], year = dateParts[2];
+            if (parseInt(dateParts[0]) <= 12 && parseInt(dateParts[1]) > 12) {
+                // Looks like mm-dd-yyyy, swap
+                [day, month] = [month, day];
+            }
+            const hour = parseInt(timeParts[0]);
+            const minute = timeParts[1];
+            
+            // Convert to 12-hour format with AM/PM
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12; // 0 becomes 12 for 12 AM
+            
+            formatted = `Last Updated: ${day}/${month}/${year} ${displayHour.toString().padStart(2, '0')}:${minute} ${ampm}`;
+        } else {
+            // Fallback to current time if no last_updated
+            const now = new Date();
+            const options = {
+                timeZone: 'Australia/Brisbane',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            };
+            const localeString = now.toLocaleString('en-AU', options);
+            const [datePart, timePart] = localeString.split(', ');
+            formatted = `Last Updated: ${datePart} ${timePart.toUpperCase()}`;
+        }
+        console.log('Dam Levels formatted timestamp:', formatted);
+        lastUpdatedDiv.textContent = formatted;
+        bottomGridCol.appendChild(lastUpdatedDiv);
+        
+        // Add horizontal line and attribution
+        const bottomTextContainer = document.createElement('div');
+        bottomTextContainer.style.borderTop = '1px solid #dee2e6';
+        bottomTextContainer.style.paddingTop = '10px';
+        bottomTextContainer.style.paddingBottom = '5px';
+        bottomTextContainer.style.backgroundColor = '#f8f9fa';
+        bottomTextContainer.style.width = '100%';
+        bottomTextContainer.style.boxSizing = 'border-box';
+        bottomTextContainer.style.marginLeft = '0';
+        bottomTextContainer.style.marginRight = '0';
+        bottomGridCol.appendChild(bottomTextContainer);
+        
+        // Attribution text
+        const attributionDiv = document.createElement('div');
+        attributionDiv.className = 'attribution-text';
+        attributionDiv.style.fontSize = '0.9rem';
+        attributionDiv.style.color = '#666';
+        attributionDiv.style.textAlign = 'center';
+        attributionDiv.textContent = 'Dam level data provided by SEQWater.com.au';
+        bottomTextContainer.appendChild(attributionDiv);
     }
 }
 

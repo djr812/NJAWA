@@ -4002,6 +4002,17 @@ function updateComfortLevelsCard(data) {
     // Get the card body to append the bottom section
     const cardBody = contentElement.closest('.card-body') || contentElement.parentElement;
     
+    // Remove any existing last-updated-text and attribution elements
+    const existingLastUpdated = cardBody.querySelector('.last-updated-text');
+    if (existingLastUpdated) {
+        existingLastUpdated.remove();
+    }
+    
+    const existingAttribution = cardBody.querySelector('.attribution-text');
+    if (existingAttribution) {
+        existingAttribution.parentElement.remove();
+    }
+    
     // Add Last Updated timestamp above horizontal line
     const lastUpdatedDiv = document.createElement('div');
     lastUpdatedDiv.className = 'last-updated-text';

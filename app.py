@@ -2600,7 +2600,7 @@ def api_comfort_levels():
         comfort_image = None
         
         if feels_like is not None:
-            if feels_like < 10:
+            if feels_like < 6:
                 comfort_rating = 'Freezing'
                 comfort_image = 'Freezing.png'
             elif feels_like < 15:

@@ -2676,6 +2676,7 @@ function updateBOMWarningsCard(data) {
         timestampDiv.style.width = '100%';
         timestampDiv.style.display = 'block';
         timestampDiv.style.paddingTop = '10px';
+        timestampDiv.style.marginTop = '50px';
         // Use the actual last updated time from the data if available, otherwise use current time
         let formatted;
         if (data.last_updated) {

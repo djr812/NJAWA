@@ -3277,31 +3277,24 @@ function updateTidesCard(data) {
     // Find the tides-content element and append the bottom section after it
     const tidesContentElement = document.getElementById('tides-content');
     if (tidesContentElement) {
-        // Remove any existing last-updated-text and attribution elements
-        const existingLastUpdated = tidesContentElement.querySelector('.last-updated-text');
-        if (existingLastUpdated) {
-            existingLastUpdated.remove();
+        // Remove any existing bottom section container
+        const existingBottomSection = tidesContentElement.querySelector('#tides-bottom-section');
+        if (existingBottomSection) {
+            existingBottomSection.remove();
         }
         
-        const existingAttribution = tidesContentElement.querySelector('.attribution-text');
-        if (existingAttribution) {
-            existingAttribution.parentElement.remove();
-        }
-        
-        // Create a completely separate grid row for the bottom section
-        const bottomGridRow = document.createElement('div');
-        bottomGridRow.className = 'row';
-        bottomGridRow.style.marginTop = '20px';
-        bottomGridRow.style.marginLeft = '0';
-        bottomGridRow.style.marginRight = '0';
-        tidesContentElement.appendChild(bottomGridRow);
+        // Create a dedicated container for the bottom section
+        const bottomSection = document.createElement('div');
+        bottomSection.id = 'tides-bottom-section';
+        bottomSection.style.marginTop = '20px';
+        tidesContentElement.appendChild(bottomSection);
         
         // Create a full-width column for the bottom section
         const bottomGridCol = document.createElement('div');
         bottomGridCol.className = 'col-12';
         bottomGridCol.style.paddingLeft = '0';
         bottomGridCol.style.paddingRight = '0';
-        bottomGridRow.appendChild(bottomGridCol);
+        bottomSection.appendChild(bottomGridCol);
         
         // Add Last Updated timestamp above horizontal line
         const lastUpdatedDiv = document.createElement('div');
@@ -3507,31 +3500,22 @@ function updateDamLevelsCard(data) {
     // Find the dam-levels-content element and append the bottom section after it
     const damLevelsContentElement = document.getElementById('dam-levels-content');
     if (damLevelsContentElement) {
-        // Remove any existing last-updated-text and attribution elements
-        const existingLastUpdated = damLevelsContentElement.querySelector('.last-updated-text');
-        if (existingLastUpdated) {
-            existingLastUpdated.remove();
+        // Remove any existing bottom section container
+        const existingBottomSection = damLevelsContentElement.querySelector('#dam-levels-bottom-section');
+        if (existingBottomSection) {
+            existingBottomSection.remove();
         }
-        
-        const existingAttribution = damLevelsContentElement.querySelector('.attribution-text');
-        if (existingAttribution) {
-            existingAttribution.parentElement.remove();
-        }
-        
-        // Create a completely separate grid row for the bottom section
-        const bottomGridRow = document.createElement('div');
-        bottomGridRow.className = 'row';
-        bottomGridRow.style.marginTop = '20px';
-        bottomGridRow.style.marginLeft = '0';
-        bottomGridRow.style.marginRight = '0';
-        damLevelsContentElement.appendChild(bottomGridRow);
-        
+        // Create a dedicated container for the bottom section
+        const bottomSection = document.createElement('div');
+        bottomSection.id = 'dam-levels-bottom-section';
+        bottomSection.style.marginTop = '20px';
+        damLevelsContentElement.appendChild(bottomSection);
         // Create a full-width column for the bottom section
         const bottomGridCol = document.createElement('div');
         bottomGridCol.className = 'col-12';
         bottomGridCol.style.paddingLeft = '0';
         bottomGridCol.style.paddingRight = '0';
-        bottomGridRow.appendChild(bottomGridCol);
+        bottomSection.appendChild(bottomGridCol);
         
         // Add Last Updated timestamp above horizontal line
         const lastUpdatedDiv = document.createElement('div');

@@ -3286,7 +3286,7 @@ function updateTidesCard(data) {
         // Create a dedicated container for the bottom section
         const bottomSection = document.createElement('div');
         bottomSection.id = 'tides-bottom-section';
-        bottomSection.style.marginTop = '20px';
+        bottomSection.style.marginTop = '80px';
         tidesContentElement.appendChild(bottomSection);
         
         // Create a full-width column for the bottom section
@@ -3410,7 +3410,7 @@ function createTideElement(tide) {
     
     tideDiv.innerHTML = `
         <div class="d-flex align-items-center flex-grow-1">
-            <span class="me-3" style="font-size: 1.5rem;">${tideIcon}</span>
+            <span class="me-3" style="font-size: 1.5rem;"></span>
             <div class="flex-grow-1">
                 <div class="fw-bold ${tideColor} fs-6">${tideType}</div>
                 <div class="text-muted small">${tideDate} at ${tideTime}</div>

@@ -1771,10 +1771,10 @@ async function updateActualWeatherConditions(data) {
     topSpacerDiv.style.height = '15px';
     mainContentContainer.appendChild(topSpacerDiv);
 
-    // Create the three-column layout using CSS Grid
+    // Create the three-column layout using CSS Grid with responsive design
     const threeColumnGrid = document.createElement('div');
     threeColumnGrid.style.display = 'grid';
-    threeColumnGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+    threeColumnGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))';
     threeColumnGrid.style.gap = '1rem';
     threeColumnGrid.style.width = '100%';
     threeColumnGrid.style.flexGrow = '1';
@@ -1787,6 +1787,8 @@ async function updateActualWeatherConditions(data) {
     column1.style.justifyContent = 'center';
     column1.style.alignItems = 'center';
     column1.style.textAlign = 'center';
+    column1.style.minWidth = '0'; // Allow column to shrink
+    column1.style.overflow = 'hidden'; // Prevent content overflow
     
     const img = document.createElement('img');
     img.src = imageSrc;
@@ -1810,9 +1812,13 @@ async function updateActualWeatherConditions(data) {
     column2.style.display = 'flex';
     column2.style.flexDirection = 'column';
     column2.style.justifyContent = 'space-around';
+    column2.style.minWidth = '0'; // Allow column to shrink
+    column2.style.overflow = 'hidden'; // Prevent content overflow
     
     const tempDiv = document.createElement('div');
     tempDiv.className = 'mb-4';
+    tempDiv.style.wordWrap = 'break-word';
+    tempDiv.style.overflowWrap = 'break-word';
     tempDiv.innerHTML = `
         <div class="h6 mb-1" style="color: #666;">TEMPERATURE</div>
         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outTemp)}°C</div>
@@ -1821,6 +1827,8 @@ async function updateActualWeatherConditions(data) {
     
     const pressureDiv = document.createElement('div');
     pressureDiv.className = 'mb-4';
+    pressureDiv.style.wordWrap = 'break-word';
+    pressureDiv.style.overflowWrap = 'break-word';
     pressureDiv.innerHTML = `
         <div class="h6 mb-1" style="color: #666;">REL. AIR PRESSURE</div>
         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.barometer)} hPa</div>
@@ -1829,6 +1837,8 @@ async function updateActualWeatherConditions(data) {
     
     const rainDiv = document.createElement('div');
     rainDiv.className = 'mb-4';
+    rainDiv.style.wordWrap = 'break-word';
+    rainDiv.style.overflowWrap = 'break-word';
     rainDiv.innerHTML = `
         <div class="h6 mb-1" style="color: #666;">RAIN (24H)</div>
         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(rainfall24h)} mm</div>
@@ -1837,6 +1847,8 @@ async function updateActualWeatherConditions(data) {
     
     const uvDiv = document.createElement('div');
     uvDiv.className = 'mb-4';
+    uvDiv.style.wordWrap = 'break-word';
+    uvDiv.style.overflowWrap = 'break-word';
     uvDiv.innerHTML = `
         <div class="h6 mb-1" style="color: #666;">UV RATING</div>
         <div style="font-size: 1.5rem; font-weight: 700;">${latest.UV === 0 ? '0' : (latest.UV || '--')}</div>
@@ -1850,9 +1862,13 @@ async function updateActualWeatherConditions(data) {
     column3.style.display = 'flex';
     column3.style.flexDirection = 'column';
     column3.style.justifyContent = 'space-around';
+    column3.style.minWidth = '0'; // Allow column to shrink
+    column3.style.overflow = 'hidden'; // Prevent content overflow
     
     const humidityDiv = document.createElement('div');
     humidityDiv.className = 'mb-4';
+    humidityDiv.style.wordWrap = 'break-word';
+    humidityDiv.style.overflowWrap = 'break-word';
     humidityDiv.innerHTML = `
         <div class="h6 mb-1" style="color: #666;">HUMIDITY</div>
         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.outHumidity)}%</div>
@@ -1861,6 +1877,8 @@ async function updateActualWeatherConditions(data) {
     
     const windGustDiv = document.createElement('div');
     windGustDiv.className = 'mb-4';
+    windGustDiv.style.wordWrap = 'break-word';
+    windGustDiv.style.overflowWrap = 'break-word';
     windGustDiv.innerHTML = `
         <div class="h6 mb-1" style="color: #666;">WIND GUST</div>
         <div style="font-size: 1.5rem; font-weight: 700;">${formatNumber(latest.windGust)} km/h</div>
@@ -1869,6 +1887,8 @@ async function updateActualWeatherConditions(data) {
     
     const windDirDiv = document.createElement('div');
     windDirDiv.className = 'mb-4';
+    windDirDiv.style.wordWrap = 'break-word';
+    windDirDiv.style.overflowWrap = 'break-word';
     windDirDiv.innerHTML = `
         <div class="h6 mb-1" style="color: #666;">WIND DIRECTION</div>
         <div style="font-size: 1.5rem; font-weight: 700;">${degreesToCompass(latest.windDir)}</div>
@@ -1877,6 +1897,8 @@ async function updateActualWeatherConditions(data) {
     
     const lightningDiv = document.createElement('div');
     lightningDiv.className = 'mb-4';
+    lightningDiv.style.wordWrap = 'break-word';
+    lightningDiv.style.overflowWrap = 'break-word';
     lightningDiv.innerHTML = `
         <div class="h6 mb-1" style="color: #666;">LIGHTNING STRIKES</div>
         <div style="font-size: 1.5rem; font-weight: 700;">${latest.lightning_strike_count === 0 ? '0' : (latest.lightning_strike_count || '--')}</div>

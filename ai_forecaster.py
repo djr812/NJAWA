@@ -49,7 +49,7 @@ def get_data(days):
     engine = create_engine(f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}')
     query = f"""
         SELECT dateTime, pressure, outTemp, outHumidity, windSpeed, rain,
-               lightning_distance, lightning_strike_count
+               lightning_distance, lightning_strike_count, conditions
         FROM archive
         WHERE dateTime > UNIX_TIMESTAMP(NOW() - INTERVAL {days} DAY)
         ORDER BY dateTime ASC
@@ -106,6 +106,31 @@ def engineer_features(df):
     df['hour'] = df.index.hour
     df['sin_doy'] = np.sin(2 * np.pi * df['day_of_year'] / 365.25)
     df['cos_doy'] = np.cos(2 * np.pi * df['day_of_year'] / 365.25)
+
+    # Map conditions code to category and one-hot encode
+    code_to_category = {
+        1000: 'Clear', 1003: 'Cloudy', 1006: 'Cloudy', 1009: 'Cloudy', 1030: 'Cloudy',
+        1063: 'Rain', 1066: 'Storm', 1069: 'Rain', 1072: 'Rain', 1087: 'Storm',
+        1114: 'Storm', 1117: 'Storm', 1135: 'Cloudy', 1147: 'Cloudy', 1150: 'Rain',
+        1153: 'Rain', 1168: 'Rain', 1171: 'Rain', 1180: 'Rain', 1183: 'Rain',
+        1186: 'Rain', 1189: 'Rain', 1192: 'Rain', 1195: 'Rain', 1198: 'Rain',
+        1201: 'Rain', 1204: 'Rain', 1207: 'Rain', 1210: 'Rain', 1213: 'Rain',
+        1216: 'Rain', 1219: 'Rain', 1222: 'Rain', 1225: 'Rain', 1237: 'Rain',
+        1240: 'Rain', 1243: 'Rain', 1246: 'Rain', 1249: 'Rain', 1252: 'Rain',
+        1255: 'Rain', 1258: 'Rain', 1261: 'Rain', 1264: 'Rain', 1273: 'Storm',
+        1276: 'Storm', 1279: 'Storm', 1282: 'Rain'
+    }
+    if 'conditions' in df.columns:
+        df['condition_cat'] = df['conditions'].map(code_to_category)
+        condition_dummies = pd.get_dummies(df['condition_cat'], prefix='cond')
+        for col in ['cond_Clear', 'cond_Cloudy', 'cond_Rain', 'cond_Storm']:
+            if col not in condition_dummies:
+                condition_dummies[col] = 0
+        df = pd.concat([df, condition_dummies[['cond_Clear', 'cond_Cloudy', 'cond_Rain', 'cond_Storm']]], axis=1)
+    else:
+        # If no conditions column, add zeros for all
+        for col in ['cond_Clear', 'cond_Cloudy', 'cond_Rain', 'cond_Storm']:
+            df[col] = 0
 
     df = df.ffill().dropna()
     return df
@@ -204,7 +229,8 @@ def train_model(df):
         'pressure', 'pressure_change', 'outTemp', 'temp_change',
         'outHumidity', 'humidity_change', 'rolling_rain', 'wind_avg',
         'lightning_last_hour', 'lightning_closest_km',
-        'month', 'day_of_year', 'hour', 'sin_doy', 'cos_doy'
+        'month', 'day_of_year', 'hour', 'sin_doy', 'cos_doy',
+        'cond_Clear', 'cond_Cloudy', 'cond_Rain', 'cond_Storm'
     ]
 
     X = df[features]
@@ -280,7 +306,8 @@ def predict_future(df, models):
         'pressure', 'pressure_change', 'outTemp', 'temp_change',
         'outHumidity', 'humidity_change', 'rolling_rain', 'wind_avg',
         'lightning_last_hour', 'lightning_closest_km',
-        'month', 'day_of_year', 'hour', 'sin_doy', 'cos_doy'
+        'month', 'day_of_year', 'hour', 'sin_doy', 'cos_doy',
+        'cond_Clear', 'cond_Cloudy', 'cond_Rain', 'cond_Storm'
     ]
 
     latest_features = latest[features]
